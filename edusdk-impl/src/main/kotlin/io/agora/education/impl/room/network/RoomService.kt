@@ -3,8 +3,7 @@ package io.agora.education.impl.room.network
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.room.data.response.EduClassRoomEntryRes
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
-import io.agora.education.room.bean.response.Page
-import io.agora.education.room.bean.response.ResponseBody
+import io.agora.education.impl.room.data.response.ResponseBody
 import retrofit2.Call
 import retrofit2.http.*
 
@@ -18,9 +17,16 @@ interface RoomService {
     ): Call<ResponseBody<Int>>
 
     @POST("/scenario/education/apps/{appId}/v1/rooms/{roomId}/entry")
+    fun joinClassroomAsTeacher(
+            @Path("appId")  appId: String,
+            @Path("roomId") roomId: String?,
+            @Body                 eduUserInfo: EduUserInfo
+    ): Call<ResponseBody<EduClassRoomEntryRes>>
+
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomId}/entry")
     fun joinClassroomAsStudent(
             @Path("appId")  appId: String,
-            @Path("roomId") roomId: String,
+            @Path("roomId") roomId: String?,
             @Body                 eduUserInfo: EduUserInfo
     ): Call<ResponseBody<EduClassRoomEntryRes>>
 
@@ -32,8 +38,8 @@ interface RoomService {
             @Header("userToken") userToken: String,
             @Path("appId")       appId: String,
             @Path("roomId")      roomId: String,
-            @Field("role")       role: Int,
-            @Field("nextId")     nextId: String,
+            @Field("role")       role: Int?,
+            @Field("nextId")     nextId: String?,
             @Field("count")      count: Int
     ): Call<ResponseBody<Page>>
 

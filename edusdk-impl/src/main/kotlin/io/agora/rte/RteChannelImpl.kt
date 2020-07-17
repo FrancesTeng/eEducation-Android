@@ -192,7 +192,8 @@ internal class RteChannelImpl(
         rtcChannel.setRtcChannelEventHandler(rtcChannelEventHandler)
     }
 
-    override fun join(token: String, uid: Int, mediaOptions: ChannelMediaOptions) {
+    override fun join(rtcToken: String, uid: Int, mediaOptions: ChannelMediaOptions) {
+
         rtmChannel.join(object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
                 TODO("Not yet implemented")
@@ -202,11 +203,13 @@ internal class RteChannelImpl(
                 TODO("Not yet implemented")
             }
         })
-        rtcChannel.joinChannel(token, null, uid, ChannelMediaOptions().apply {
+        rtcChannel.joinChannel(rtcToken, null, uid, ChannelMediaOptions().apply {
             this.autoSubscribeAudio = mediaOptions.autoSubscribeAudio
             autoSubscribeVideo = mediaOptions.autoSubscribeVideo
         })
     }
+
+
 
     override fun leave() {
         rtmChannel.leave(object : ResultCallback<Void> {

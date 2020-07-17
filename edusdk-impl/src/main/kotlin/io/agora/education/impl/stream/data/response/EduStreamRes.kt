@@ -1,4 +1,4 @@
-package io.agora.education.impl.room.data.response
+package io.agora.education.impl.stream.data.response
 
 import io.agora.education.api.stream.data.VideoSourceType
 import io.agora.education.api.user.data.EduUserInfo

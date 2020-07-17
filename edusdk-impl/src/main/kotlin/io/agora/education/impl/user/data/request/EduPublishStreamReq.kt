@@ -9,7 +9,8 @@ class EduPublishStreamReq constructor(var userId: String,
                                       var streamUuid: String,
                                       var streamName: String,
                                       var videoSourceType: VideoSourceType,
-                                      var audioSourceType: Int = 1,
                                       var hasVideo: Int, var hasAudio: Int) {
+
+    var audioSourceType: Int = 1
 
 }

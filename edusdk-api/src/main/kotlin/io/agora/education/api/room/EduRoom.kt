@@ -7,9 +7,11 @@ import io.agora.education.api.room.data.EduRoomInfo
 import io.agora.education.api.room.data.EduRoomStatus
 import io.agora.education.api.room.data.RoomJoinOptions
 import io.agora.education.api.room.listener.EduRoomEventListener
+import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.education.api.user.EduStudent
 import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.EduUser
+import io.agora.education.api.user.data.EduUserInfo
 
 abstract class EduRoom(
         val roomInfo: EduRoomInfo,
@@ -21,9 +23,13 @@ abstract class EduRoom(
 
     var eventListener: EduRoomEventListener? = null
 
-    abstract fun joinAsTeacher(options: RoomJoinOptions, callback: EduCallback<EduTeacher>)
+    abstract fun joinClassroomAsTeacher(options: RoomJoinOptions, callback: EduCallback<EduTeacher>)
 
-    abstract fun joinAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
+    abstract fun joinClassroomAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
+
+    abstract fun getFullStreamList(nextId: String, count: Int, callback: EduCallback<MutableList<EduStreamInfo>>)
+
+    abstract fun getFullUserList(nextId: String, count: Int, callback: EduCallback<MutableList<EduUserInfo>>)
 
     abstract fun leave(callback: EduCallback<Unit>)
 }

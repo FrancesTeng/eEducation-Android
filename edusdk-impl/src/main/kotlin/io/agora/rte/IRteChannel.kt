@@ -1,5 +1,6 @@
 package io.agora.rte
 
+import io.agora.education.api.message.EduTextMessage
 import io.agora.rtc.models.ChannelMediaOptions
 
 interface IRteChannel {

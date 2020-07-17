@@ -5,7 +5,7 @@ import io.agora.education.api.stream.data.VideoSourceType
 import io.agora.education.api.user.data.EduUserInfo
 
 internal class EduStreamInfoImpl(
-        val streamId: Int,
+        var streamId: Int,
         streamUuid: String,
         streamName: String,
         videoSourceType: VideoSourceType,
