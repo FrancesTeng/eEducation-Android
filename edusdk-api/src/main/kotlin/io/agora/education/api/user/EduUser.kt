@@ -2,6 +2,7 @@ package io.agora.education.api.user
 
 import android.view.SurfaceView
 import android.view.View
+import android.view.ViewGroup
 import io.agora.education.api.EduCallback
 import io.agora.education.api.message.EduTextMessage
 import io.agora.education.api.stream.data.*
@@ -32,5 +33,5 @@ interface EduUser {
      * @param user 消息接收方的userInfo*/
     fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduTextMessage>)
 
-    fun setStreamView(stream: EduStreamInfo, view: SurfaceView, config: VideoRenderConfig = VideoRenderConfig())
+    fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig = VideoRenderConfig())
 }

@@ -190,6 +190,7 @@ internal class RteChannelImpl(
 
     init {
         rtcChannel.setRtcChannelEventHandler(rtcChannelEventHandler)
+
     }
 
     override fun join(rtcToken: String, uid: Int, mediaOptions: ChannelMediaOptions) {
@@ -208,8 +209,6 @@ internal class RteChannelImpl(
             autoSubscribeVideo = mediaOptions.autoSubscribeVideo
         })
     }
-
-
 
     override fun leave() {
         rtmChannel.leave(object : ResultCallback<Void> {

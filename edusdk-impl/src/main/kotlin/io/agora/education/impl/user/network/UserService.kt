@@ -10,35 +10,38 @@ import retrofit2.http.*
 
 interface UserService {
 
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomId}/streams")
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
     fun publishStream(
             @Header("userToken") userToken:String,
             @Path("appId") appId: String,
-            @Path("roomId") roomId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Path("userUuid") userUuid: String,
+            @Path("streamUuid") streamUuid: String,
             @Body eduPublishStreamReq: EduPublishStreamReq
     ): Call<ResponseBody<EduPublishStreamRes>>
 
-    @DELETE("/scenario/education/apps/{appId}/v1/rooms/{roomId}/streams/{streamId}")
+    @DELETE("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
     fun unPublishStream(
             @Header("userToken") userToken: String,
             @Path("appId") appId: String,
-            @Path("roomId") roomId: String,
-            @Path("streamId") streamId: String
-    ): Call<ResponseBody<Boolean>>
+            @Path("roomUuid") roomUuid: String,
+            @Path("userUuid") userUuid: String,
+            @Path("streamUuid") streamUuid: String
+    ): Call<io.agora.base.network.ResponseBody<String>>
 
-    @GET("/scenario/education/apps/{appId}/v1/rooms/{roomId}/message/broadcast")
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/channel")
     fun sendRoomMessage(
             @Header("userToken") userToken: String,
             @Path("appId") appId: String,
-            @Path("roomId") roomId: String,
+            @Path("roomUuid") roomUuid: String,
             @Body eduRoomMsgReq: EduRoomMsgReq
-    ): Call<ResponseBody<Boolean>>
+    ): Call<io.agora.base.network.ResponseBody<String>>
 
-    @GET("/scenario/education/apps/{appId}/v1/rooms/{roomId}/message/peer")
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/peer")
     fun sendUserMessage(
             @Header("userToken") userToken: String,
             @Path("appId") appId: String,
-            @Path("roomId") roomId: String,
+            @Path("roomUuid") roomUuid: String,
             @Body eduUserMsgReq: EduUserMsgReq
-    ): Call<ResponseBody<Boolean>>
+    ): Call<io.agora.base.network.ResponseBody<String>>
 }

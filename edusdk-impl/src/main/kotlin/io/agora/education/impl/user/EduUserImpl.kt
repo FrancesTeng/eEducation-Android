@@ -1,7 +1,6 @@
 package io.agora.education.impl.user
 
-import android.view.SurfaceView
-import android.view.View
+import android.view.ViewGroup
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.USERTOKEN
@@ -10,22 +9,23 @@ import io.agora.base.network.BusinessException
 import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
 import io.agora.education.api.message.EduTextMessage
-import io.agora.education.api.room.data.RoomJoinOptions
+import io.agora.education.api.room.data.EduRoomInfo
 import io.agora.education.api.room.data.RoomMediaOptions
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
+import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.education.impl.user.data.request.EduPublishStreamReq
 import io.agora.education.impl.user.network.UserService
-import io.agora.education.impl.stream.data.response.EduStreamListRes
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
 import io.agora.education.impl.user.data.request.EduUserMsgReq
 import io.agora.education.impl.user.data.response.EduPublishStreamRes
 import io.agora.education.impl.user.data.response.ResponseBody
 import io.agora.rtc.Constants
+import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rte.RteEngineImpl
@@ -69,7 +69,7 @@ internal open class EduUserImpl(
 
     override var eventListener: EduUserEventListener? = null
 
-    lateinit var roomId: String
+    lateinit var roomInfo: EduRoomInfoImpl
     lateinit var roomMediaOptions: RoomMediaOptions
 
     override fun initOrUpdateLocalStream(options: LocalStreamInitOptions, callback: EduCallback<EduStreamInfo>) {
@@ -126,11 +126,12 @@ internal open class EduUserImpl(
     }
 
     override fun publishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
-        var publishStreamReq = EduPublishStreamReq((streamInfo.publisher as EduUserInfoImpl).userId,
+        var publishStreamReq = EduPublishStreamReq((streamInfo.publisher as EduUserInfoImpl).userId!!,
                 streamInfo.streamUuid, streamInfo.streamName, streamInfo.videoSourceType,
                 if (streamInfo.hasVideo) 1 else 0, if (streamInfo.hasAudio) 1 else 0)
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
-                .publishStream(USERTOKEN, APPID, this.roomId, publishStreamReq)
+                .publishStream(USERTOKEN, APPID, roomInfo.roomUuid, userInfo.userUuid,
+                               roomMediaOptions.primaryStreamId, publishStreamReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduPublishStreamRes>> {
                     override fun onSuccess(res: ResponseBody<EduPublishStreamRes>?) {
                         callback.onSuccess(true)
@@ -145,10 +146,10 @@ internal open class EduUserImpl(
 
     override fun unPublishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
-                .unPublishStream(USERTOKEN, APPID, this.roomId, (streamInfo as EduStreamInfoImpl).streamId.toString())
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<Boolean>> {
-                    override fun onSuccess(res: ResponseBody<Boolean>?) {
-                        callback.onSuccess(res?.data)
+                .unPublishStream(USERTOKEN, APPID, roomInfo.roomUuid, userInfo.userUuid, roomMediaOptions.primaryStreamId)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
+                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
+                        callback.onSuccess(true)
                     }
 
                     override fun onFailure(throwable: Throwable?) {
@@ -161,9 +162,9 @@ internal open class EduUserImpl(
     override fun sendRoomMessage(message: String, callback: EduCallback<EduTextMessage>) {
         var roomMsgReq = EduRoomMsgReq(message)
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
-                .sendRoomMessage(USERTOKEN, APPID, this.roomId, roomMsgReq)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<Boolean>> {
-                    override fun onSuccess(res: ResponseBody<Boolean>?) {
+                .sendRoomMessage(USERTOKEN, APPID, roomInfo.roomUuid, roomMsgReq)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
+                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
                         var textMessage = EduTextMessage(userInfo.userUuid, userInfo.userName,
                                 message, System.currentTimeMillis())
                         callback.onSuccess(textMessage)
@@ -177,11 +178,11 @@ internal open class EduUserImpl(
     }
 
     override fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduTextMessage>) {
-        var userMsgReq = EduUserMsgReq((user as EduUserInfoImpl).userId, message)
+        var userMsgReq = EduUserMsgReq(userInfo.userUuid, user.userUuid, message)
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
-                .sendUserMessage(USERTOKEN, APPID, this.roomId, userMsgReq)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<Boolean>> {
-                    override fun onSuccess(res: ResponseBody<Boolean>?) {
+                .sendUserMessage(USERTOKEN, APPID, roomInfo.roomUuid, userMsgReq)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
+                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
                         var textMessage = EduTextMessage(userInfo.userUuid, userInfo.userName,
                                 message, System.currentTimeMillis())
                         callback.onSuccess(textMessage)
@@ -194,13 +195,16 @@ internal open class EduUserImpl(
                 }))
     }
 
-    override fun setStreamView(stream: EduStreamInfo, view: SurfaceView, config: VideoRenderConfig) {
-        var videoCanvas = VideoCanvas(view, config.renderMode.ordinal, stream.streamUuid.toInt())
+    /**
+     * @param viewGroup 视频画面的父布局(在UI布局上最好保持独立)*/
+    override fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig) {
+        var surfaceView = RtcEngine.CreateRendererView(viewGroup.context)
+        surfaceView.setZOrderMediaOverlay(true)
+        var videoCanvas = VideoCanvas(surfaceView, config.renderMode.ordinal, stream.streamUuid.toInt())
         if (stream.publisher.userUuid == this.userInfo.userUuid) {
             RteEngineImpl.rtcEngine.setupLocalVideo(videoCanvas)
         } else {
             RteEngineImpl.rtcEngine.setupRemoteVideo(videoCanvas)
         }
-        TODO("Not yet implemented")
     }
 }

@@ -6,10 +6,4 @@ package io.agora.education.impl.room.data.response
 class EduClassRoomEntryRes constructor(var userId: String, var userUuid: String,
                                        var userToken: String, var rtmToken: String,
                                        var rtcToken:String) {
-
-//    fun convertToEduClassroomEntry(): EduClassRoomEntry
-//    {
-//        var eduClassroomEntry = EduClassRoomEntry(userId, userUuid, userToken, rtmToken, rtcToken)
-//        return eduClassroomEntry
-//    }
 }

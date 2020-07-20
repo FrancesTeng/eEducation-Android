@@ -20,7 +20,7 @@ data class RoomProperty(
 class RoomCreateOptions(
         var roomUuid: String,
         var roomName: String,
-        roomType: RoomType
+        val roomType: RoomType
 ) {
     lateinit var roomId: String
     val properties: MutableList<RoomProperty> = mutableListOf()
