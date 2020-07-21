@@ -177,7 +177,7 @@ internal open class EduUserImpl(
     }
 
     override fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduTextMessage>) {
-        val userMsgReq = EduUserMsgReq(userInfo.userUuid, user.userUuid, message)
+        val userMsgReq = EduUserMsgReq(user.userUuid, message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
                 .sendPeerMessage(USERTOKEN, APPID, roomInfo.roomUuid, userMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {

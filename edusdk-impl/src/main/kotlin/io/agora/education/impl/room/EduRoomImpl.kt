@@ -46,6 +46,7 @@ internal class EduRoomImpl(
 
     private var eduUserInfoList = mutableListOf<EduUserInfo>()
     private var eduStreamInfoList = mutableListOf<EduStreamInfo>()
+    private val count = 20
 
     override fun joinClassroomAsTeacher(options: RoomJoinOptions, callback: EduCallback<EduTeacher>) {
         /**用户传了primaryStreamId,那么就用他当做streamUuid;如果没传，
@@ -66,6 +67,9 @@ internal class EduRoomImpl(
                 .joinClassroom(APPID, roomInfo.roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduClassRoomEntryRes>> {
                     override fun onSuccess(res: ResponseBody<EduClassRoomEntryRes>?) {
+                        /**接口调用成功，把localUser对象回调出去，仅代表接口调用成功，不作为成功加入房间的标志；
+                         * 成功加入房间与否依赖于RTM的通知*/
+                        callback.onSuccess(localUser as EduTeacherImpl)
                         val classRoomEntryRes = res?.data!!
                         /**设置全局静态数据*/
                         USERTOKEN = classRoomEntryRes.userToken
@@ -76,8 +80,25 @@ internal class EduRoomImpl(
                         channelMediaOptions.autoSubscribeAudio = options.mediaOptions.autoSubscribeAudio
                         channelMediaOptions.autoSubscribeVideo = options.mediaOptions.autoSubscribeVideo
                         joinRte(RTCTOKEN, options.userUuid.toInt(), channelMediaOptions)
-                        /***/
-                        callback.onSuccess(localUser as EduTeacherImpl)
+                        /**同步用户和流的全量数据*/
+                        syncUserList(null, count, object : EduCallback<Unit> {
+                            override fun onSuccess(res: Unit?) {
+                                eventListener?.onRemoteUsersInitialized(eduUserInfoList, this@EduRoomImpl)
+                            }
+
+                            override fun onFailure(code: Int, reason: String?) {
+                                TODO("Not yet implemented")
+                            }
+                        })
+                        syncStreamList(null, count, object : EduCallback<Unit> {
+                            override fun onSuccess(res: Unit?) {
+                                eventListener?.onRemoteStreamsInitialized(eduStreamInfoList, this@EduRoomImpl)
+                            }
+
+                            override fun onFailure(code: Int, reason: String?) {
+                                TODO("Not yet implemented")
+                            }
+                        })
                     }
 
                     override fun onFailure(throwable: Throwable?) {
@@ -106,6 +127,9 @@ internal class EduRoomImpl(
                 .joinClassroom(APPID, roomInfo.roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduClassRoomEntryRes>> {
                     override fun onSuccess(res: ResponseBody<EduClassRoomEntryRes>?) {
+                        /**接口调用成功，把localUser对象回调出去，仅代表接口调用成功，不作为成功加入房间的标志；
+                         * 成功加入房间与否依赖于RTM的通知*/
+                        callback.onSuccess(localUser as EduStudentImpl)
                         val classRoomEntryRes = res?.data!!
                         USERTOKEN = classRoomEntryRes.userToken
                         RTMTOKEN = classRoomEntryRes.rtmToken
@@ -115,8 +139,25 @@ internal class EduRoomImpl(
                         channelMediaOptions.autoSubscribeAudio = options.mediaOptions.autoSubscribeAudio
                         channelMediaOptions.autoSubscribeVideo = options.mediaOptions.autoSubscribeVideo
                         joinRte(RTCTOKEN, options.userUuid.toInt(), channelMediaOptions)
-                        /***/
-                        callback.onSuccess(localUser as EduStudentImpl)
+                        /**同步用户和流的全量数据*/
+                        syncUserList(null, count, object : EduCallback<Unit> {
+                            override fun onSuccess(res: Unit?) {
+                                eventListener?.onRemoteUsersInitialized(eduUserInfoList, this@EduRoomImpl)
+                            }
+
+                            override fun onFailure(code: Int, reason: String?) {
+                                TODO("Not yet implemented")
+                            }
+                        })
+                        syncStreamList(null, count, object : EduCallback<Unit> {
+                            override fun onSuccess(res: Unit?) {
+                                eventListener?.onRemoteStreamsInitialized(eduStreamInfoList, this@EduRoomImpl)
+                            }
+
+                            override fun onFailure(code: Int, reason: String?) {
+                                TODO("Not yet implemented")
+                            }
+                        })
                     }
 
                     override fun onFailure(throwable: Throwable?) {
@@ -130,14 +171,29 @@ internal class EduRoomImpl(
         RteEngineImpl[roomInfo.roomUuid]?.join(rtcToken, uid, channelMediaOptions)
     }
 
-    override fun getFullStreamList(nextId: String, count: Int, callback: EduCallback<MutableList<EduStreamInfo>>) {
+    override fun getFullStreamList(): MutableList<EduStreamInfo> {
+        return eduStreamInfoList
+    }
+
+    /**递归调用，同步全量数据*/
+    private fun syncStreamList(nextId: String?, count: Int, callback: EduCallback<Unit>) {
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
                 .getStreamList(USERTOKEN, APPID, roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduStreamListRes>> {
                     override fun onSuccess(res: ResponseBody<EduStreamListRes>?) {
+                        val eduStreamListRes = res?.data
                         /**转换类型*/
-                        val streamInfoList: MutableList<EduStreamInfo> = Convert.getStreamInfoList(res?.data, (roomInfo as EduRoomInfoImpl).roomType)
-                        callback.onSuccess(streamInfoList)
+                        val streamInfoList = Convert.getStreamInfoList(res?.data, (roomInfo as EduRoomInfoImpl).roomType)
+                        eduStreamInfoList.addAll(streamInfoList)
+                        if(eduStreamInfoList.size < eduStreamListRes?.total!!)
+                        {
+                            syncStreamList(eduStreamListRes?.nextId!!, count, callback)
+                        }
+                        else
+                        {
+                            /**拉去全量用户数据成功完成*/
+                            callback.onSuccess(Unit)
+                        }
                     }
 
                     override fun onFailure(throwable: Throwable?) {
@@ -147,14 +203,29 @@ internal class EduRoomImpl(
                 }))
     }
 
-    override fun getFullUserList(nextId: String, count: Int, callback: EduCallback<MutableList<EduUserInfo>>) {
+    override fun getFullUserList(): MutableList<EduUserInfo> {
+        return eduUserInfoList
+    }
+
+    /**递归调用，同步全量数据*/
+    private fun syncUserList(nextId: String?, count: Int, callback: EduCallback<Unit>) {
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
                 .getUserList(USERTOKEN, APPID, roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduUserListRes>> {
                     override fun onSuccess(res: ResponseBody<EduUserListRes>?) {
+                        val eduUserListRes = res?.data
                         /**转换类型*/
-                        val userList: MutableList<EduUserInfo>? = Convert.getUserInfoList(res?.data, (roomInfo as EduRoomInfoImpl).roomType)
-                        callback.onSuccess(userList)
+                        val userInfoList = Convert.getUserInfoList(res?.data, (roomInfo as EduRoomInfoImpl).roomType)
+                        eduUserInfoList.addAll(userInfoList)
+                        if(eduUserInfoList.size < eduUserListRes?.total!!)
+                        {
+                            syncUserList(eduUserListRes?.nextId!!, count, callback)
+                        }
+                        else
+                        {
+                            /**拉去全量用户数据成功完成*/
+                            callback.onSuccess(Unit)
+                        }
                     }
 
                     override fun onFailure(throwable: Throwable?) {
@@ -169,9 +240,10 @@ internal class EduRoomImpl(
                 .leaveClassroom(USERTOKEN, APPID, roomInfo.roomUuid, localUser.userInfo.userUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
                     override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
-                        /**处理rte*/
                         RteEngineImpl[roomInfo.roomUuid]?.leave()
                         RteEngineImpl[roomInfo.roomUuid]?.release()
+                        /**此处也是会有离开房间的RTM的通知的，但是离开房间只是通知一下后台并不依赖RTM通知，
+                         * 所以此处的回调可以作为成功离开房间的依据*/
                         callback.onSuccess(Unit)
                     }
 

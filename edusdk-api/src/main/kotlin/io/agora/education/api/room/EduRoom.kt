@@ -27,9 +27,9 @@ abstract class EduRoom(
 
     abstract fun joinClassroomAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
 
-    abstract fun getFullStreamList(nextId: String, count: Int, callback: EduCallback<MutableList<EduStreamInfo>>)
+    abstract fun getFullStreamList(): MutableList<EduStreamInfo>
 
-    abstract fun getFullUserList(nextId: String, count: Int, callback: EduCallback<MutableList<EduUserInfo>>)
+    abstract fun getFullUserList(): MutableList<EduUserInfo>
 
     abstract fun leave(callback: EduCallback<Unit>)
 }
