@@ -1,15 +1,18 @@
 package io.agora.education.impl.room.network
 
-import io.agora.education.api.stream.data.EduStreamInfo
-import io.agora.education.api.user.data.EduUserInfo
+import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.data.request.EduJoinClassroomReq
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.data.response.*
+import io.agora.education.impl.user.data.request.EduRoomMsgReq
+import io.agora.education.impl.user.data.request.EduRoomStateReq
+import io.agora.education.impl.user.data.request.EduUserMsgReq
 import retrofit2.Call
 import retrofit2.http.*
 
 interface RoomService {
 
+    /**创建房间*/
     /**@return 房间id(roomId)*/
     @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/config")
     fun createClassroom(
@@ -18,54 +21,60 @@ interface RoomService {
             @Body roomCreateOptionsReq: RoomCreateOptionsReq
     ): Call<ResponseBody<Int>>
 
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomId}/entry")
-    fun joinClassroomAsTeacher(
+    /**更新课堂状态*/
+    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
+    fun updateClassroomState(
+            @Header("userToken")userToken: String,
             @Path("appId")  appId: String,
-            @Path("roomUuid") roomUuid: String?,
-            @Body                 eduJoinClassroomReq: EduJoinClassroomReq
-    ): Call<ResponseBody<EduClassRoomEntryRes>>
-
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomId}/entry")
-    fun joinClassroomAsStudent(
-            @Path("appId")  appId: String,
-            @Path("roomUuid") roomUuid: String?,
-            @Body                 eduJoinClassroomReq: EduJoinClassroomReq
-    ): Call<ResponseBody<EduClassRoomEntryRes>>
-
-    /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
-     * @param nextId 下一页起始ID；非必须参数
-     * @param count 返回条数	*/
-    @GET("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users")
-    fun getFullUserList(
-            @Header("userToken") userToken: String,
-            @Path("appId")       appId: String,
-            @Path("roomUuid")      roomUuid: String,
-//            @Query("role")       role: String?,
-            @Query("nextId")     nextId: String?,
-            @Query("count")      count: Int
-    ): Call<ResponseBody<EduUserListRes>>
-
-    /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
-     * @param nextId 本次查询起始userId；非必须参数
-     * @param count 返回条数	*/
-    @GET("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/userStreams")
-    fun getFullStreamList(
-            @Header("userToken") userToken: String,
-            @Path("appId")       appId: String,
-            @Path("roomUuid")      roomUuid: String,
-//            @Query("role")       role: String?,
-            @Query("nextId")     nextId: String?,
-            @Query("count")      count: Int
-    ): Call<ResponseBody<EduStreamListRes>>
-
-    /**调用此接口需要添加header->userToken
-     * 此处的返回值没有写错，确实只返回code 和 msg*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/exit")
-    fun leaveClassroom(
-            @Header("userToken") userToken: String,
-            @Path("appId")       appId: String,
-            @Path("roomUuid")      roomUuid: String,
-            @Path("userUuid")      userUuid: String
+            @Path("roomUUid") roomUUid: String,
+            @Path("state") state: Int
     ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**更新课堂中对应角色的禁用状态
+     * 包括禁止聊天、禁止摄像头、禁用麦克风*/
+    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/roles/mute")
+    fun updateClassroomMuteState(
+            @Header("userToken")userToken: String,
+            @Path("appId")  appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Body eduRoomStateReq: EduRoomStateReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**发送自定义的频道消息*/
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/channel")
+    fun sendChannelCustomMessage(
+            @Header("userToken") userToken: String,
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Body eduRoomMsgReq: EduRoomMsgReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**发送自定义的点对点消息*/
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/peer")
+    fun sendPeerCustomMessage(
+            @Header("userToken") userToken: String,
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Body eduUserMsgReq: EduUserMsgReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**发送课堂内群聊消息*/
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/chat")
+    fun sendRoomMessage(
+            @Header("userToken") userToken: String,
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Body eduRoomMsgReq: EduRoomMsgReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**发送用户间的私聊消息*/
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/peer")
+    fun sendPeerMessage(
+            @Header("userToken") userToken: String,
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Body eduUserMsgReq: EduUserMsgReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
+
 
 }

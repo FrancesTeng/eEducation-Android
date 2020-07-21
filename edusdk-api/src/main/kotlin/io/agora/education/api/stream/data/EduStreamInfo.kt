@@ -14,7 +14,7 @@ enum class AudioSourceType(var value: Int) {
 open class EduStreamInfo(
         var streamUuid: String,
         var streamName: String,
-        val videoSourceType: VideoSourceType,
+        var videoSourceType: VideoSourceType,
         var hasVideo: Boolean,
         var hasAudio: Boolean,
 

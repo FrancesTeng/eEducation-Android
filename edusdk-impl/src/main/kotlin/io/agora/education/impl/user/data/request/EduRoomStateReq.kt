@@ -7,7 +7,7 @@ import io.agora.education.api.user.data.EduChatState
 import io.agora.education.impl.role.data.EduUserRoleStr
 
 /**三个参数的状态只要不是disable就等同于enable*/
-class EduRoomStatusReq() {
+class EduRoomStateReq() {
     var muteChat: String? = null
     var muteVideo: String? = null
     var muteAudio: String? = null

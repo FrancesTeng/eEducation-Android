@@ -10,11 +10,11 @@ import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
+import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.network.RoomService
-import io.agora.education.impl.room.data.response.ResponseBody
 import io.agora.education.impl.user.EduUserImpl
 import io.agora.rte.RteEngineImpl
 
@@ -33,7 +33,7 @@ internal class EduManagerImpl(
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<Int>> {
                     /**接口返回Int类型的roomId*/
                     override fun onSuccess(res: ResponseBody<Int>?) {
-                        var eduRoomInfo = EduRoomInfoImpl(res?.data.toString(), config.roomType, config.roomUuid, config.roomName)
+                        var eduRoomInfo = EduRoomInfoImpl(config.roomType, config.roomUuid, config.roomName)
                         var eduRoomStatus = EduRoomStatus(EduRoomState.INIT, System.currentTimeMillis(), true, 0)
                         var eduRoomImpl = EduRoomImpl(eduRoomInfo, eduRoomStatus)
                         /**把roomUuid设置进roomImpl中的localUser里面*/

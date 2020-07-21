@@ -58,43 +58,41 @@ class Convert {
 
         /**根据返回的用户和stream列表提取出用户列表*/
         fun getUserInfoList(eduUserListRes: EduUserListRes?, roomType: RoomType): MutableList<EduUserInfo> {
-            var list = eduUserListRes?.list
+            val list = eduUserListRes?.list
             if (list?.size == 0) {
                 return mutableListOf()
             }
-            var userInfoList: MutableList<EduUserInfo> = mutableListOf()
+            val userInfoList: MutableList<EduUserInfo> = mutableListOf()
             for ((index, element) in list?.withIndex()!!) {
-                var eduUser = convertUserInfo(element, roomType)
+                val eduUser = convertUserInfo(element, roomType)
                 userInfoList.add(index, eduUser)
             }
             return userInfoList
         }
 
         private fun convertUserInfo(eduUserRes: EduUserRes, roomType: RoomType): EduUserInfo {
-            var role = convertUserRole(eduUserRes.role, roomType)
-            return EduUserInfoImpl(null, eduUserRes.userUuid,
-                    eduUserRes.userName, role)
+            val role = convertUserRole(eduUserRes.role, roomType)
+            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role)
         }
 
         private fun convertUserInfo(eduUserRes: EduFromUserRes, roomType: RoomType): EduUserInfo {
-            var role = convertUserRole(eduUserRes.role, roomType)
-            return EduUserInfoImpl(null, eduUserRes.userUuid,
-                    eduUserRes.userName, role)
+            val role = convertUserRole(eduUserRes.role, roomType)
+            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role)
         }
 
         /**根据返回的用户和stream列表提取出stream列表*/
         fun getStreamInfoList(eduStreamListRes: EduStreamListRes?, roomType: RoomType): MutableList<EduStreamInfo> {
-            var userResList = eduStreamListRes?.list
+            val userResList = eduStreamListRes?.list
             if (userResList?.size == 0) {
                 return mutableListOf()
             }
-            var streamInfoList: MutableList<EduStreamInfo> = mutableListOf()
+            val streamInfoList: MutableList<EduStreamInfo> = mutableListOf()
             for ((index, element) in userResList?.withIndex()!!) {
-                var eduUserInfo = convertUserInfo(element.fromUser, roomType)
-                var videoSourceType = if (element.videoSourceType == 1) VideoSourceType.CAMERA else VideoSourceType.SCREEN
-                var hasVideo = element.videoState == EduVideoState.Open.value
-                var hasAudio = element.audioState == EduAudioState.Open.value
-                var eduStreamInfo = EduStreamInfoImpl(null, element.streamUuid, element.streamName,
+                val eduUserInfo = convertUserInfo(element.fromUser, roomType)
+                val videoSourceType = if (element.videoSourceType == 1) VideoSourceType.CAMERA else VideoSourceType.SCREEN
+                val hasVideo = element.videoState == EduVideoState.Open.value
+                val hasAudio = element.audioState == EduAudioState.Open.value
+                val eduStreamInfo = EduStreamInfoImpl(null, element.streamUuid, element.streamName,
                         videoSourceType, hasVideo, hasAudio, eduUserInfo)
                 streamInfoList.add(index, eduStreamInfo)
             }

@@ -1,4 +1,4 @@
-package io.agora.education.impl.user.data.response
+package io.agora.education.impl
 
 import io.agora.base.network.ResponseBody
 
