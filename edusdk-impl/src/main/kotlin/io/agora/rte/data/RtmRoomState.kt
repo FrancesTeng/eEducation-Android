@@ -6,7 +6,7 @@ import io.agora.education.impl.room.data.response.EduUserRes
 class RtmRoomState(
         /**房间状态 1开始 0结束*/
         val state: Int,
-        val startTime: Int,
+        val startTime: Long,
         val operator: EduUserRes
 ) {
 }

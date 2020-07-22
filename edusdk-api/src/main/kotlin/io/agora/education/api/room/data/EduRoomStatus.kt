@@ -12,7 +12,7 @@ enum class EduRoomState(var value: Int) {
 
 data class EduRoomStatus(
         var courseState: EduRoomState,
-        var startTime: Int,
+        var startTime: Long,
         var isStudentChatAllowed: Boolean,
         var onlineUsersCount: Int
 )

@@ -17,6 +17,7 @@ class RoomCreateOptionsReq constructor() {
     }
 
     companion object {
+
         fun convertToSelf(roomCreateOptions: RoomCreateOptions): RoomCreateOptionsReq {
             var roomCreateOptionsReq = RoomCreateOptionsReq()
             roomCreateOptionsReq.roomName = roomCreateOptions.roomName

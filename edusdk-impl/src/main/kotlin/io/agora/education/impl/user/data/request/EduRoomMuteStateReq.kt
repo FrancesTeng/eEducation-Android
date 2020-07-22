@@ -36,3 +36,8 @@ class EduRoomMuteStateReq() {
         this.muteAudio = Gson().toJson(audio)
     }
 }
+
+/**上边代码中的map需要改为属性*/
+class RoleMuteConfig constructor(val host:  String?, val broadcaster: String?, val audience: String?) {
+
+}

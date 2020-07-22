@@ -21,6 +21,7 @@ import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.Convert
+import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
 import io.agora.education.impl.record.EduRecordImpl
@@ -37,10 +38,7 @@ import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rte.RteChannelEventListener
 import io.agora.rte.RteEngineEventListener
 import io.agora.rte.RteEngineImpl
-import io.agora.rte.data.RTMCMD
-import io.agora.rte.data.RtmMsg
-import io.agora.rte.data.RtmResponseBody
-import io.agora.rte.data.RtmRoomState
+import io.agora.rte.data.*
 import io.agora.rtm.RtmChannelMember
 import io.agora.rtm.RtmMessage
 
@@ -277,11 +275,32 @@ internal class EduRoomImpl(
                 val rtmRoomState = Gson().fromJson(rtmResponseBody.data, RtmRoomState::class.java)
                 roomStatus.courseState = Convert.convertRoomState(rtmRoomState.state)
                 roomStatus.startTime = rtmRoomState.startTime
-                var roomStatusEvent = RoomStatusEvent.COURSE_STATE
-                eventListener?.onRoomStatusChanged(roomStatusEvent, this)
+                eventListener?.onRoomStatusChanged(RoomStatusEvent.COURSE_STATE, this)
             }
             RTMCMD.RoomMuteStateChange.value -> {
-
+                val rtmRoomMuteState = Gson().fromJson(rtmResponseBody.data, RtmRoomMuteState::class.java)
+                when ((roomInfo as EduRoomInfoImpl).roomType)
+                {
+                    RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
+                        /**判断本次更改是否包含针对学生的全部静音;(一对一和小班课学生的角色是broadcaster)*/
+                        val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster
+                        broadcasterMuteChat?.let {
+                            roomStatus.isStudentChatAllowed = broadcasterMuteChat?.toInt() == EduAudioState.Open.value
+                        }
+                        /**
+                         * roomStatus中仅定义了isStudentChatAllowed来标识是否全员静音；没有属性来标识是否全员禁摄像头和麦克风；
+                         * 需要确定
+                         * */
+                    }
+                    RoomType.LARGE_CLASS -> {
+                        /**判断本次更改是否包含针对学生的全部静音;(大班课学生的角色是audience)*/
+                        val audienceMuteChat = rtmRoomMuteState.muteChat?.audience
+                        audienceMuteChat?.let {
+                            roomStatus.isStudentChatAllowed = audienceMuteChat?.toInt() == EduAudioState.Open.value
+                        }
+                    }
+                }
+                eventListener?.onRoomStatusChanged(RoomStatusEvent.STUDENT_CHAT, this)
             }
             RTMCMD.ChannelMsgReceived.value -> {
                 val rtmMsg = Gson().fromJson(rtmResponseBody.data, RtmMsg::class.java)
