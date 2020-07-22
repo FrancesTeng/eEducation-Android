@@ -199,7 +199,7 @@ internal open class EduUserImpl(
     override fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig) {
         val surfaceView = RtcEngine.CreateRendererView(viewGroup.context)
         surfaceView.setZOrderMediaOverlay(true)
-        val videoCanvas = VideoCanvas(surfaceView, config.renderMode.ordinal, stream.streamUuid.toInt())
+        val videoCanvas = VideoCanvas(surfaceView, config.renderMode.value, stream.streamUuid.toInt())
         if (stream.publisher.userUuid == this.userInfo.userUuid) {
             RteEngineImpl.rtcEngine.setupLocalVideo(videoCanvas)
         } else {

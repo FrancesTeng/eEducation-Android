@@ -1,5 +1,6 @@
-package io.agora.education.api
+package io.agora.education.api.manager
 
+import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom

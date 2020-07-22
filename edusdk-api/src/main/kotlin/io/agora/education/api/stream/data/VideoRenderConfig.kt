@@ -1,9 +1,8 @@
 package io.agora.education.api.stream.data
 
-enum class RenderMode(value: Int) {
+enum class RenderMode(var value: Int) {
     HIDDEN(1),
-    FIT(2),
-    FILL(4)
+    FIT(2)
 }
 
 data class VideoRenderConfig(

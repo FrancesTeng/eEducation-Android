@@ -1,4 +1,4 @@
-package io.agora.education.api
+package io.agora.education.api.manager
 
 import android.content.Context
 import io.agora.education.api.logger.LogLevel

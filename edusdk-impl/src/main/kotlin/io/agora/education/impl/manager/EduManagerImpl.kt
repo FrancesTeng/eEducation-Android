@@ -4,8 +4,8 @@ import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
-import io.agora.education.api.EduManager
-import io.agora.education.api.EduManagerOptions
+import io.agora.education.api.manager.EduManager
+import io.agora.education.api.manager.EduManagerOptions
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
