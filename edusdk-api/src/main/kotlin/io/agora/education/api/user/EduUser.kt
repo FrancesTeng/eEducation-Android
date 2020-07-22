@@ -1,10 +1,8 @@
 package io.agora.education.api.user
 
-import android.view.SurfaceView
-import android.view.View
 import android.view.ViewGroup
 import io.agora.education.api.EduCallback
-import io.agora.education.api.message.EduTextMessage
+import io.agora.education.api.message.EduMsg
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
@@ -27,11 +25,11 @@ interface EduUser {
 
     fun unPublishStream(stream: EduStreamInfo, callback: EduCallback<Boolean>)
 
-    fun sendRoomMessage(message: String, callback: EduCallback<EduTextMessage>)
+    fun sendRoomMessage(message: String, callback: EduCallback<EduMsg>)
 
     /**
      * @param user 消息接收方的userInfo*/
-    fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduTextMessage>)
+    fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduMsg>)
 
     fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig = VideoRenderConfig())
 }

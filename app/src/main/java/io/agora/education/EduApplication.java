@@ -4,12 +4,18 @@ import android.app.Application;
 
 import androidx.annotation.Nullable;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import java.util.Map;
 
 import io.agora.base.PreferenceManager;
 import io.agora.base.ToastManager;
+import io.agora.base.network.ResponseBody;
+import io.agora.education.service.bean.request.UserReq;
 import io.agora.education.service.bean.response.AppConfigRes;
 import io.agora.log.LogManager;
+import kotlin.jvm.internal.TypeReference;
 
 public class EduApplication extends Application {
 

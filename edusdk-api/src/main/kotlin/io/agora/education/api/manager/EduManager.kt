@@ -12,7 +12,7 @@ abstract class EduManager(
     companion object {
         @JvmStatic
         fun init(options: EduManagerOptions): EduManager {
-            return Class.forName("io.agora.education.impl.EduManagerImpl")
+            return Class.forName("io.agora.education.impl.manager.EduManagerImpl")
                     .getConstructor(EduManagerOptions::class.java).newInstance(options) as EduManager
         }
     }

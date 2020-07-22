@@ -1,11 +1,8 @@
 package io.agora.education.impl.room.network
 
-import io.agora.education.impl.ResponseBody
-import io.agora.education.impl.room.data.request.EduJoinClassroomReq
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
-import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
-import io.agora.education.impl.user.data.request.EduRoomStateReq
+import io.agora.education.impl.user.data.request.EduRoomMuteStateReq
 import io.agora.education.impl.user.data.request.EduUserMsgReq
 import retrofit2.Call
 import retrofit2.http.*
@@ -19,7 +16,7 @@ interface RoomService {
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Body roomCreateOptionsReq: RoomCreateOptionsReq
-    ): Call<ResponseBody<Int>>
+    ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**更新课堂状态*/
     @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
@@ -37,7 +34,7 @@ interface RoomService {
             @Header("userToken")userToken: String,
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,
-            @Body eduRoomStateReq: EduRoomStateReq
+            @Body eduRoomMuteStateReq: EduRoomMuteStateReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送自定义的频道消息*/

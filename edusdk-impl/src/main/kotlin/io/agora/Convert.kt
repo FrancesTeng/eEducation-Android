@@ -1,5 +1,6 @@
-package io.agora.education.impl
+package io.agora
 
+import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.api.stream.data.EduStreamInfo
@@ -97,6 +98,23 @@ class Convert {
                 streamInfoList.add(index, eduStreamInfo)
             }
             return streamInfoList
+        }
+
+        fun convertRoomState(state: Int): EduRoomState {
+            return when (state) {
+                EduRoomState.INIT.value -> {
+                    EduRoomState.INIT
+                }
+                EduRoomState.START.value -> {
+                    EduRoomState.START
+                }
+                EduRoomState.END.value -> {
+                    EduRoomState.END
+                }
+                else -> {
+                    EduRoomState.INIT
+                }
+            }
         }
     }
 }

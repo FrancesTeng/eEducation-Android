@@ -1,8 +1,8 @@
 package io.agora.education.api.message
 
-open class EduTextMessage(
+open class EduMsg(
         val userUuid: String,
         val userName: String,
         val message: String,
-        val timeStamp: Long
+        val timeStamp: Int
 )

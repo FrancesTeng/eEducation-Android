@@ -1,6 +1,8 @@
 package io.agora.education.impl.room
 
 import android.text.TextUtils
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.RTCTOKEN
@@ -10,33 +12,42 @@ import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
+import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.EduRoom
-import io.agora.education.api.room.data.EduRoomInfo
-import io.agora.education.api.room.data.EduRoomStatus
-import io.agora.education.api.room.data.RoomJoinOptions
+import io.agora.education.api.room.data.*
 import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.education.api.user.EduStudent
 import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
-import io.agora.education.impl.Convert
+import io.agora.Convert
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
 import io.agora.education.impl.record.EduRecordImpl
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.request.EduJoinClassroomReq
-import io.agora.education.impl.room.data.response.*
+import io.agora.education.impl.room.data.response.EduClassRoomEntryRes
+import io.agora.education.impl.room.data.response.EduStreamListRes
+import io.agora.education.impl.room.data.response.EduUserListRes
 import io.agora.education.impl.user.EduStudentImpl
 import io.agora.education.impl.user.EduTeacherImpl
 import io.agora.education.impl.user.EduUserImpl
 import io.agora.education.impl.user.network.UserService
 import io.agora.rtc.models.ChannelMediaOptions
+import io.agora.rte.RteChannelEventListener
+import io.agora.rte.RteEngineEventListener
 import io.agora.rte.RteEngineImpl
+import io.agora.rte.data.RTMCMD
+import io.agora.rte.data.RtmMsg
+import io.agora.rte.data.RtmResponseBody
+import io.agora.rte.data.RtmRoomState
+import io.agora.rtm.RtmChannelMember
+import io.agora.rtm.RtmMessage
 
 internal class EduRoomImpl(
         roomInfo: EduRoomInfo,
         roomStatus: EduRoomStatus
-) : EduRoom(roomInfo, roomStatus) {
+) : EduRoom(roomInfo, roomStatus), RteChannelEventListener, RteEngineEventListener {
 
     init {
         RteEngineImpl.createChannel(roomInfo.roomUuid)
@@ -252,5 +263,58 @@ internal class EduRoomImpl(
                         callback.onFailure(error.code, error.message)
                     }
                 }))
+    }
+
+
+
+    override fun onChannelMsgReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
+        val text = p0?.text
+        val rtmResponseBody = Gson().fromJson<RtmResponseBody<String>>(text,
+                                               object : TypeToken<RtmResponseBody<String>>(){}.type)
+        when (rtmResponseBody.cmd) {
+            RTMCMD.RoomStateChange.value -> {
+                /**课堂状态发生改变*/
+                val rtmRoomState = Gson().fromJson(rtmResponseBody.data, RtmRoomState::class.java)
+                roomStatus.courseState = Convert.convertRoomState(rtmRoomState.state)
+                roomStatus.startTime = rtmRoomState.startTime
+                var roomStatusEvent = RoomStatusEvent.COURSE_STATE
+                eventListener?.onRoomStatusChanged(roomStatusEvent, this)
+            }
+            RTMCMD.RoomMuteStateChange.value -> {
+
+            }
+            RTMCMD.ChannelMsgReceived.value -> {
+                val rtmMsg = Gson().fromJson(rtmResponseBody.data, RtmMsg::class.java)
+                val eduMsg = EduMsg(rtmMsg.fromUser.userUuid, rtmMsg.fromUser.userName, rtmMsg.message, rtmResponseBody.ts)
+                eventListener?.onRoomMessageReceived(eduMsg, this)
+            }
+            RTMCMD.ChannelCustomMsgReceived.value -> {
+
+            }
+            RTMCMD.UserJoinOrLeave.value -> {
+
+            }
+            RTMCMD.StreamStateChange.value -> {
+
+            }
+            RTMCMD.BoardRoomStateChange.value -> {
+
+            }
+            RTMCMD.BoardUserStateChange.value -> {
+
+            }
+        }
+    }
+
+    override fun onNetworkQuality(uid: Int, txQuality: Int, rxQuality: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onConnectionStateChanged(p0: Int, p1: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onPeerMsgReceived(p0: RtmMessage?, p1: String?) {
+        TODO("Not yet implemented")
     }
 }

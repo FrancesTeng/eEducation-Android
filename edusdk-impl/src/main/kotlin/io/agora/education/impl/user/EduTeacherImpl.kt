@@ -17,10 +17,10 @@ import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduTeacherEventListener
-import io.agora.education.impl.Convert
+import io.agora.Convert
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.stream.network.StreamService
-import io.agora.education.impl.user.data.request.EduRoomStateReq
+import io.agora.education.impl.user.data.request.EduRoomMuteStateReq
 import io.agora.education.impl.user.data.request.EduStreamStatusReq
 import io.agora.education.impl.user.data.request.EduUserStatusReq
 import io.agora.education.impl.user.network.UserService
@@ -64,7 +64,7 @@ internal class EduTeacherImpl(
     }
 
     override fun allowStudentChat(isAllow: Boolean, callback: EduCallback<Unit>) {
-        val eduRoomStatusReq = EduRoomStateReq(EduChatState.Disable)
+        val eduRoomStatusReq = EduRoomMuteStateReq(EduChatState.Disable)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
                 .updateClassroomMuteState(USERTOKEN, APPID, roomInfo.roomUuid, eduRoomStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {

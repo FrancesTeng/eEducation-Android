@@ -1,57 +1,78 @@
 package io.agora.education.impl.room.data.request
 
 import io.agora.education.api.room.data.RoomCreateOptions
+import io.agora.education.api.room.data.RoomProperty
 import io.agora.education.api.room.data.RoomProperty.Companion.KEY_STREAM_LIMIT
 import io.agora.education.api.room.data.RoomProperty.Companion.KEY_STUDENT_LIMIT
 import io.agora.education.api.room.data.RoomProperty.Companion.KEY_TEACHER_LIMIT
+import io.agora.education.api.room.data.RoomType
 
-class RoomCreateOptionsReq constructor(){
-    lateinit var roomUuid: String
+class RoomCreateOptionsReq constructor() {
     lateinit var roomName: String
-    lateinit var roomLimitConfig: RoomLimitConfig
+    lateinit var roleConfig: RoleConfig
 
-    constructor(roomUuid: String, roomName: String,
-                roomLimitConfig: RoomLimitConfig) : this() {
-        this.roomUuid = roomUuid
+    constructor(roomName: String, roleConfig: RoleConfig) : this() {
         this.roomName = roomName
-        this.roomLimitConfig = roomLimitConfig
+        this.roleConfig = roleConfig
     }
 
     companion object {
         fun convertToSelf(roomCreateOptions: RoomCreateOptions): RoomCreateOptionsReq {
             var roomCreateOptionsReq = RoomCreateOptionsReq()
-            roomCreateOptionsReq.roomUuid = roomCreateOptions.roomUuid
             roomCreateOptionsReq.roomName = roomCreateOptions.roomName
-            var roomLimitConfig = RoomLimitConfig()
+            var mRoleConfig = RoleConfig()
+
             var roomProperties = roomCreateOptions.properties
             for (roomProperty in roomProperties) {
-                when (roomProperty.value) {
-                    KEY_TEACHER_LIMIT -> {
-                        roomLimitConfig.teacherLimit = roomProperty.value!!.toInt()
-                    }
-                    KEY_STUDENT_LIMIT -> {
-                        roomLimitConfig.studentLimit = roomProperty.value!!.toInt()
-                    }
-                    KEY_STREAM_LIMIT -> {
-                        roomLimitConfig.streamLimit = roomProperty.value!!.toInt()
-                    }
+                modifyRoleConfig(mRoleConfig, roomProperty, roomCreateOptions.roomType)
+            }
+            roomCreateOptionsReq.roleConfig = mRoleConfig
+            return roomCreateOptionsReq
+        }
+
+        private fun modifyRoleConfig(roleConfig: RoleConfig, roomProperty: RoomProperty, roomType: RoomType) {
+            var teacherLimit = 0
+            var studentLimit = 0
+            when (roomProperty.key) {
+                KEY_TEACHER_LIMIT -> {
+                    teacherLimit = roomProperty.value?.toInt() ?: 0
+                }
+                KEY_STUDENT_LIMIT -> {
+                    studentLimit = roomProperty.value?.toInt() ?: 0
                 }
             }
-            roomCreateOptionsReq.roomLimitConfig == roomLimitConfig
-            return roomCreateOptionsReq
+            roleConfig.host = LimitConfig(teacherLimit)
+            if(roomType == RoomType.LARGE_CLASS)
+            {
+                roleConfig.audience = LimitConfig(studentLimit)
+            }
+            else
+            {
+                roleConfig.broadcaster = LimitConfig(studentLimit)
+            }
         }
     }
 }
 
-class RoomLimitConfig constructor() {
-    var teacherLimit: Int = 0
-    var studentLimit: Int = 0
-    var streamLimit: Int  = 0
+class RoleConfig constructor() {
+    lateinit var host: LimitConfig
+    lateinit var broadcaster: LimitConfig
+    lateinit var audience: LimitConfig
 
-    constructor(teacherLimit: Int, studentLimit: Int, streamLimit: Int) : this() {
-        this.teacherLimit = teacherLimit
-        this.studentLimit = studentLimit
-        this.streamLimit = streamLimit
+    constructor(host: LimitConfig, broadcaster: LimitConfig, audience: LimitConfig) : this() {
     }
+}
 
+class LimitConfig constructor(val limit: Int) {
+    var verifyType = VerifyType.NotAllow.value
+
+    constructor(limit: Int, verifyType: Int) : this(limit) {
+        this.verifyType = verifyType
+    }
+}
+
+/**验证类型, 0: 允许匿名, 1: 不允许匿名 */
+enum class VerifyType(var value: Int) {
+    Allow(0),
+    NotAllow(1)
 }

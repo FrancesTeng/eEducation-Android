@@ -11,8 +11,8 @@ enum class EduRoomState(var value: Int) {
 }
 
 data class EduRoomStatus(
-        val courseState: EduRoomState,
-        val startTime: Long,
+        var courseState: EduRoomState,
+        var startTime: Int,
         var isStudentChatAllowed: Boolean,
         var onlineUsersCount: Int
 )

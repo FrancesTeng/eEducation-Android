@@ -9,7 +9,7 @@ import io.agora.base.network.BusinessException
 import io.agora.base.network.ResponseBody
 import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
-import io.agora.education.api.message.EduTextMessage
+import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.data.RoomMediaOptions
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
@@ -17,12 +17,8 @@ import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.network.RoomService
-import io.agora.education.impl.user.data.EduUserInfoImpl
-import io.agora.education.impl.user.data.request.EduPublishStreamReq
-import io.agora.education.impl.user.network.UserService
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
 import io.agora.education.impl.user.data.request.EduUserMsgReq
-import io.agora.education.impl.user.data.response.EduPublishStreamRes
 import io.agora.education.impl.stream.network.StreamService
 import io.agora.education.impl.user.data.request.EduStreamStatusReq
 import io.agora.rtc.Constants
@@ -158,13 +154,13 @@ internal open class EduUserImpl(
                 }))
     }
 
-    override fun sendRoomMessage(message: String, callback: EduCallback<EduTextMessage>) {
+    override fun sendRoomMessage(message: String, callback: EduCallback<EduMsg>) {
         val roomMsgReq = EduRoomMsgReq(message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
                 .sendRoomMessage(USERTOKEN, APPID, roomInfo.roomUuid, roomMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduTextMessage(userInfo.userUuid, userInfo.userName,
+                        val textMessage = EduMsg(userInfo.userUuid, userInfo.userName,
                                 message, System.currentTimeMillis())
                         callback.onSuccess(textMessage)
                     }
@@ -176,13 +172,13 @@ internal open class EduUserImpl(
                 }))
     }
 
-    override fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduTextMessage>) {
+    override fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduMsg>) {
         val userMsgReq = EduUserMsgReq(user.userUuid, message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
                 .sendPeerMessage(USERTOKEN, APPID, roomInfo.roomUuid, userMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduTextMessage(userInfo.userUuid, userInfo.userName,
+                        val textMessage = EduMsg(userInfo.userUuid, userInfo.userName,
                                 message, System.currentTimeMillis())
                         callback.onSuccess(textMessage)
                     }

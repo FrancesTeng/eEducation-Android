@@ -1,5 +1,8 @@
 package io.agora.education.impl.manager
 
+import io.agora.Constants
+import io.agora.Constants.Companion.API_BASE_URL
+import io.agora.Constants.Companion.APPID
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.RetrofitManager
@@ -10,6 +13,7 @@ import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
+import io.agora.education.api.statistics.AgoraError
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.EduRoomInfoImpl
@@ -23,16 +27,17 @@ internal class EduManagerImpl(
 ) : EduManager(options) {
     init {
         RteEngineImpl.init(options.context, options.appId)
+        Constants.APPID = options.appId
     }
 
     private lateinit var eduRoom: EduRoom
 
     override fun createClassroom(config: RoomCreateOptions, callback: EduCallback<EduRoom>) {
-        RetrofitManager.instance().getService("", RoomService::class.java)
-                .createClassroom("", config.roomUuid, RoomCreateOptionsReq.convertToSelf(config))
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<Int>> {
+        RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
+                .createClassroom(APPID, config.roomUuid, RoomCreateOptionsReq.convertToSelf(config))
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
                     /**接口返回Int类型的roomId*/
-                    override fun onSuccess(res: ResponseBody<Int>?) {
+                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
                         var eduRoomInfo = EduRoomInfoImpl(config.roomType, config.roomUuid, config.roomName)
                         var eduRoomStatus = EduRoomStatus(EduRoomState.INIT, System.currentTimeMillis(), true, 0)
                         var eduRoomImpl = EduRoomImpl(eduRoomInfo, eduRoomStatus)
@@ -43,12 +48,11 @@ internal class EduManagerImpl(
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as BusinessException
-                        callback.onFailure(error.code, error.message)
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
                     }
                 }))
-
-        RteEngineImpl.createChannel(config.roomId)
 
     }
 

@@ -22,7 +22,6 @@ class RoomCreateOptions(
         var roomName: String,
         val roomType: RoomType
 ) {
-    lateinit var roomId: String
     val properties: MutableList<RoomProperty> = mutableListOf()
 
     init {

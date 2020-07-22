@@ -9,6 +9,8 @@ def extGet(prop, key) {
 }
 
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion rootProject.ext.android.compileSdkVersion
@@ -74,6 +76,7 @@ dependencies {
     implementation project(':timeline')
     implementation project(':whiteboard')
     implementation project(':edusdk-api')
+    implementation project(':edusdk-impl')
 
     testImplementation "junit:junit:${extGet('dependencies', 'junit:junit')}"
     androidTestImplementation "androidx.test.ext:junit:${extGet('dependencies', 'androidx.test.ext:junit')}"
