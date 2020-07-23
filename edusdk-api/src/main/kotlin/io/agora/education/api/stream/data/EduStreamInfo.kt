@@ -18,8 +18,29 @@ open class EduStreamInfo(
         var hasVideo: Boolean,
         var hasAudio: Boolean,
 
-        val publisher: EduUserInfo
-)
+        val publisher: EduUserInfo,
+        val updateTime: Long?
+) {
+    override fun equals(other: Any?): Boolean {
+        if(other == null || other !is EduStreamInfo)
+        {
+            return false
+        }
+        return (other.streamUuid == this.streamUuid && other.streamName == this.streamName &&
+                other.publisher == this.publisher)
+    }
+
+    override fun hashCode(): Int {
+        val var10000 = streamUuid
+        var var1 = (var10000?.hashCode() ?: 0) * 31
+        val var10001 = streamName
+        var1 = (var1 + (var10001?.hashCode() ?: 0)) * 31
+
+        val var4 = publisher
+        var1 = (var1 + (var4?.hashCode() ?: 0)) * 31
+        return var1
+    }
+}
 
 enum class EduVideoState(var value: Int) {
     Off(0),

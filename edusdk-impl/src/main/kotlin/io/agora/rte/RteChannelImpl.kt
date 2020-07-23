@@ -1,14 +1,14 @@
 package io.agora.rte
 
 import io.agora.rtc.IRtcChannelEventHandler
-import io.agora.rtc.IRtcEngineEventHandler
-import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rtm.*
 
 internal class RteChannelImpl(
-        channelId: String
+        channelId: String,
+        private var eventListener: RteChannelEventListener?
 ) : IRteChannel {
+
     private val rtmChannelListener = object : RtmChannelListener {
         override fun onAttributesUpdated(p0: MutableList<RtmChannelAttribute>?) {
             TODO("Not yet implemented")
@@ -16,7 +16,7 @@ internal class RteChannelImpl(
 
         /**收到频道内消息(包括频道内的群聊消息和各种房间配置、人员信息、流信息等)*/
         override fun onMessageReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
-            TODO("Not yet implemented")
+            eventListener?.onChannelMsgReceived(p0, p1)
         }
 
         override fun onMemberJoined(p0: RtmChannelMember?) {

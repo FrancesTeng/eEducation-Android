@@ -20,6 +20,7 @@ import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.user.EduUserImpl
+import io.agora.rte.RteEngineEventListener
 import io.agora.rte.RteEngineImpl
 
 internal class EduManagerImpl(
@@ -43,6 +44,9 @@ internal class EduManagerImpl(
                         var eduRoomImpl = EduRoomImpl(eduRoomInfo, eduRoomStatus)
                         /**把roomUuid设置进roomImpl中的localUser里面*/
                         (eduRoomImpl.localUser as EduUserImpl).roomInfo = eduRoomInfo
+                        /**为RteEngine设置eventListener*/
+                        RteEngineImpl.eventListener = eduRoomImpl
+                        /**转换为抽象对象并回调出去*/
                         eduRoom = eduRoomImpl
                         callback.onSuccess(eduRoom)
                     }

@@ -23,6 +23,7 @@ import io.agora.education.impl.stream.network.StreamService
 import io.agora.education.impl.user.data.request.EduRoomMuteStateReq
 import io.agora.education.impl.user.data.request.EduStreamStatusReq
 import io.agora.education.impl.user.data.request.EduUserStatusReq
+import io.agora.education.impl.user.data.request.RoleMuteConfig
 import io.agora.education.impl.user.network.UserService
 
 internal class EduTeacherImpl(
@@ -64,7 +65,10 @@ internal class EduTeacherImpl(
     }
 
     override fun allowStudentChat(isAllow: Boolean, callback: EduCallback<Unit>) {
-        val eduRoomStatusReq = EduRoomMuteStateReq(EduChatState.Disable)
+        val chatState = if(isAllow) EduChatState.Enable else EduChatState.Disable
+        val eduRoomStatusReq = EduRoomMuteStateReq(
+                RoleMuteConfig(null, EduChatState.Disable.value.toString(), EduChatState.Disable.value.toString()),
+                null, null)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
                 .updateClassroomMuteState(USERTOKEN, APPID, roomInfo.roomUuid, eduRoomStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {

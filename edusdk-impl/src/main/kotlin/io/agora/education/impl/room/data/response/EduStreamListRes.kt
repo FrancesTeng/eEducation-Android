@@ -1,9 +1,5 @@
 package io.agora.education.impl.room.data.response
 
-import io.agora.education.api.user.data.EduUserInfo
-import io.agora.education.api.user.data.EduUserRole
-import io.agora.education.impl.user.data.EduUserInfoImpl
-
 class EduStreamListRes(
         var count: Int,
         var total: Int,
@@ -12,7 +8,7 @@ class EduStreamListRes(
 ) {
 }
 
-class EduStreamRes(
+open class EduStreamRes(
         var fromUser: EduFromUserRes,
         var streamUuid: String,
         var streamName: String,
@@ -20,11 +16,10 @@ class EduStreamRes(
         var audioSourceType: Int,
         var videoState: Int,
         var audioState: Int,
-        var updateTime: Int) {
+        var updateTime: Long) {
 }
 
 class EduFromUserRes(
-        var userId: String,
         var userUuid: String,
         var userName: String,
         var role: String

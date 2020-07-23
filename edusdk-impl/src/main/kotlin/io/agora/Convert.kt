@@ -12,6 +12,8 @@ import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
+import io.agora.rte.data.RtmStreamActionMsg
+import io.agora.rte.data.RtmUserStateMsg
 
 class Convert {
     companion object {
@@ -42,14 +44,12 @@ class Convert {
                     return EduUserRole.TEACHER
                 }
                 EduUserRoleStr.broadcaster.name -> {
-                    if(roomType == RoomType.ONE_ON_ONE || roomType == RoomType.SMALL_CLASS)
-                    {
+                    if (roomType == RoomType.ONE_ON_ONE || roomType == RoomType.SMALL_CLASS) {
                         return EduUserRole.STUDENT
                     }
                 }
                 EduUserRoleStr.audience.name -> {
-                    if(roomType == RoomType.LARGE_CLASS)
-                    {
+                    if (roomType == RoomType.LARGE_CLASS) {
                         return EduUserRole.STUDENT
                     }
                 }
@@ -73,12 +73,12 @@ class Convert {
 
         private fun convertUserInfo(eduUserRes: EduUserRes, roomType: RoomType): EduUserInfo {
             val role = convertUserRole(eduUserRes.role, roomType)
-            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role)
+            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role, eduUserRes.updateTime)
         }
 
         private fun convertUserInfo(eduUserRes: EduFromUserRes, roomType: RoomType): EduUserInfo {
             val role = convertUserRole(eduUserRes.role, roomType)
-            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role)
+            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role, null)
         }
 
         /**根据返回的用户和stream列表提取出stream列表*/
@@ -94,7 +94,7 @@ class Convert {
                 val hasVideo = element.videoState == EduVideoState.Open.value
                 val hasAudio = element.audioState == EduAudioState.Open.value
                 val eduStreamInfo = EduStreamInfoImpl(null, element.streamUuid, element.streamName,
-                        videoSourceType, hasVideo, hasAudio, eduUserInfo)
+                        videoSourceType, hasVideo, hasAudio, eduUserInfo, element.updateTime)
                 streamInfoList.add(index, eduStreamInfo)
             }
             return streamInfoList
@@ -115,6 +115,35 @@ class Convert {
                     EduRoomState.INIT
                 }
             }
+        }
+
+        fun convertStreamInfo(rtmStreamActionMsg: RtmStreamActionMsg, roomType: RoomType): EduStreamInfo {
+            val fromUserInfo = convertUserInfo(rtmStreamActionMsg.fromUser, roomType)
+            return EduStreamInfo(rtmStreamActionMsg.streamUuid, rtmStreamActionMsg.streamName,
+                    convertVideoSourceType(rtmStreamActionMsg.videoSourceType),
+                    rtmStreamActionMsg.videoState == EduVideoState.Open.value,
+                    rtmStreamActionMsg.audioState == EduAudioState.Open.value,
+                    fromUserInfo, rtmStreamActionMsg.updateTime)
+        }
+
+        fun convertVideoSourceType(value: Int): VideoSourceType {
+            return when (value) {
+                VideoSourceType.CAMERA.value -> {
+                    VideoSourceType.CAMERA
+                }
+                VideoSourceType.SCREEN.value -> {
+                    VideoSourceType.SCREEN
+                }
+                else -> {
+                    VideoSourceType.CAMERA
+                }
+            }
+        }
+
+        fun convertUserInfo(rtmUserStateMsg: RtmUserStateMsg, roomType: RoomType): EduUserInfo {
+            val role = convertUserRole(rtmUserStateMsg.role, roomType)
+            return EduUserInfo(rtmUserStateMsg.userUuid, rtmUserStateMsg.userName,
+                    role, rtmUserStateMsg.updateTime)
         }
     }
 }

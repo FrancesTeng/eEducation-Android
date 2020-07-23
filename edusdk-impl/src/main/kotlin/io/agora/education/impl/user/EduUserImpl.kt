@@ -79,7 +79,7 @@ internal open class EduUserImpl(
         RteEngineImpl.rtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING)
         RteEngineImpl.rtcEngine.setVideoEncoderConfiguration(getVideoEncoderConfiguration())
         val streamInfo = EduStreamInfo(options.streamUuid, options.streamName, VideoSourceType.CAMERA,
-                options.enableCamera, options.enableMicrophone, this.userInfo)
+                options.enableCamera, options.enableMicrophone, this.userInfo, null)
         if (roomMediaOptions.autoSubscribeVideo || roomMediaOptions.autoSubscribeAudio) {
             val subscribeOptions = StreamSubscribeOptions(roomMediaOptions.autoSubscribeAudio,
                     roomMediaOptions.autoSubscribeVideo,

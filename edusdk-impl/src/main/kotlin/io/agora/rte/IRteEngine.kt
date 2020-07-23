@@ -5,5 +5,5 @@ import android.content.Context
 interface IRteEngine {
     fun init(context: Context, appId: String)
 
-    fun createChannel(channelId: String): IRteChannel
+    fun createChannel(channelId: String, eventListener: RteChannelEventListener): IRteChannel
 }

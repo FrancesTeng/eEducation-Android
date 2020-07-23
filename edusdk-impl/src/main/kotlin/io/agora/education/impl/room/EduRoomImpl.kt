@@ -21,6 +21,7 @@ import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.Convert
+import io.agora.Util
 import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
@@ -48,7 +49,7 @@ internal class EduRoomImpl(
 ) : EduRoom(roomInfo, roomStatus), RteChannelEventListener, RteEngineEventListener {
 
     init {
-        RteEngineImpl.createChannel(roomInfo.roomUuid)
+        RteEngineImpl.createChannel(roomInfo.roomUuid, this)
         record = EduRecordImpl()
         board = EduBoardImpl()
     }
@@ -57,18 +58,22 @@ internal class EduRoomImpl(
     private var eduStreamInfoList = mutableListOf<EduStreamInfo>()
     private val count = 20
 
+    fun getCurRoomType(): RoomType {
+        return (roomInfo as EduRoomInfoImpl).roomType
+    }
+
     override fun joinClassroomAsTeacher(options: RoomJoinOptions, callback: EduCallback<EduTeacher>) {
         /**用户传了primaryStreamId,那么就用他当做streamUuid;如果没传，
          * 则把userUuid赋值给primaryStreamId当做streamUuid*/
         if (TextUtils.isEmpty(options.mediaOptions.primaryStreamId)) {
             options.mediaOptions.primaryStreamId = options.userUuid
         }
-        val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.TEACHER)
+        val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.TEACHER, null)
         /**此处需要把localUserInfo设置进localUser中*/
         localUser = EduUserImpl(localUserInfo)
         (localUser as EduUserImpl).roomMediaOptions = options.mediaOptions
         /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
-        val roomType = (roomInfo as EduRoomInfoImpl).roomType
+        val roomType = getCurRoomType()
         val role = Convert.convertUserRole(localUserInfo.role, roomType)
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName,
                 role, options.mediaOptions.primaryStreamId)
@@ -123,12 +128,12 @@ internal class EduRoomImpl(
         if (TextUtils.isEmpty(options.mediaOptions.primaryStreamId)) {
             options.mediaOptions.primaryStreamId = options.userUuid
         }
-        val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.STUDENT)
+        val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.STUDENT, null)
         /**此处需要把localUserInfo设置进localUser中*/
         localUser = EduUserImpl(localUserInfo)
         (localUser as EduUserImpl).roomMediaOptions = options.mediaOptions
         /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
-        val roomType = (roomInfo as EduRoomInfoImpl).roomType
+        val roomType = getCurRoomType()
         val role = Convert.convertUserRole(localUserInfo.role, roomType)
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
                 options.mediaOptions.primaryStreamId)
@@ -192,11 +197,11 @@ internal class EduRoomImpl(
                     override fun onSuccess(res: ResponseBody<EduStreamListRes>?) {
                         val eduStreamListRes = res?.data
                         /**转换类型*/
-                        val streamInfoList = Convert.getStreamInfoList(res?.data, (roomInfo as EduRoomInfoImpl).roomType)
+                        val streamInfoList = Convert.getStreamInfoList(res?.data, getCurRoomType())
                         eduStreamInfoList.addAll(streamInfoList)
                         if(eduStreamInfoList.size < eduStreamListRes?.total!!)
                         {
-                            syncStreamList(eduStreamListRes?.nextId!!, count, callback)
+                            syncStreamList(eduStreamListRes.nextId, count, callback)
                         }
                         else
                         {
@@ -224,11 +229,11 @@ internal class EduRoomImpl(
                     override fun onSuccess(res: ResponseBody<EduUserListRes>?) {
                         val eduUserListRes = res?.data
                         /**转换类型*/
-                        val userInfoList = Convert.getUserInfoList(res?.data, (roomInfo as EduRoomInfoImpl).roomType)
+                        val userInfoList = Convert.getUserInfoList(res?.data, getCurRoomType())
                         eduUserInfoList.addAll(userInfoList)
                         if(eduUserInfoList.size < eduUserListRes?.total!!)
                         {
-                            syncUserList(eduUserListRes?.nextId!!, count, callback)
+                            syncUserList(eduUserListRes.nextId, count, callback)
                         }
                         else
                         {
@@ -279,13 +284,13 @@ internal class EduRoomImpl(
             }
             RTMCMD.RoomMuteStateChange.value -> {
                 val rtmRoomMuteState = Gson().fromJson(rtmResponseBody.data, RtmRoomMuteState::class.java)
-                when ((roomInfo as EduRoomInfoImpl).roomType)
+                when (getCurRoomType())
                 {
                     RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
                         /**判断本次更改是否包含针对学生的全部静音;(一对一和小班课学生的角色是broadcaster)*/
                         val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster
                         broadcasterMuteChat?.let {
-                            roomStatus.isStudentChatAllowed = broadcasterMuteChat?.toInt() == EduAudioState.Open.value
+                            roomStatus.isStudentChatAllowed = broadcasterMuteChat.toInt() == EduAudioState.Open.value
                         }
                         /**
                          * roomStatus中仅定义了isStudentChatAllowed来标识是否全员静音；没有属性来标识是否全员禁摄像头和麦克风；
@@ -296,7 +301,7 @@ internal class EduRoomImpl(
                         /**判断本次更改是否包含针对学生的全部静音;(大班课学生的角色是audience)*/
                         val audienceMuteChat = rtmRoomMuteState.muteChat?.audience
                         audienceMuteChat?.let {
-                            roomStatus.isStudentChatAllowed = audienceMuteChat?.toInt() == EduAudioState.Open.value
+                            roomStatus.isStudentChatAllowed = audienceMuteChat.toInt() == EduAudioState.Open.value
                         }
                     }
                 }
@@ -308,13 +313,47 @@ internal class EduRoomImpl(
                 eventListener?.onRoomMessageReceived(eduMsg, this)
             }
             RTMCMD.ChannelCustomMsgReceived.value -> {
-
             }
             RTMCMD.UserJoinOrLeave.value -> {
-
+                val rtmInOutMsg = Gson().fromJson(rtmResponseBody.data, RtmUserInOutMsg::class.java)
+                /**根据回调数据，维护本地存储的流列表，并返回有效数据*/
+                val validOfflineUsers = Util.filterUserWithOffline(rtmInOutMsg.offlineUsers, eduUserInfoList, getCurRoomType())
+                val validOnlineUsers = Util.addUserWithOnline(rtmInOutMsg.onlineUsers, eduUserInfoList, getCurRoomType())
+                eventListener?.onRemoteUsersJoined(validOnlineUsers, this)
+                eventListener?.onRemoteUsersLeft(validOfflineUsers, this)
+            }
+            RTMCMD.UserStateChange.value -> {
+                val rtmUserStateMsg = Gson().fromJson(rtmResponseBody.data, RtmUserStateMsg::class.java)
+                val userStateChangedList = mutableListOf<EduUserInfo>()
+                userStateChangedList.add(Convert.convertUserInfo(rtmUserStateMsg, getCurRoomType()))
+                val validUserList = Util.modifyUserWithUserStateChange(userStateChangedList, eduUserInfoList)
+                /**
+                 * 缺少一个回调用户信息改变的回调
+                 * */
             }
             RTMCMD.StreamStateChange.value -> {
-
+                val rtmStreamActionMsg = Gson().fromJson(rtmResponseBody.data, RtmStreamActionMsg::class.java)
+                /**根据回调数据，维护本地存储的用户列表*/
+                when (rtmStreamActionMsg.action) {
+                    RtmStreamAction.Add.value -> {
+                        val streamInfos = mutableListOf<EduStreamInfo>()
+                        streamInfos.add(Convert.convertStreamInfo(rtmStreamActionMsg, getCurRoomType()))
+                        val validAddStreams = Util.addStreamWithAction(streamInfos, eduStreamInfoList)
+                        eventListener?.onRemoteStreamsAdded(validAddStreams, this)
+                    }
+                    RtmStreamAction.Modify.value -> {
+                        val streamInfos = mutableListOf<EduStreamInfo>()
+                        streamInfos.add(Convert.convertStreamInfo(rtmStreamActionMsg, getCurRoomType()))
+                        val validModifyStreams = Util.modifyStreamWithAction(streamInfos, eduStreamInfoList)
+                        eventListener?.onRemoteStreamsUpdated(validModifyStreams, this)
+                    }
+                    RtmStreamAction.Remove.value -> {
+                        val streamInfos = mutableListOf<EduStreamInfo>()
+                        streamInfos.add(Convert.convertStreamInfo(rtmStreamActionMsg, getCurRoomType()))
+                        val validRemoveStreams = Util.removeStreamWithAction(streamInfos, eduStreamInfoList)
+                        eventListener?.onRemoteStreamsRemoved(validRemoveStreams, this)
+                    }
+                }
             }
             RTMCMD.BoardRoomStateChange.value -> {
 

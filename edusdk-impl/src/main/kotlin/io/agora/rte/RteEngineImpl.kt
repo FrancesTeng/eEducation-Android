@@ -1,11 +1,9 @@
 package io.agora.rte
 
 import android.content.Context
-import android.graphics.Rect
 import android.util.Log
 import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcEngine
-import io.agora.rtc.models.UserInfo
 import io.agora.rtm.RtmClient
 import io.agora.rtm.RtmClientListener
 import io.agora.rtm.RtmMessage
@@ -18,7 +16,7 @@ internal object RteEngineImpl : IRteEngine {
         private set
     private val channelMap = mutableMapOf<String, IRteChannel>()
 
-    var connectionState = RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
+    var eventListener:RteEngineEventListener? = null
 
     override fun init(context: Context, appId: String) {
         rtmClient = RtmClient.createInstance(context, appId, rtmClientListener)
@@ -26,8 +24,8 @@ internal object RteEngineImpl : IRteEngine {
         Log.e("RteEngineImpl", "init")
     }
 
-    override fun createChannel(channelId: String): IRteChannel {
-        val rteChannel = RteChannelImpl(channelId)
+    override fun createChannel(channelId: String, eventListener: RteChannelEventListener): IRteChannel {
+        val rteChannel = RteChannelImpl(channelId, eventListener)
         channelMap[channelId] = rteChannel
         return rteChannel
     }
@@ -45,18 +43,18 @@ internal object RteEngineImpl : IRteEngine {
 
         /**RTE连接质量发生改变*/
         override fun onConnectionStateChanged(p0: Int, p1: Int) {
-            
+            eventListener?.onConnectionStateChanged(p0, p1)
         }
 
         /**收到私聊消息 peerMsg*/
         override fun onMessageReceived(p0: RtmMessage?, p1: String?) {
-            
+            eventListener?.onPeerMsgReceived(p0, p1)
         }
     }
 
     private val rtcEngineEventHandler = object : IRtcEngineEventHandler() {
         override fun onNetworkQuality(uid: Int, txQuality: Int, rxQuality: Int) {
-
+            eventListener?.onNetworkQuality(uid, txQuality, rxQuality)
         }
     }
 }

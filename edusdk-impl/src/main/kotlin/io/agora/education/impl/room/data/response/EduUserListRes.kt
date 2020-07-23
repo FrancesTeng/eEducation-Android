@@ -8,8 +8,8 @@ class EduUserListRes(
 ) {
 }
 
-class EduUserRes(var userUuid: String,
-                 var userName: String,
-                 var role: String,
-                 var updateTime: Int) {
+open class EduUserRes(var userUuid: String,
+                      var userName: String,
+                      var role: String,
+                      var updateTime: Long?) {
 }

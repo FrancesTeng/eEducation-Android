@@ -12,6 +12,8 @@ enum class RTMCMD(var value: Int) {
     /**频道-用户-进出
      * 有人员进出时会触发此消息(包括进入，离开，踢出)*/
     UserJoinOrLeave(20),
+    /**人员信息改变会触发*/
+    UserStateChange(21),
     /**频道-流-新增/更新/删除*/
     StreamStateChange(40),
     /**频道-白板房间状态*/
