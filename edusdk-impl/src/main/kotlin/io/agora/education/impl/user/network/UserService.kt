@@ -5,7 +5,7 @@ import io.agora.education.impl.room.data.response.EduUserListRes
 import io.agora.education.impl.user.data.request.*
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.data.request.EduJoinClassroomReq
-import io.agora.education.impl.room.data.response.EduClassRoomEntryRes
+import io.agora.education.impl.room.data.response.EduEntryRes
 import retrofit2.Call
 import retrofit2.http.*
 
@@ -18,7 +18,7 @@ interface UserService {
             @Path("roomUuid") roomUuid: String,
             @Path("userUuid") userUuid: String,
             @Body                 eduJoinClassroomReq: EduJoinClassroomReq
-    ): Call<ResponseBody<EduClassRoomEntryRes>>
+    ): Call<ResponseBody<EduEntryRes>>
 
     /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
      * @param nextId 下一页起始ID；非必须参数

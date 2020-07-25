@@ -1,6 +1,6 @@
-package io.agora.rte.data
+package io.agora.education.impl.cmd
 
-enum class RTMCMD(var value: Int) {
+enum class CMDId(var value: Int) {
     /**频道-房间-开始/结束*/
     RoomStateChange(1),
     /**频道-房间-禁用状态*/

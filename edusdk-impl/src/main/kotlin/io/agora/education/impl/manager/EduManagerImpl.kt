@@ -39,11 +39,13 @@ internal class EduManagerImpl(
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
                     /**接口返回Int类型的roomId*/
                     override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
+                        /**此处room对象的信息可能不可靠(因为此房间有可能已经被创建)，所以需要在entry接口调用成功之后，
+                         * 根据返回的room信息进行同步*/
                         var eduRoomInfo = EduRoomInfoImpl(config.roomType, config.roomUuid, config.roomName)
                         var eduRoomStatus = EduRoomStatus(EduRoomState.INIT, System.currentTimeMillis(), true, 0)
                         var eduRoomImpl = EduRoomImpl(eduRoomInfo, eduRoomStatus)
                         /**把roomUuid设置进roomImpl中的localUser里面*/
-                        (eduRoomImpl.localUser as EduUserImpl).roomInfo = eduRoomInfo
+                        (eduRoomImpl.localUser as EduUserImpl).eduRoom = eduRoomImpl
                         /**为RteEngine设置eventListener*/
                         RteEngineImpl.eventListener = eduRoomImpl
                         /**转换为抽象对象并回调出去*/

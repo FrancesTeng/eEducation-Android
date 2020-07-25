@@ -1,19 +1,21 @@
 package io.agora
 
+import io.agora.education.api.room.data.EduMuteState
 import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.education.api.stream.data.EduVideoState
 import io.agora.education.api.stream.data.VideoSourceType
+import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
-import io.agora.rte.data.RtmStreamActionMsg
-import io.agora.rte.data.RtmUserStateMsg
+import io.agora.education.impl.cmd.CMDStreamActionMsg
+import io.agora.education.impl.cmd.CMDUserStateMsg
 
 class Convert {
     companion object {
@@ -71,14 +73,15 @@ class Convert {
             return userInfoList
         }
 
-        private fun convertUserInfo(eduUserRes: EduUserRes, roomType: RoomType): EduUserInfo {
+        fun convertUserInfo(eduUserRes: EduUserRes, roomType: RoomType): EduUserInfo {
             val role = convertUserRole(eduUserRes.role, roomType)
-            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role, eduUserRes.updateTime)
+            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role,
+                    eduUserRes.muteChat == EduChatState.Allow.value, eduUserRes.updateTime)
         }
 
-        private fun convertUserInfo(eduUserRes: EduFromUserRes, roomType: RoomType): EduUserInfo {
+        fun convertUserInfo(eduUserRes: EduFromUserRes, roomType: RoomType): EduUserInfo {
             val role = convertUserRole(eduUserRes.role, roomType)
-            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role, null)
+            return EduUserInfoImpl(eduUserRes.userUuid, eduUserRes.userName, role, false, null)
         }
 
         /**根据返回的用户和stream列表提取出stream列表*/
@@ -117,13 +120,13 @@ class Convert {
             }
         }
 
-        fun convertStreamInfo(rtmStreamActionMsg: RtmStreamActionMsg, roomType: RoomType): EduStreamInfo {
-            val fromUserInfo = convertUserInfo(rtmStreamActionMsg.fromUser, roomType)
-            return EduStreamInfo(rtmStreamActionMsg.streamUuid, rtmStreamActionMsg.streamName,
-                    convertVideoSourceType(rtmStreamActionMsg.videoSourceType),
-                    rtmStreamActionMsg.videoState == EduVideoState.Open.value,
-                    rtmStreamActionMsg.audioState == EduAudioState.Open.value,
-                    fromUserInfo, rtmStreamActionMsg.updateTime)
+        fun convertStreamInfo(cmdStreamActionMsg: CMDStreamActionMsg, roomType: RoomType): EduStreamInfo {
+            val fromUserInfo = convertUserInfo(cmdStreamActionMsg.fromUser, roomType)
+            return EduStreamInfo(cmdStreamActionMsg.streamUuid, cmdStreamActionMsg.streamName,
+                    convertVideoSourceType(cmdStreamActionMsg.videoSourceType),
+                    cmdStreamActionMsg.videoState == EduVideoState.Open.value,
+                    cmdStreamActionMsg.audioState == EduAudioState.Open.value,
+                    fromUserInfo, cmdStreamActionMsg.updateTime)
         }
 
         fun convertVideoSourceType(value: Int): VideoSourceType {
@@ -140,10 +143,27 @@ class Convert {
             }
         }
 
-        fun convertUserInfo(rtmUserStateMsg: RtmUserStateMsg, roomType: RoomType): EduUserInfo {
-            val role = convertUserRole(rtmUserStateMsg.role, roomType)
-            return EduUserInfo(rtmUserStateMsg.userUuid, rtmUserStateMsg.userName,
-                    role, rtmUserStateMsg.updateTime)
+        fun convertUserInfo(cmdUserStateMsg: CMDUserStateMsg, roomType: RoomType): EduUserInfo {
+            val role = convertUserRole(cmdUserStateMsg.role, roomType)
+            return EduUserInfoImpl(cmdUserStateMsg.userUuid, cmdUserStateMsg.userName, role,
+                    cmdUserStateMsg.muteChat == EduChatState.Allow.value,
+                    cmdUserStateMsg.updateTime)
+        }
+
+        /**根据roomType从RTM返回的教室信息(EduEntryRoomStateRes)中提取muteChat(针对student而言)的状态*/
+        fun extractStudentChatAllowState(eduEntryRoomStateRes: EduEntryRoomStateRes, roomType: RoomType): Boolean {
+            var allow = false
+            when (roomType) {
+                RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
+                    eduEntryRoomStateRes.muteChat?.audience?.let {
+                        allow = eduEntryRoomStateRes.muteChat?.broadcaster?.toInt() == EduMuteState.Enable.value
+                    }
+                }
+                RoomType.LARGE_CLASS -> {
+                    allow = eduEntryRoomStateRes.muteChat?.audience?.toInt() == EduMuteState.Enable.value
+                }
+            }
+            return allow
         }
     }
 }

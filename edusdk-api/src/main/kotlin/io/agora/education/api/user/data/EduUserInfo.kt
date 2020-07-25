@@ -9,7 +9,7 @@ open class EduUserInfo(
         val userUuid: String,
         val userName: String,
         val role: EduUserRole,
-        val updateTime: Long?
+        var isChatAllowed: Boolean?
 ) {
     override fun equals(other: Any?): Boolean {
         if(other == null || other !is EduUserInfo)
@@ -29,8 +29,7 @@ open class EduUserInfo(
         return var1
     }
 }
-
 enum class EduChatState(var value: Int) {
-    Enable(0),
-    Disable(1)
+    NotAllow(1),
+    Allow(0)
 }

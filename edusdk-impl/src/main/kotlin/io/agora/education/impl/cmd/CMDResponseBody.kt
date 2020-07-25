@@ -1,6 +1,6 @@
-package io.agora.rte.data
+package io.agora.education.impl.cmd
 
-class RtmResponseBody<T>(
+class CMDResponseBody<T>(
         val cmd: Int,
         val version: Int,
         val ts: Long,

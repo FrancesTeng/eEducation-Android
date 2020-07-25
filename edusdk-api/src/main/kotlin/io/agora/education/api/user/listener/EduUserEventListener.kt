@@ -1,11 +1,14 @@
 package io.agora.education.api.user.listener
 
 import io.agora.education.api.stream.data.EduStreamInfo
+import io.agora.education.api.user.data.EduUserInfo
 
 interface EduUserEventListener {
-    fun onLocalStreamAdded(stream: EduStreamInfo)
+    fun onLocalUserUpdated(eduUserInfo: EduUserInfo, operatorUser: EduUserInfo)
 
-    fun onLocalStreamUpdated(stream: EduStreamInfo)
+    fun onLocalStreamAdded(stream: EduStreamInfo, operatorUser: EduUserInfo)
 
-    fun onLocalSteamRemoved(stream: EduStreamInfo)
+    fun onLocalStreamUpdated(stream: EduStreamInfo, operatorUser: EduUserInfo)
+
+    fun onLocalSteamRemoved(stream: EduStreamInfo, operatorUser: EduUserInfo)
 }

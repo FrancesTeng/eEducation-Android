@@ -11,5 +11,6 @@ class EduUserListRes(
 open class EduUserRes(var userUuid: String,
                       var userName: String,
                       var role: String,
+                      var muteChat: Int,
                       var updateTime: Long?) {
 }

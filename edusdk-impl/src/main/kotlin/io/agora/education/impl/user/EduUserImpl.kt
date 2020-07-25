@@ -15,6 +15,7 @@ import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
+import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
@@ -66,7 +67,7 @@ internal open class EduUserImpl(
 
     override var eventListener: EduUserEventListener? = null
 
-    lateinit var roomInfo: EduRoomInfoImpl
+    lateinit var eduRoom: EduRoomImpl
     lateinit var roomMediaOptions: RoomMediaOptions
 
     override fun initOrUpdateLocalStream(options: LocalStreamInitOptions, callback: EduCallback<EduStreamInfo>) {
@@ -125,7 +126,7 @@ internal open class EduUserImpl(
                 AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
                 if (streamInfo.hasAudio) 1 else 0)
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                .createStream(USERTOKEN, APPID, roomInfo.roomUuid, userInfo.userUuid,
+                .createStream(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
                         roomMediaOptions.primaryStreamId, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
@@ -141,7 +142,7 @@ internal open class EduUserImpl(
 
     override fun unPublishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                .deleteStream(USERTOKEN, APPID, roomInfo.roomUuid, userInfo.userUuid, roomMediaOptions.primaryStreamId)
+                .deleteStream(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid, roomMediaOptions.primaryStreamId)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(true)
@@ -157,11 +158,10 @@ internal open class EduUserImpl(
     override fun sendRoomMessage(message: String, callback: EduCallback<EduMsg>) {
         val roomMsgReq = EduRoomMsgReq(message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendRoomMessage(USERTOKEN, APPID, roomInfo.roomUuid, roomMsgReq)
+                .sendRoomMessage(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, roomMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduMsg(userInfo.userUuid, userInfo.userName,
-                                message, System.currentTimeMillis())
+                        val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
                         callback.onSuccess(textMessage)
                     }
 
@@ -175,11 +175,10 @@ internal open class EduUserImpl(
     override fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduMsg>) {
         val userMsgReq = EduUserMsgReq(user.userUuid, message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendPeerMessage(USERTOKEN, APPID, roomInfo.roomUuid, userMsgReq)
+                .sendPeerMessage(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduMsg(userInfo.userUuid, userInfo.userName,
-                                message, System.currentTimeMillis())
+                        val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
                         callback.onSuccess(textMessage)
                     }
 

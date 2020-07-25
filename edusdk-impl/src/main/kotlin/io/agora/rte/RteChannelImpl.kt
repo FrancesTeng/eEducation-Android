@@ -44,7 +44,10 @@ internal class RteChannelImpl(
     }
 
     override fun join(rtcToken: String, uid: Int, mediaOptions: ChannelMediaOptions) {
-
+        rtcChannel.joinChannel(rtcToken, null, uid, ChannelMediaOptions().apply {
+            this.autoSubscribeAudio = mediaOptions.autoSubscribeAudio
+            autoSubscribeVideo = mediaOptions.autoSubscribeVideo
+        })
         rtmChannel.join(object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
                 TODO("Not yet implemented")
@@ -53,10 +56,6 @@ internal class RteChannelImpl(
             override fun onFailure(p0: ErrorInfo?) {
                 TODO("Not yet implemented")
             }
-        })
-        rtcChannel.joinChannel(rtcToken, null, uid, ChannelMediaOptions().apply {
-            this.autoSubscribeAudio = mediaOptions.autoSubscribeAudio
-            autoSubscribeVideo = mediaOptions.autoSubscribeVideo
         })
     }
 

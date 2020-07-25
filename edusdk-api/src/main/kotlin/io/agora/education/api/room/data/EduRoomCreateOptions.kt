@@ -13,7 +13,6 @@ data class RoomProperty(
     companion object {
         const val KEY_TEACHER_LIMIT = "TeacherLimit"
         const val KEY_STUDENT_LIMIT = "StudentLimit"
-        const val KEY_STREAM_LIMIT = "StreamLimit"
     }
 }
 
@@ -34,11 +33,6 @@ class RoomCreateOptions(
             RoomType.ONE_ON_ONE -> "1"
             RoomType.SMALL_CLASS -> "16"
             RoomType.LARGE_CLASS -> null
-        }))
-        properties.add(RoomProperty(RoomProperty.KEY_STREAM_LIMIT, when (roomType) {
-            RoomType.ONE_ON_ONE -> "17"
-            RoomType.SMALL_CLASS -> "17"
-            RoomType.LARGE_CLASS -> "17"
         }))
     }
 }

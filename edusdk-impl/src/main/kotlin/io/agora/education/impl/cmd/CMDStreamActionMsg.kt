@@ -1,10 +1,10 @@
-package io.agora.rte.data
+package io.agora.education.impl.cmd
 
 import io.agora.education.impl.room.data.response.EduFromUserRes
 import io.agora.education.impl.room.data.response.EduStreamRes
 import io.agora.education.impl.room.data.response.EduUserRes
 
-class RtmStreamActionMsg(
+class CMDStreamActionMsg(
         fromUser: EduFromUserRes,
         streamUuid: String,
         streamName: String,

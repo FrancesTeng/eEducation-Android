@@ -21,3 +21,10 @@ enum class RoomStatusEvent {
     STUDENT_CHAT,
     COURSE_STATE,
 }
+
+enum class EduMuteState(var value: Int) {
+    /**不禁*/
+    Enable(0),
+    /**禁*/
+    Disable(1)
+}

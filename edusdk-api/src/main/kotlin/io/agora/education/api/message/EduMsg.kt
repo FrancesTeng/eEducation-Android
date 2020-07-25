@@ -1,8 +1,9 @@
 package io.agora.education.api.message
 
+import io.agora.education.api.user.data.EduUserInfo
+
 open class EduMsg(
-        val userUuid: String,
-        val userName: String,
+        val fromUser: EduUserInfo,
         val message: String,
         val timeStamp: Long
 )

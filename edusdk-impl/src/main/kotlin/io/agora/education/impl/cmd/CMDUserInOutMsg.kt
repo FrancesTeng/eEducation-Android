@@ -1,4 +1,4 @@
-package io.agora.rte.data
+package io.agora.education.impl.cmd
 
 import io.agora.education.impl.room.data.response.EduUserRes
 
@@ -7,8 +7,8 @@ class RtmUserInOutMsg(val total: Int, val onlineUsers: MutableList<EduUserRes>,
                       val offlineUsers: MutableList<OffLineUserInfo>) {
 }
 
-class OffLineUserInfo(userUuid: String, userName: String, role: String, updateTime: Long?,
+class OffLineUserInfo(userUuid: String, userName: String, role: String, muteChat: Int, updateTime: Long?,
                       val operator: EduUserRes?)
-    : EduUserRes(userUuid, userName, role, updateTime) {
+    : EduUserRes(userUuid, userName, role, muteChat, updateTime) {
 
 }

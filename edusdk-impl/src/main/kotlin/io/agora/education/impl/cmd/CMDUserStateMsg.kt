@@ -1,8 +1,8 @@
-package io.agora.rte.data
+package io.agora.education.impl.cmd
 
 import io.agora.education.impl.room.data.response.EduUserRes
 
-class RtmUserStateMsg(
+class CMDUserStateMsg(
         val userUuid: String,
         val userName: String,
         val role: String,
