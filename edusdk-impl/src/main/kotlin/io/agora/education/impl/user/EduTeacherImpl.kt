@@ -65,7 +65,7 @@ internal class EduTeacherImpl(
     }
 
     override fun allowStudentChat(isAllow: Boolean, callback: EduCallback<Unit>) {
-        val chatState = if(isAllow) EduMuteState.Enable else EduMuteState.Disable
+        val chatState = if (isAllow) EduMuteState.Enable else EduMuteState.Disable
         val eduRoomStatusReq = EduRoomMuteStateReq(
                 RoleMuteConfig(null, EduMuteState.Disable.value.toString(), EduMuteState.Disable.value.toString()),
                 null, null)
@@ -84,8 +84,10 @@ internal class EduTeacherImpl(
     }
 
     override fun allowStudentChat(isAllow: Boolean, user: EduUserInfo, callback: EduCallback<Unit>) {
-        val role = Convert.convertUserRole(user.role, (eduRoom.roomInfo as EduRoomInfoImpl).roomType)
-        val eduUserStatusReq = EduUserStatusReq(user.userName, if(isAllow) 0 else 1, role)
+        /***/
+        val role = Convert.convertUserRole(user.role, (eduRoom.roomInfo as EduRoomInfoImpl).roomType,
+                false)
+        val eduUserStatusReq = EduUserStatusReq(user.userName, if (isAllow) 0 else 1, role)
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
                 .updateUserMuteState(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, user.userUuid, eduUserStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
@@ -115,7 +117,7 @@ internal class EduTeacherImpl(
                 AudioSourceType.MICROPHONE.value, if (stream.hasVideo) 1 else 0, if (stream.hasAudio) 1 else 0)
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
                 .updateStreamInfo(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, stream.publisher.userUuid,
-                                          stream.streamUuid, eduStreamStatusReq)
+                        stream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -135,7 +137,7 @@ internal class EduTeacherImpl(
                 AudioSourceType.MICROPHONE.value, if (stream.hasVideo) 1 else 0, if (stream.hasAudio) 1 else 0)
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
                 .updateStreamInfo(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, stream.publisher.userUuid,
-                                          stream.streamUuid, eduStreamStatusReq)
+                        stream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -154,7 +156,7 @@ internal class EduTeacherImpl(
                 AudioSourceType.MICROPHONE.value, if (stream.hasVideo) 1 else 0, if (stream.hasAudio) 1 else 0)
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
                 .updateStreamInfo(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, stream.publisher.userUuid,
-                                              stream.streamUuid, eduStreamStatusReq)
+                        stream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -173,7 +175,7 @@ internal class EduTeacherImpl(
                 AudioSourceType.MICROPHONE.value, if (stream.hasVideo) 1 else 0, if (stream.hasAudio) 1 else 0)
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
                 .updateStreamInfo(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, stream.publisher.userUuid,
-                                              stream.streamUuid, eduStreamStatusReq)
+                        stream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)

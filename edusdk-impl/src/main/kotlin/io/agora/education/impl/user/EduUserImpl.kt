@@ -70,39 +70,20 @@ internal open class EduUserImpl(
     lateinit var roomMediaOptions: RoomMediaOptions
 
     override fun initOrUpdateLocalStream(options: LocalStreamInitOptions, callback: EduCallback<EduStreamInfo>) {
-        /**enableCamera和enableMicrophone控制是否打开摄像头和麦克风*/
-        if (options.enableCamera) {
-            RteEngineImpl.rtcEngine.enableVideo()
-            RteEngineImpl.rtcEngine.enableLocalVideo(options.enableCamera)
-        }
-        RteEngineImpl.rtcEngine.enableLocalAudio(options.enableMicrophone)
         RteEngineImpl.rtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING)
         RteEngineImpl.rtcEngine.setVideoEncoderConfiguration(getVideoEncoderConfiguration())
+        RteEngineImpl.rtcEngine.enableVideo()
+        /**enableCamera和enableMicrophone控制是否打开摄像头和麦克风*/
+        RteEngineImpl.rtcEngine.enableLocalVideo(options.enableCamera)
+        RteEngineImpl.rtcEngine.enableLocalAudio(options.enableMicrophone)
+
+        /**根据当前配置生成一个流信息*/
         val streamInfo = EduStreamInfo(options.streamUuid, options.streamName, VideoSourceType.CAMERA,
                 options.enableCamera, options.enableMicrophone, this.userInfo, null)
-        if (roomMediaOptions.autoSubscribeVideo || roomMediaOptions.autoSubscribeAudio) {
-            val subscribeOptions = StreamSubscribeOptions(roomMediaOptions.autoSubscribeAudio,
-                    roomMediaOptions.autoSubscribeVideo,
-                    VideoStreamType.LOW)
-            subscribeStream(streamInfo, subscribeOptions)
-        }
-        /**autoPublishCamera和autoPublishMicrophone控制是否自动推流*/
-        if (roomMediaOptions.autoPublishCamera || roomMediaOptions.autoPublishMicrophone) {
-            publishStream(streamInfo, object : EduCallback<Boolean> {
-                override fun onSuccess(res: Boolean?) {
-                    if (res!!) {
-                        return
-                    }
-                    RteEngineImpl.rtcEngine.muteLocalVideoStream(!roomMediaOptions.autoPublishCamera)
-                    RteEngineImpl.rtcEngine.muteLocalAudioStream(!roomMediaOptions.autoPublishMicrophone)
-                    callback.onSuccess(streamInfo)
-                }
+        callback.onSuccess(streamInfo)
 
-                override fun onFailure(code: Int, reason: String?) {
-                    callback.onFailure(code, reason)
-                }
-            })
-        }
+
+
     }
 
     override fun switchCamera() {
@@ -126,9 +107,12 @@ internal open class EduUserImpl(
                 if (streamInfo.hasAudio) 1 else 0)
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
                 .createStream(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
-                        roomMediaOptions.primaryStreamId, eduStreamStatusReq)
+                        streamInfo.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
+
+                        RteEngineImpl.rtcEngine.muteLocalVideoStream(!roomMediaOptions.autoPublishCamera)
+                        RteEngineImpl.rtcEngine.muteLocalAudioStream(!roomMediaOptions.autoPublishMicrophone)
                         callback.onSuccess(true)
                     }
 
@@ -141,7 +125,8 @@ internal open class EduUserImpl(
 
     override fun unPublishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                .deleteStream(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid, roomMediaOptions.primaryStreamId)
+                .deleteStream(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                        streamInfo.streamUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(true)

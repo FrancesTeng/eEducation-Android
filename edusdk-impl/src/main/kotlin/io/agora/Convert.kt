@@ -20,8 +20,8 @@ import io.agora.education.impl.cmd.CMDUserStateMsg
 class Convert {
     companion object {
 
-        /**根据EduUserRole枚举返回角色字符串*/
-        fun convertUserRole(role: EduUserRole, roomType: RoomType): String {
+        /**根据EduUserRole枚举返回角色字符串;大班课状态下，如果学生自动发流，那么他就是broadcaster*/
+        fun convertUserRole(role: EduUserRole, roomType: RoomType, autoPublish: Boolean): String {
             return if (role == EduUserRole.TEACHER) {
                 EduUserRoleStr.host.name
             } else {
@@ -33,7 +33,14 @@ class Convert {
                         EduUserRoleStr.broadcaster.name
                     }
                     RoomType.LARGE_CLASS -> {
-                        EduUserRoleStr.audience.name
+                        if(autoPublish)
+                        {
+                            EduUserRoleStr.broadcaster.name
+                        }
+                        else
+                        {
+                            EduUserRoleStr.audience.name
+                        }
                     }
                 }
             }

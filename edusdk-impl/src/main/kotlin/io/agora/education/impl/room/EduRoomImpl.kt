@@ -21,12 +21,16 @@ import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.Convert
+import io.agora.education.api.room.data.RoomMediaOptions.Companion.DefaultStreamId
 import io.agora.education.api.stream.data.LocalStreamInitOptions
+import io.agora.education.api.stream.data.StreamSubscribeOptions
+import io.agora.education.api.stream.data.VideoStreamType
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
 import io.agora.education.impl.cmd.*
 import io.agora.education.impl.record.EduRecordImpl
+import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.request.EduJoinClassroomReq
 import io.agora.education.impl.room.data.response.EduEntryRes
@@ -45,6 +49,7 @@ import io.agora.rtm.ResultCallback
 import io.agora.rtm.RtmChannelMember
 import io.agora.rtm.RtmMessage
 import java.util.*
+import java.util.concurrent.CountDownLatch
 
 internal class EduRoomImpl(
         roomInfo: EduRoomInfo,
@@ -75,11 +80,6 @@ internal class EduRoomImpl(
     }
 
     override fun joinClassroomAsTeacher(options: RoomJoinOptions, callback: EduCallback<EduTeacher>) {
-        /**用户传了primaryStreamId,那么就用他当做streamUuid;如果没传，
-         * 则把userUuid赋值给primaryStreamId当做streamUuid*/
-        if (TextUtils.isEmpty(options.mediaOptions.primaryStreamId)) {
-            options.mediaOptions.primaryStreamId = options.userUuid
-        }
         val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.TEACHER, null)
         /**此处需要把localUserInfo设置进localUser中*/
         localUser = EduUserImpl(localUserInfo)
@@ -88,7 +88,7 @@ internal class EduRoomImpl(
         val roomType = getCurRoomType()
         val role = Convert.convertUserRole(localUserInfo.role, roomType)
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName,
-                role, options.mediaOptions.primaryStreamId)
+                role, options.mediaOptions.primaryStreamId.toString())
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
                 .joinClassroom(APPID, roomInfo.roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {
@@ -108,7 +108,15 @@ internal class EduRoomImpl(
                         val channelMediaOptions = ChannelMediaOptions()
                         channelMediaOptions.autoSubscribeAudio = options.mediaOptions.autoSubscribeAudio
                         channelMediaOptions.autoSubscribeVideo = options.mediaOptions.autoSubscribeVideo
-                        joinRte(RTCTOKEN, options.userUuid.toInt(), channelMediaOptions)
+                        joinRte(RTCTOKEN, RTMTOKEN, options.userUuid.toInt(), channelMediaOptions, object : ResultCallback<Void> {
+                            override fun onSuccess(p0: Void?) {
+                                TODO("Not yet implemented")
+                            }
+
+                            override fun onFailure(p0: ErrorInfo?) {
+                                TODO("Not yet implemented")
+                            }
+                        })
                         /**同步用户和流的全量数据*/
                         syncUserList(null, count, object : EduCallback<Unit> {
                             override fun onSuccess(res: Unit?) {
@@ -139,20 +147,17 @@ internal class EduRoomImpl(
     }
 
     override fun joinClassroomAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>) {
-        /**用户传了primaryStreamId,那么就用他当做streamUuid;如果没传，
-         * 则把userUuid赋值给primaryStreamId当做streamUuid*/
-        if (TextUtils.isEmpty(options.mediaOptions.primaryStreamId)) {
-            options.mediaOptions.primaryStreamId = options.userUuid
-        }
         val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.STUDENT, null)
         /**此处需要把localUserInfo设置进localUser中*/
         localUser = EduUserImpl(localUserInfo)
         (localUser as EduUserImpl).roomMediaOptions = options.mediaOptions
+        val autoPublish = options.mediaOptions.autoPublishCamera ||
+                options.mediaOptions.autoPublishMicrophone
         /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
         val roomType = getCurRoomType()
-        val role = Convert.convertUserRole(localUserInfo.role, roomType)
+        val role = Convert.convertUserRole(localUserInfo.role, roomType, autoPublish)
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
-                options.mediaOptions.primaryStreamId)
+                options.mediaOptions.primaryStreamId.toString())
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
                 .joinClassroom(APPID, roomInfo.roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {
@@ -174,43 +179,53 @@ internal class EduRoomImpl(
                         channelMediaOptions.autoSubscribeVideo = options.mediaOptions.autoSubscribeVideo
                         joinRte(RTCTOKEN, RTMTOKEN, options.userUuid.toInt(), channelMediaOptions, object : ResultCallback<Void> {
                             override fun onSuccess(p0: Void?) {
-                                TODO("Not yet implemented")
+                                syncUserStreamList()
                             }
 
                             override fun onFailure(p0: ErrorInfo?) {
-                                TODO("Not yet implemented")
+                                callback.onFailure(p0?.errorCode!!, p0?.errorDescription)
                             }
                         })
-                        /**同步用户和流的全量数据*/
-                        syncUserList(null, count, object : EduCallback<Unit> {
-                            override fun onSuccess(res: Unit?) {
-                                /**维护本地存储的在线人数*/
-                                roomStatus.onlineUsersCount = eduUserInfoList.size
-                                eventListener?.onRemoteUsersInitialized(eduUserInfoList, this@EduRoomImpl)
+
+                        /**检查是否自动订阅远端流*/
+                        checkAutoSubscribe(options.mediaOptions)
+                        /**初始化本地用户的本地流*/
+                        val localStreamInitOptions = LocalStreamInitOptions(classRoomEntryRes.user.streamUuid,
+                                options.mediaOptions.autoPublishCamera, options.mediaOptions.autoPublishMicrophone)
+                        localUser.initOrUpdateLocalStream(localStreamInitOptions, object : EduCallback<EduStreamInfo> {
+                            override fun onSuccess(streamInfo: EduStreamInfo?) {
+                                /**判断是否需要更新本地的流信息(因为当前流信息在本地可能已经存在)*/
+                                for ((index, element) in eduStreamInfoList.withIndex()) {
+                                    if (element == streamInfo) {
+                                        eduStreamInfoList[index] = element
+                                    }
+                                }
+                                /**如果当前用户是观众则调用unPublishStream，否则调用publishStream*/
+                                if (Convert.convertUserRole(localUser.userInfo.role, roomType, autoPublish)
+                                        == EduUserRoleStr.audience.value) {
+                                    localUser.unPublishStream(streamInfo!!, object : EduCallback<Boolean> {
+                                        override fun onSuccess(res: Boolean?) {
+                                        }
+
+                                        override fun onFailure(code: Int, reason: String?) {
+                                            callback.onFailure(code, reason)
+                                        }
+                                    })
+                                }
+                                else {
+                                    localUser.publishStream(streamInfo!!, object : EduCallback<Boolean> {
+                                        override fun onSuccess(res: Boolean?) {
+                                        }
+
+                                        override fun onFailure(code: Int, reason: String?) {
+                                            callback.onFailure(code, reason)
+                                        }
+                                    })
+                                }
                             }
 
                             override fun onFailure(code: Int, reason: String?) {
-                                TODO("Not yet implemented")
-                            }
-                        })
-                        syncStreamList(null, count, object : EduCallback<Unit> {
-                            override fun onSuccess(res: Unit?) {
-                                eventListener?.onRemoteStreamsInitialized(eduStreamInfoList, this@EduRoomImpl)
-                            }
-
-                            override fun onFailure(code: Int, reason: String?) {
-                                TODO("Not yet implemented")
-                            }
-                        })
-                        /**初始化本地用户的本地流
-                         * 此处的options数据从哪来呢？*/
-                        localUser.initOrUpdateLocalStream(LocalStreamInitOptions(options.mediaOptions.primaryStreamId), object : EduCallback<EduStreamInfo> {
-                            override fun onSuccess(res: EduStreamInfo?) {
-                                TODO("Not yet implemented")
-                            }
-
-                            override fun onFailure(code: Int, reason: String?) {
-                                TODO("Not yet implemented")
+                                callback.onFailure(code, reason)
                             }
                         })
                         callback.onSuccess(localUser as EduStudentImpl)
@@ -226,6 +241,46 @@ internal class EduRoomImpl(
     private fun joinRte(rtcToken: String, rtmToken: String, uid: Int,
                         channelMediaOptions: ChannelMediaOptions, @NonNull callback: ResultCallback<Void>) {
         RteEngineImpl[roomInfo.roomUuid]?.join(rtcToken, rtmToken, uid, channelMediaOptions, callback)
+    }
+
+    private fun syncUserStreamList(callback: EduCallback<Unit>) {
+        /**同步用户和流的全量数据*/
+        syncUserList(null, count, object : EduCallback<Unit> {
+            override fun onSuccess(res: Unit?) {
+                /**维护本地存储的在线人数*/
+                roomStatus.onlineUsersCount = eduUserInfoList.size
+                eventListener?.onRemoteUsersInitialized(eduUserInfoList, this@EduRoomImpl)
+            }
+
+            override fun onFailure(code: Int, reason: String?) {
+                callback.onFailure(code, reason)
+            }
+        })
+        syncStreamList(null, count, object : EduCallback<Unit> {
+            override fun onSuccess(res: Unit?) {
+                eventListener?.onRemoteStreamsInitialized(eduStreamInfoList, this@EduRoomImpl)
+            }
+
+            override fun onFailure(code: Int, reason: String?) {
+                callback.onFailure(code, reason)
+            }
+        })
+    }
+
+    private fun checkAutoSubscribe(roomMediaOptions: RoomMediaOptions) {
+        /**检查是否需要自动订阅远端流*/
+        if (roomMediaOptions.autoSubscribeVideo || roomMediaOptions.autoSubscribeAudio) {
+            val subscribeOptions = StreamSubscribeOptions(roomMediaOptions.autoSubscribeAudio,
+                    roomMediaOptions.autoSubscribeVideo,
+                    VideoStreamType.LOW)
+            for (element in getCurStreamList()) {
+                localUser.subscribeStream(element, subscribeOptions)
+            }
+        }
+    }
+
+    /**join失败的情况下，清楚所有本地已存在的缓存数据*/
+    private fun clearLocalCache() {
     }
 
     override fun getFullStreamList(): MutableList<EduStreamInfo> {

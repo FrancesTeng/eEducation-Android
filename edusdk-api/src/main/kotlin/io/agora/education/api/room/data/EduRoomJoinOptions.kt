@@ -6,10 +6,14 @@ data class RoomMediaOptions(
         val autoPublishCamera: Boolean = true,
         val autoPublishMicrophone: Boolean = true
 ) {
-    /**用户传了primaryStreamId,那么就用他当做streamUuid;如果没传，则把userUuid赋值给primaryStreamId当做streamUuid*/
-    lateinit var primaryStreamId: String
+    /**用户传了primaryStreamId,那么就用他当做streamUuid;如果没传，就是默认值，后端会生成一个streamUuid*/
+    var primaryStreamId: Int = DefaultStreamId
 
-    constructor(primaryStreamId: String) : this() {
+    companion object {
+        const val DefaultStreamId = 0
+    }
+
+    constructor(primaryStreamId: Int) : this() {
         this.primaryStreamId = primaryStreamId
     }
 }
