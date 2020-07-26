@@ -6,7 +6,7 @@ package io.agora.education.impl.user.data.request
  * @param videoState 0关 1开 2禁
  * @param audioState 0关 1开 2禁*/
 class EduStreamStatusReq(
-        val streamName: String,
+        val streamName: String?,
         val videoSourceType: Int,
         val audioSourceType: Int,
         val videoState: Int,

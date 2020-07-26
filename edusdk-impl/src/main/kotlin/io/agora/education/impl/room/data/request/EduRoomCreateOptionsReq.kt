@@ -2,7 +2,6 @@ package io.agora.education.impl.room.data.request
 
 import io.agora.education.api.room.data.RoomCreateOptions
 import io.agora.education.api.room.data.RoomProperty
-import io.agora.education.api.room.data.RoomProperty.Companion.KEY_STREAM_LIMIT
 import io.agora.education.api.room.data.RoomProperty.Companion.KEY_STUDENT_LIMIT
 import io.agora.education.api.room.data.RoomProperty.Companion.KEY_TEACHER_LIMIT
 import io.agora.education.api.room.data.RoomType
@@ -43,12 +42,9 @@ class RoomCreateOptionsReq constructor() {
                 }
             }
             roleConfig.host = LimitConfig(teacherLimit)
-            if(roomType == RoomType.LARGE_CLASS)
-            {
+            if (roomType == RoomType.LARGE_CLASS) {
                 roleConfig.audience = LimitConfig(studentLimit)
-            }
-            else
-            {
+            } else {
                 roleConfig.broadcaster = LimitConfig(studentLimit)
             }
         }

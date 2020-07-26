@@ -2,15 +2,14 @@ package io.agora.education.api.stream.data
 
 open class StreamInitOptions(
         var streamUuid: String,
-        var streamName: String
+        var streamName: String? = null
 )
 
 class LocalStreamInitOptions(
         streamUuid: String,
-        streamName: String,
         var enableCamera: Boolean = true,
         var enableMicrophone: Boolean = true
-) : StreamInitOptions(streamUuid, streamName)
+) : StreamInitOptions(streamUuid)
 
 class ScreenStreamInitOptions(
         streamUuid: String,
