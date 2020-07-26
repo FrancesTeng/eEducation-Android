@@ -16,12 +16,11 @@ import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.network.RoomService
-import io.agora.education.impl.user.data.request.EduRoomMsgReq
-import io.agora.education.impl.user.data.request.EduUserMsgReq
 import io.agora.education.impl.stream.network.StreamService
+import io.agora.education.impl.user.data.request.EduRoomMsgReq
 import io.agora.education.impl.user.data.request.EduStreamStatusReq
+import io.agora.education.impl.user.data.request.EduUserMsgReq
 import io.agora.rtc.Constants
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas

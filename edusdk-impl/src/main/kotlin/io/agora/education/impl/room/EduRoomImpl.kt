@@ -192,7 +192,7 @@ internal class EduRoomImpl(
                         })
                         /**初始化本地用户的本地流
                          * 此处的options数据从哪来呢？*/
-                        localUser.initOrUpdateLocalStream(LocalStreamInitOptions(), object : EduCallback<EduStreamInfo> {
+                        localUser.initOrUpdateLocalStream(LocalStreamInitOptions(options.mediaOptions.primaryStreamId), object : EduCallback<EduStreamInfo> {
                             override fun onSuccess(res: EduStreamInfo?) {
                                 TODO("Not yet implemented")
                             }

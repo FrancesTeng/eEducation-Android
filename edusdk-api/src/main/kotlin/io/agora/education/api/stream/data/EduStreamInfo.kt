@@ -13,7 +13,7 @@ enum class AudioSourceType(var value: Int) {
 
 open class EduStreamInfo(
         var streamUuid: String,
-        var streamName: String,
+        var streamName: String?,
         var videoSourceType: VideoSourceType,
         var hasVideo: Boolean,
         var hasAudio: Boolean,
@@ -22,8 +22,7 @@ open class EduStreamInfo(
         val updateTime: Long?
 ) {
     override fun equals(other: Any?): Boolean {
-        if(other == null || other !is EduStreamInfo)
-        {
+        if (other == null || other !is EduStreamInfo) {
             return false
         }
         return (other.streamUuid == this.streamUuid && other.streamName == this.streamName &&
