@@ -9,23 +9,27 @@ import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.RTCTOKEN
 import io.agora.Constants.Companion.RTMTOKEN
 import io.agora.Constants.Companion.USERTOKEN
+import io.agora.Convert
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
 import io.agora.education.api.room.EduRoom
-import io.agora.education.api.room.data.*
+import io.agora.education.api.room.data.EduRoomInfo
+import io.agora.education.api.room.data.EduRoomStatus
+import io.agora.education.api.room.data.RoomJoinOptions
+import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduStreamInfo
+import io.agora.education.api.stream.data.LocalStreamInitOptions
 import io.agora.education.api.user.EduStudent
 import io.agora.education.api.user.EduTeacher
+import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
-import io.agora.Convert
-import io.agora.education.api.stream.data.LocalStreamInitOptions
-import io.agora.education.api.user.data.EduChatState
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
-import io.agora.education.impl.cmd.*
+import io.agora.education.impl.cmd.CMDDispatch
+import io.agora.education.impl.cmd.CMDResponseBody
 import io.agora.education.impl.record.EduRecordImpl
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.request.EduJoinClassroomReq
@@ -108,7 +112,15 @@ internal class EduRoomImpl(
                         val channelMediaOptions = ChannelMediaOptions()
                         channelMediaOptions.autoSubscribeAudio = options.mediaOptions.autoSubscribeAudio
                         channelMediaOptions.autoSubscribeVideo = options.mediaOptions.autoSubscribeVideo
-                        joinRte(RTCTOKEN, options.userUuid.toInt(), channelMediaOptions)
+                        joinRte(RTCTOKEN, RTMTOKEN, options.userUuid.toInt(), channelMediaOptions, object : ResultCallback<Void> {
+                            override fun onSuccess(p0: Void?) {
+                                TODO("Not yet implemented")
+                            }
+
+                            override fun onFailure(p0: ErrorInfo?) {
+                                TODO("Not yet implemented")
+                            }
+                        })
                         /**同步用户和流的全量数据*/
                         syncUserList(null, count, object : EduCallback<Unit> {
                             override fun onSuccess(res: Unit?) {
