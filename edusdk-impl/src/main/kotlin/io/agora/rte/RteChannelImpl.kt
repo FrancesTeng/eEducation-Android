@@ -1,5 +1,8 @@
 package io.agora.rte
 
+import androidx.annotation.NonNull
+import io.agora.rtc.Constants
+import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcChannelEventHandler
 import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rtm.*
@@ -38,23 +41,49 @@ internal class RteChannelImpl(
     private val rtmChannel = RteEngineImpl.rtmClient.createChannel(channelId, rtmChannelListener)
     private val rtcChannel = RteEngineImpl.rtcEngine.createRtcChannel(channelId)
 
+    /**rtm登录成功的标志*/
+    private var rtmLoginSuccess = false
+
     init {
         rtcChannel.setRtcChannelEventHandler(rtcChannelEventHandler)
-
     }
 
-    override fun join(rtcToken: String, uid: Int, mediaOptions: ChannelMediaOptions) {
-        rtcChannel.joinChannel(rtcToken, null, uid, ChannelMediaOptions().apply {
+    override fun join(rtcToken: String, rtmToken: String, uid: Int, mediaOptions: ChannelMediaOptions,
+                      @NonNull callback: ResultCallback<Void>) {
+        val rtcCode = rtcChannel.joinChannel(rtcToken, null, uid, ChannelMediaOptions().apply {
             this.autoSubscribeAudio = mediaOptions.autoSubscribeAudio
             autoSubscribeVideo = mediaOptions.autoSubscribeVideo
         })
+        /**rtm不能重复登录*/
+        if (!rtmLoginSuccess) {
+            RteEngineImpl.rtmClient.login(rtmToken, uid.toString(), object : ResultCallback<Void> {
+                override fun onSuccess(p0: Void?) {
+                    rtmLoginSuccess = true
+                    joinRtmChannel(rtcCode, callback)
+                }
+
+                override fun onFailure(p0: ErrorInfo?) {
+                    rtmLoginSuccess = false
+                    callback.onFailure(p0)
+                }
+            })
+        } else {
+            joinRtmChannel(rtcCode, callback)
+        }
+    }
+
+    private fun joinRtmChannel(rtcCode: Int, @NonNull callback: ResultCallback<Void>) {
         rtmChannel.join(object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
-                TODO("Not yet implemented")
+                if (rtcCode == ERR_OK) {
+                    callback.onSuccess(p0)
+                } else {
+                    callback.onFailure(ErrorInfo(rtcCode))
+                }
             }
 
             override fun onFailure(p0: ErrorInfo?) {
-                TODO("Not yet implemented")
+                callback.onFailure(p0)
             }
         })
     }

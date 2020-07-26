@@ -1,6 +1,7 @@
 package io.agora.education.impl.room
 
 import android.text.TextUtils
+import androidx.annotation.NonNull
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.agora.Constants.Companion.API_BASE_URL
@@ -39,6 +40,8 @@ import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rte.RteChannelEventListener
 import io.agora.rte.RteEngineEventListener
 import io.agora.rte.RteEngineImpl
+import io.agora.rtm.ErrorInfo
+import io.agora.rtm.ResultCallback
 import io.agora.rtm.RtmChannelMember
 import io.agora.rtm.RtmMessage
 import java.util.*
@@ -57,6 +60,7 @@ internal class EduRoomImpl(
     private var eduUserInfoList = Collections.synchronizedList(mutableListOf<EduUserInfo>())
     private var eduStreamInfoList = Collections.synchronizedList(mutableListOf<EduStreamInfo>())
     private val count = 1000
+    private var joinSuccess: Boolean = false
 
     fun getCurRoomType(): RoomType {
         return (roomInfo as EduRoomInfoImpl).roomType
@@ -168,7 +172,15 @@ internal class EduRoomImpl(
                         val channelMediaOptions = ChannelMediaOptions()
                         channelMediaOptions.autoSubscribeAudio = options.mediaOptions.autoSubscribeAudio
                         channelMediaOptions.autoSubscribeVideo = options.mediaOptions.autoSubscribeVideo
-                        joinRte(RTCTOKEN, options.userUuid.toInt(), channelMediaOptions)
+                        joinRte(RTCTOKEN, RTMTOKEN, options.userUuid.toInt(), channelMediaOptions, object : ResultCallback<Void> {
+                            override fun onSuccess(p0: Void?) {
+                                TODO("Not yet implemented")
+                            }
+
+                            override fun onFailure(p0: ErrorInfo?) {
+                                TODO("Not yet implemented")
+                            }
+                        })
                         /**同步用户和流的全量数据*/
                         syncUserList(null, count, object : EduCallback<Unit> {
                             override fun onSuccess(res: Unit?) {
@@ -211,8 +223,9 @@ internal class EduRoomImpl(
                 }))
     }
 
-    private fun joinRte(rtcToken: String, uid: Int, channelMediaOptions: ChannelMediaOptions) {
-        RteEngineImpl[roomInfo.roomUuid]?.join(rtcToken, uid, channelMediaOptions)
+    private fun joinRte(rtcToken: String, rtmToken: String, uid: Int,
+                        channelMediaOptions: ChannelMediaOptions, @NonNull callback: ResultCallback<Void>) {
+        RteEngineImpl[roomInfo.roomUuid]?.join(rtcToken, rtmToken, uid, channelMediaOptions, callback)
     }
 
     override fun getFullStreamList(): MutableList<EduStreamInfo> {
