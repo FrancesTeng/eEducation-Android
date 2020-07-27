@@ -3,10 +3,9 @@ package io.agora
 import io.agora.education.api.room.data.EduMuteState
 import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.room.data.RoomType
-import io.agora.education.api.stream.data.EduAudioState
-import io.agora.education.api.stream.data.EduStreamInfo
-import io.agora.education.api.stream.data.EduVideoState
-import io.agora.education.api.stream.data.VideoSourceType
+import io.agora.education.api.statistics.ConnectionState
+import io.agora.education.api.statistics.ConnectionStateChangeReason
+import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
@@ -16,9 +15,46 @@ import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.education.impl.cmd.CMDStreamActionMsg
 import io.agora.education.impl.cmd.CMDUserStateMsg
+import io.agora.rtc.video.VideoEncoderConfiguration
+import io.agora.rtm.RtmStatusCode
+import io.agora.rtm.RtmStatusCode.ConnectionChangeReason.*
+import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED
+import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
 
 class Convert {
     companion object {
+
+        fun convertVideoEncoderConfig(videoEncoderConfig: VideoEncoderConfig): VideoEncoderConfiguration {
+            var videoDimensions = VideoEncoderConfiguration.VideoDimensions(
+                    videoEncoderConfig.videoDimensionWidth,
+                    videoEncoderConfig.videoDimensionHeight)
+            var videoEncoderConfiguration = VideoEncoderConfiguration()
+            videoEncoderConfiguration.dimensions = videoDimensions
+            videoEncoderConfiguration.frameRate = videoEncoderConfig.fps
+            when (videoEncoderConfig.orientationMode) {
+                OrientationMode.ADAPTIVE -> {
+                    videoEncoderConfiguration.orientationMode = VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE
+                }
+                OrientationMode.FIXED_LANDSCAPE -> {
+                    videoEncoderConfiguration.orientationMode = VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE
+                }
+                OrientationMode.FIXED_PORTRAIT -> {
+                    videoEncoderConfiguration.orientationMode = VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_PORTRAIT
+                }
+            }
+            when (videoEncoderConfig.degradationPreference) {
+                DegradationPreference.MAINTAIN_QUALITY -> {
+                    videoEncoderConfiguration.degradationPrefer = VideoEncoderConfiguration.DEGRADATION_PREFERENCE.MAINTAIN_QUALITY
+                }
+                DegradationPreference.MAINTAIN_FRAME_RATE -> {
+                    videoEncoderConfiguration.degradationPrefer = VideoEncoderConfiguration.DEGRADATION_PREFERENCE.MAINTAIN_FRAMERATE
+                }
+                DegradationPreference.MAINTAIN_BALANCED -> {
+                    videoEncoderConfiguration.degradationPrefer = VideoEncoderConfiguration.DEGRADATION_PREFERENCE.MAINTAIN_BALANCED
+                }
+            }
+            return videoEncoderConfiguration
+        }
 
         /**根据EduUserRole枚举返回角色字符串;大班课状态下，如果学生自动发流，那么他就是broadcaster*/
         fun convertUserRole(role: EduUserRole, roomType: RoomType, autoPublish: Boolean): String {
@@ -33,12 +69,9 @@ class Convert {
                         EduUserRoleStr.broadcaster.name
                     }
                     RoomType.LARGE_CLASS -> {
-                        if(autoPublish)
-                        {
+                        if (autoPublish) {
                             EduUserRoleStr.broadcaster.name
-                        }
-                        else
-                        {
+                        } else {
                             EduUserRoleStr.audience.name
                         }
                     }
@@ -103,8 +136,8 @@ class Convert {
                 val videoSourceType = if (element.videoSourceType == 1) VideoSourceType.CAMERA else VideoSourceType.SCREEN
                 val hasVideo = element.videoState == EduVideoState.Open.value
                 val hasAudio = element.audioState == EduAudioState.Open.value
-                val eduStreamInfo = EduStreamInfoImpl(null, element.streamUuid, element.streamName,
-                        videoSourceType, hasVideo, hasAudio, eduUserInfo, element.updateTime)
+                val eduStreamInfo = EduStreamInfoImpl(element.streamUuid, element.streamName, videoSourceType,
+                        hasVideo, hasAudio, eduUserInfo, element.updateTime)
                 streamInfoList.add(index, eduStreamInfo)
             }
             return streamInfoList
@@ -127,9 +160,18 @@ class Convert {
             }
         }
 
+        fun convertStreamInfo(eduStreamRes: EduStreamRes, roomType: RoomType): EduStreamInfo {
+            val fromUserInfo = convertUserInfo(eduStreamRes.fromUser, roomType)
+            return EduStreamInfoImpl(eduStreamRes.streamUuid, eduStreamRes.streamName,
+                    convertVideoSourceType(eduStreamRes.videoSourceType),
+                    eduStreamRes.videoState == EduVideoState.Open.value,
+                    eduStreamRes.audioState == EduAudioState.Open.value,
+                    fromUserInfo, eduStreamRes.updateTime)
+        }
+
         fun convertStreamInfo(cmdStreamActionMsg: CMDStreamActionMsg, roomType: RoomType): EduStreamInfo {
             val fromUserInfo = convertUserInfo(cmdStreamActionMsg.fromUser, roomType)
-            return EduStreamInfo(cmdStreamActionMsg.streamUuid, cmdStreamActionMsg.streamName,
+            return EduStreamInfoImpl(cmdStreamActionMsg.streamUuid, cmdStreamActionMsg.streamName,
                     convertVideoSourceType(cmdStreamActionMsg.videoSourceType),
                     cmdStreamActionMsg.videoState == EduVideoState.Open.value,
                     cmdStreamActionMsg.audioState == EduAudioState.Open.value,
@@ -171,6 +213,61 @@ class Convert {
                 }
             }
             return allow
+        }
+
+        fun convertConnectionState(connectionState: Int): ConnectionState {
+            return when (connectionState) {
+                CONNECTION_STATE_DISCONNECTED -> {
+                    ConnectionState.DISCONNECTED
+                }
+                CONNECTION_STATE_DISCONNECTED -> {
+                    ConnectionState.CONNECTING
+                }
+                CONNECTION_STATE_DISCONNECTED -> {
+                    ConnectionState.CONNECTED
+                }
+                CONNECTION_STATE_DISCONNECTED -> {
+                    ConnectionState.RECONNECTING
+                }
+                CONNECTION_STATE_DISCONNECTED -> {
+                    ConnectionState.ABORTED
+                }
+                else -> {
+                    ConnectionState.DISCONNECTED
+                }
+            }
+        }
+
+        fun convertConnectionStateChangeReason(changeReason: Int): ConnectionStateChangeReason {
+            return when (changeReason) {
+                CONNECTION_CHANGE_REASON_LOGIN -> {
+                    ConnectionStateChangeReason.LOGIN
+                }
+                CONNECTION_CHANGE_REASON_LOGIN_SUCCESS -> {
+                    ConnectionStateChangeReason.LOGIN_SUCCESS
+                }
+                CONNECTION_CHANGE_REASON_LOGIN_FAILURE -> {
+                    ConnectionStateChangeReason.LOGIN_FAILURE
+                }
+                CONNECTION_CHANGE_REASON_LOGIN_TIMEOUT -> {
+                    ConnectionStateChangeReason.LOGIN_TIMEOUT
+                }
+                CONNECTION_CHANGE_REASON_INTERRUPTED -> {
+                    ConnectionStateChangeReason.INTERRUPTED
+                }
+                CONNECTION_CHANGE_REASON_LOGOUT -> {
+                    ConnectionStateChangeReason.LOGOUT
+                }
+                CONNECTION_CHANGE_REASON_BANNED_BY_SERVER -> {
+                    ConnectionStateChangeReason.BANNED_BY_SERVER
+                }
+                CONNECTION_CHANGE_REASON_REMOTE_LOGIN -> {
+                    ConnectionStateChangeReason.REMOTE_LOGIN
+                }
+                else -> {
+                    ConnectionStateChangeReason.LOGIN
+                }
+            }
         }
     }
 }

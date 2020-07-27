@@ -138,10 +138,10 @@ class CMDProcessor {
          *         !(> 0) first < second*/
         fun compareStreamInfoTime(first: EduStreamInfo, second: EduStreamInfo): Long {
             /**判断更新时间是否为空(为空的有可能是原始数据)*/
-            if (first.updateTime == null) {
+            if ((first as EduStreamInfoImpl).updateTime == null) {
                 return -1
             }
-            if (second.updateTime == null) {
+            if ((second as EduStreamInfoImpl).updateTime == null) {
                 return first.updateTime!!
             }
             /**最终判断出最新数据*/

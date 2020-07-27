@@ -1,6 +1,6 @@
 package io.agora.education.api.statistics
 
-enum class ConnectionState(value: Int) {
+enum class ConnectionState(var value: Int) {
     DISCONNECTED(1),
     CONNECTING(2),
     CONNECTED(3),
@@ -8,7 +8,7 @@ enum class ConnectionState(value: Int) {
     ABORTED(5)
 }
 
-enum class ConnectionStateChangeReason(value: Int) {
+enum class ConnectionStateChangeReason(var value: Int) {
     LOGIN(1),
     LOGIN_SUCCESS(2),
     LOGIN_FAILURE(3),

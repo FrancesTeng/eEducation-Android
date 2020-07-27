@@ -32,7 +32,7 @@ class RoomCreateOptions(
         properties.add(RoomProperty(RoomProperty.KEY_STUDENT_LIMIT, when (roomType) {
             RoomType.ONE_ON_ONE -> "1"
             RoomType.SMALL_CLASS -> "16"
-            RoomType.LARGE_CLASS -> null
+            RoomType.LARGE_CLASS -> "-1"
         }))
     }
 }

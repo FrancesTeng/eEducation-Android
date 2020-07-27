@@ -17,9 +17,7 @@ open class EduStreamInfo(
         var videoSourceType: VideoSourceType,
         var hasVideo: Boolean,
         var hasAudio: Boolean,
-
-        val publisher: EduUserInfo,
-        val updateTime: Long?
+        val publisher: EduUserInfo
 ) {
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is EduStreamInfo) {

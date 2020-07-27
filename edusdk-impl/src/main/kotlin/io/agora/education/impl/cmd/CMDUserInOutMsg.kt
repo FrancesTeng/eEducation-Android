@@ -9,6 +9,6 @@ class RtmUserInOutMsg(val total: Int, val onlineUsers: MutableList<EduUserRes>,
 
 class OffLineUserInfo(userUuid: String, userName: String, role: String, muteChat: Int, updateTime: Long?,
                       val operator: EduUserRes?)
-    : EduUserRes(userUuid, userName, role, muteChat, updateTime) {
+    : EduUserRes(userUuid, userName, role, muteChat, updateTime, null) {
 
 }

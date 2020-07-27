@@ -6,6 +6,6 @@ import io.agora.education.impl.room.data.response.EduUserRes
 class RtmMsg(
         val fromUser: EduUserRes,
         val message: String,
-        val type: Int
+        val type: Int?
 ) {
 }

@@ -1,5 +1,6 @@
 package io.agora.education.api.room.listener
 
+import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduRoomStatus
@@ -25,6 +26,10 @@ interface EduRoomEventListener {
     fun onRoomMessageReceived(message: EduMsg, fromClassRoom: EduRoom)
 
     fun onUserMessageReceived(message: EduMsg, fromClassRoom: EduRoom)
+
+    fun onRoomChatMessageReceived(chatMsg: EduChatMsg, fromClassRoom: EduRoom)
+
+    fun onUserChatMessageReceived(chatMsg: EduChatMsg, fromClassRoom: EduRoom)
 
     fun onRemoteStreamsInitialized(streams: List<EduStreamInfo>, fromClassRoom: EduRoom)
 

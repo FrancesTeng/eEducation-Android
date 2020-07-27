@@ -30,7 +30,9 @@ interface UserService {
             @Path("roomUuid")      roomUuid: String,
 //            @Query("role")       role: String?,
             @Query("nextId")     nextId: String?,
-            @Query("count")      count: Int
+            @Query("count")      count: Int,
+            @Query("updateTimeOffset") updateTimeOffset: Long?,
+            @Query("includeOffline") includeOffline: Int?
     ): Call<ResponseBody<EduUserListRes>>
 
     /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
@@ -43,7 +45,9 @@ interface UserService {
             @Path("roomUuid")      roomUuid: String,
 //            @Query("role")       role: String?,
             @Query("nextId")     nextId: String?,
-            @Query("count")      count: Int
+            @Query("count")      count: Int,
+            @Query("updateTimeOffset") updateTimeOffset: Long?,
+            @Query("includeOffline") includeOffline: Int?
     ): Call<ResponseBody<EduStreamListRes>>
 
 

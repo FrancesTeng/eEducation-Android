@@ -12,5 +12,6 @@ open class EduUserRes(var userUuid: String,
                       var userName: String,
                       var role: String,
                       var muteChat: Int,
-                      var updateTime: Long?) {
+                      var updateTime: Long?,
+                      var state: Int?) {
 }

@@ -31,5 +31,12 @@ interface EduUser {
      * @param user 消息接收方的userInfo*/
     fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduMsg>)
 
+    /**发送聊天消息*/
+    fun sendRoomChatMessage(message: String, callback: EduCallback<EduMsg>)
+
+    fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduMsg>)
+
     fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig = VideoRenderConfig())
+
+    fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup)
 }

@@ -15,17 +15,17 @@ interface EduTeacher : EduUser {
 
     fun allowStudentChat(isAllow: Boolean, callback: EduCallback<Unit>)
 
-    fun allowStudentChat(isAllow: Boolean, user: EduUserInfo, callback: EduCallback<Unit>)
+    fun allowRemoteStudentChat(isAllow: Boolean, remoteStudent: EduUserInfo, callback: EduCallback<Unit>)
 
     fun startShareScreen(options: ScreenStreamInitOptions, callback: EduCallback<EduStreamInfo>)
 
     fun stopShareScreen(callback: EduCallback<Unit>)
 
-    fun openStudentCamera(stream: EduStreamInfo, callback: EduCallback<Unit>)
+    fun remoteStartStudentCamera(remoteStream: EduStreamInfo, callback: EduCallback<Unit>)
 
-    fun closeStudentCamera(stream: EduStreamInfo, callback: EduCallback<Unit>)
+    fun remoteStopStudentCamera(remoteStream: EduStreamInfo, callback: EduCallback<Unit>)
 
-    fun openStudentMicrophone(stream: EduStreamInfo, callback: EduCallback<Unit>)
+    fun remoteStartStudentMicrophone(remoteStream: EduStreamInfo, callback: EduCallback<Unit>)
 
-    fun closeStudentMicrophone(stream: EduStreamInfo, callback: EduCallback<Unit>)
+    fun remoteStopStudentMicrophone(remoteStream: EduStreamInfo, callback: EduCallback<Unit>)
 }

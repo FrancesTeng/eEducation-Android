@@ -1,13 +1,17 @@
 package io.agora.education.impl.room.network
 
+import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
+import io.agora.education.impl.room.data.response.EduEntryRoomRes
+import io.agora.education.impl.user.data.request.*
+import io.agora.education.impl.user.data.request.EduRoomChatMsgReq
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
-import io.agora.education.impl.user.data.request.EduRoomMuteStateReq
+import io.agora.education.impl.user.data.request.EduUserChatMsgReq
 import io.agora.education.impl.user.data.request.EduUserMsgReq
 import retrofit2.Call
 import retrofit2.http.*
 
-interface RoomService {
+internal interface RoomService {
 
     /**创建房间*/
     /**@return 房间id(roomId)*/
@@ -17,6 +21,14 @@ interface RoomService {
             @Path("roomUuid") roomUuid: String,
             @Body roomCreateOptionsReq: RoomCreateOptionsReq
     ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**查询房间信息*/
+    @GET("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/info")
+    fun queryClassroomState(
+            @Header("userToken") userToken: String,
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String
+    ): Call<ResponseBody<EduEntryRoomRes>>
 
     /**更新课堂状态*/
     @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
@@ -52,25 +64,27 @@ interface RoomService {
             @Header("userToken") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
+            @Path("toUserUuid") toUserUuid: String,
             @Body eduUserMsgReq: EduUserMsgReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送课堂内群聊消息*/
     @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/chat")
-    fun sendRoomMessage(
+    fun sendRoomChatMsg(
             @Header("userToken") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
-            @Body eduRoomMsgReq: EduRoomMsgReq
+            @Body eduRoomChatMsgReq: EduRoomChatMsgReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送用户间的私聊消息*/
     @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/peer")
-    fun sendPeerMessage(
+    fun sendPeerChatMsg(
             @Header("userToken") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
-            @Body eduUserMsgReq: EduUserMsgReq
+            @Path("toUserUuid") toUserUuid: String,
+            @Body eduUserChatMsgReq: EduUserChatMsgReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
 

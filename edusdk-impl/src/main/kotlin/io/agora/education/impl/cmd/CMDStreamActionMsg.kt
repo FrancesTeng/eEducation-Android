@@ -16,5 +16,5 @@ class CMDStreamActionMsg(
         updateTime: Long,
         val operator: EduFromUserRes
 ) : EduStreamRes(fromUser, streamUuid, streamName, videoSourceType,
-        audioSourceType, videoState, audioState, updateTime) {
+        audioSourceType, videoState, audioState, updateTime, null) {
 }

@@ -5,9 +5,9 @@ enum class CMDId(var value: Int) {
     RoomStateChange(1),
     /**频道-房间-禁用状态*/
     RoomMuteStateChange(2),
-    /**频道-房间-即时聊天--文本消息*/
+    /**频道-房间-即时聊天--*/
     ChannelMsgReceived(3),
-    /**频道--自定义消息*/
+    /**频道--自定义消息(可以是用户的信令)*/
     ChannelCustomMsgReceived(99),
     /**频道-用户-进出
      * 有人员进出时会触发此消息(包括进入，离开，踢出)*/
@@ -23,8 +23,8 @@ enum class CMDId(var value: Int) {
 
 
 
-    /**点对点-用户-私聊--文本消息*/
+    /**点对点-用户-私聊*/
     PeerMsgReceived(1),
-    /**点对点--自定义消息*/
+    /**点对点--自定义消息(可以使用户的信令)*/
     PeerCustomMsgReceived(99)
 }

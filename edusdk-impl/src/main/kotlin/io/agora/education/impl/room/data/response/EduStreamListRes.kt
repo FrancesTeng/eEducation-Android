@@ -16,7 +16,8 @@ open class EduStreamRes(
         var audioSourceType: Int,
         var videoState: Int,
         var audioState: Int,
-        var updateTime: Long) {
+        var updateTime: Long,
+        var state: Int?) {
 }
 
 class EduFromUserRes(
