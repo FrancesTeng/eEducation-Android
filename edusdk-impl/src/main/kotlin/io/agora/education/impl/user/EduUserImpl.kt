@@ -1,6 +1,7 @@
 package io.agora.education.impl.user
 
 import android.util.Log
+import android.view.SurfaceView
 import android.view.ViewGroup
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
@@ -10,6 +11,7 @@ import io.agora.base.network.BusinessException
 import io.agora.base.network.ResponseBody
 import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
+import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduChatMsgType
 import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.data.RoomType
@@ -40,6 +42,8 @@ internal open class EduUserImpl(
 
     lateinit var eduRoom: EduRoomImpl
     lateinit var USERTOKEN: String
+
+    private val surfaceViewList = mutableListOf<SurfaceView>()
 
     override fun initOrUpdateLocalStream(options: LocalStreamInitOptions, callback: EduCallback<EduStreamInfo>) {
         Log.e("EduUserImpl", "开始初始化和更新本地流")
@@ -203,13 +207,14 @@ internal open class EduUserImpl(
                 }))
     }
 
-    override fun sendRoomChatMessage(message: String, callback: EduCallback<EduMsg>) {
+    override fun sendRoomChatMessage(message: String, callback: EduCallback<EduChatMsg>) {
         val roomChatMsgReq = EduRoomChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
                 .sendRoomChatMsg(APPID, eduRoom.roomInfo.roomUuid, roomChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
+                        val textMessage = EduChatMsg(userInfo, message, System.currentTimeMillis(),
+                                EduChatMsgType.Text.value)
                         callback.onSuccess(textMessage)
                     }
 
@@ -221,13 +226,14 @@ internal open class EduUserImpl(
                 }))
     }
 
-    override fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduMsg>) {
+    override fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduChatMsg>) {
         val userChatMsgReq = EduUserChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
                 .sendPeerChatMsg(APPID, eduRoom.roomInfo.roomUuid, remoteUser.userUuid, userChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
+                        val textMessage = EduChatMsg(userInfo, message, System.currentTimeMillis(),
+                                EduChatMsgType.Text.value)
                         callback.onSuccess(textMessage)
                     }
 
@@ -242,9 +248,26 @@ internal open class EduUserImpl(
     /**
      * @param viewGroup 视频画面的父布局(在UI布局上最好保持独立)*/
     override fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig) {
-        val surfaceView = RtcEngine.CreateRendererView(viewGroup.context)
-        surfaceView.setZOrderMediaOverlay(true)
-        val videoCanvas = VideoCanvas(surfaceView, config.renderMode.value, stream.streamUuid.toInt())
+        val videoCanvas: VideoCanvas
+        if (viewGroup == null) {
+            /**remove掉当前流对应的surfaceView*/
+            videoCanvas = VideoCanvas(null, config.renderMode.value, stream.streamUuid.toInt())
+            for (surfaceView in surfaceViewList) {
+                if (surfaceView.tag == stream.hashCode()) {
+                    (surfaceView.parent as ViewGroup).removeView(surfaceView)
+                }
+            }
+        } else {
+            checkAndRemoveSurfaceView(stream.hashCode())?.let {
+                viewGroup.removeView(it)
+            }
+            val surfaceView = RtcEngine.CreateRendererView(viewGroup.context)
+            surfaceView.tag = stream.hashCode()
+//            surfaceView.setZOrderMediaOverlay(true)
+            videoCanvas = VideoCanvas(surfaceView, config.renderMode.value, stream.streamUuid.toInt())
+            viewGroup.addView(surfaceView)
+            surfaceViewList.add(surfaceView)
+        }
         if (stream.publisher.userUuid == this.userInfo.userUuid) {
             RteEngineImpl.rtcEngine.setupLocalVideo(videoCanvas)
         } else {
@@ -253,13 +276,16 @@ internal open class EduUserImpl(
     }
 
     override fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup) {
-        val surfaceView = RtcEngine.CreateRendererView(viewGroup.context)
-        surfaceView.setZOrderMediaOverlay(true)
-        val videoCanvas = VideoCanvas(surfaceView, Constants.RENDER_MODE_HIDDEN, stream.streamUuid.toInt())
-        if (stream.publisher.userUuid == this.userInfo.userUuid) {
-            RteEngineImpl.rtcEngine.setupLocalVideo(videoCanvas)
-        } else {
-            RteEngineImpl.rtcEngine.setupRemoteVideo(videoCanvas)
+        setStreamView(stream, viewGroup, VideoRenderConfig(RenderMode.HIDDEN))
+    }
+
+    private fun checkAndRemoveSurfaceView(tag: Int): SurfaceView? {
+        for (surfaceView in surfaceViewList) {
+            if (surfaceView.tag == tag) {
+                surfaceViewList.remove(surfaceView);
+                return surfaceView
+            }
         }
+        return null
     }
 }

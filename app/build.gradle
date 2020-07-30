@@ -26,7 +26,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
 //        buildConfigField 'String', 'API_BASE_URL', '"https://api.agora.io"'
-        buildConfigField 'String', 'API_BASE_URL', '"http://115.231.168.26:3000/mock/9"'
+        buildConfigField 'String', 'API_BASE_URL', '"https://api-solutions-dev.sh.agoralab.co"'
         buildConfigField 'String', 'POLICY_URL', '"https://www.agora.io/privacy-policy"'
     }
 

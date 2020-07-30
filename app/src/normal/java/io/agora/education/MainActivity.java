@@ -59,7 +59,8 @@ public class MainActivity extends BaseActivity {
     private final int REQUEST_CODE_DOWNLOAD = 100;
     private final int REQUEST_CODE_RTC = 101;
     public final static int REQUEST_CODE_RTE = 909;
-    public static final String DATA = "data";
+    public static final String CODE = "code";
+    public static final String REASON = "reason";
 
     @BindView(R.id.et_room_name)
     protected EditText et_room_name;
@@ -72,7 +73,6 @@ public class MainActivity extends BaseActivity {
 
     private DownloadReceiver receiver;
     private CommonService commonService;
-    private RoomService roomService;
     private String url;
 
     @Override
@@ -89,9 +89,7 @@ public class MainActivity extends BaseActivity {
         registerReceiver(receiver, filter);
 
         commonService = RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, CommonService.class);
-        roomService = RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, RoomService.class);
         checkVersion();
-        getConfig();
     }
 
     @Override
@@ -135,9 +133,10 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @androidx.annotation.Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(data != null && requestCode == REQUEST_CODE_RTE && requestCode == RESULT_CODE) {
-            Message msg = data.getParcelableExtra(DATA);
-            ToastManager.showShort(String.format(getString(R.string.function_error), msg.what, msg.obj));
+        if(data != null && requestCode == REQUEST_CODE_RTE && resultCode == RESULT_CODE) {
+            int code = data.getIntExtra(CODE, -1);
+            String reason = data.getStringExtra(REASON);
+            ToastManager.showShort(String.format(getString(R.string.function_error), code, reason));
         }
     }
 
@@ -191,10 +190,6 @@ public class MainActivity extends BaseActivity {
                 showAppUpgradeDialog(data.upgradeUrl, data.forcedUpgrade == 2);
             }
         }));
-    }
-
-    private void getConfig() {
-        commonService.language().enqueue(new BaseCallback<>(EduApplication::setMultiLanguage));
     }
 
     private void showAppUpgradeDialog(String url, boolean isForce) {

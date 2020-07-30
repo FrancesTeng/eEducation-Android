@@ -18,6 +18,9 @@ internal object RteEngineImpl : IRteEngine {
 
     var eventListener:RteEngineEventListener? = null
 
+    /**rtm登录成功的标志*/
+    var rtmLoginSuccess = false
+
     override fun init(context: Context, appId: String) {
         rtmClient = RtmClient.createInstance(context, appId, rtmClientListener)
         rtcEngine = RtcEngine.create(context, appId, rtcEngineEventHandler)

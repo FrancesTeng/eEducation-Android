@@ -20,6 +20,9 @@ import butterknife.ButterKnife;
 import io.agora.education.R;
 import io.agora.education.classroom.bean.msg.ChannelMsg;
 
+/**
+ * @author cjw
+ */
 public class MessageListAdapter extends BaseProviderMultiAdapter<ChannelMsg.ChatMsg> {
 
     public MessageListAdapter() {
@@ -50,15 +53,17 @@ public class MessageListAdapter extends BaseProviderMultiAdapter<ChannelMsg.Chat
 
         void convert(ChannelMsg.ChatMsg msg) {
             Resources resources = getContext().getResources();
-            tv_name.setText(msg.userName);
-            tv_content.setText(msg.message);
-            if (msg instanceof ChannelMsg.ReplayMsg) {
-                tv_content.setTextColor(resources.getColor(R.color.blue_1F3DE8));
-                tv_content.getPaint().setFlags(Paint.UNDERLINE_TEXT_FLAG);
-            } else {
-                tv_content.setTextColor(resources.getColor(R.color.gray_666666));
-                tv_content.getPaint().setFlags(0);
-            }
+            tv_name.setText(msg.getFromUser().getUserName());
+            tv_content.setText(msg.getMessage());
+//            if (msg instanceof ChannelMsg.ReplayMsg) {
+//                tv_content.setTextColor(resources.getColor(R.color.blue_1F3DE8));
+//                tv_content.getPaint().setFlags(Paint.UNDERLINE_TEXT_FLAG);
+//            } else {
+//                tv_content.setTextColor(resources.getColor(R.color.gray_666666));
+//                tv_content.getPaint().setFlags(0);
+//            }
+            tv_content.setTextColor(resources.getColor(R.color.gray_666666));
+            tv_content.getPaint().setFlags(0);
         }
     }
 

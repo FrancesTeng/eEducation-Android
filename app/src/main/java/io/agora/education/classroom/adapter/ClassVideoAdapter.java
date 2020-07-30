@@ -16,7 +16,7 @@ import io.agora.education.classroom.bean.channel.User;
 import io.agora.education.classroom.mediator.VideoMediator;
 import io.agora.education.classroom.widget.RtcVideoView;
 
-public class ClassVideoAdapter extends BaseQuickAdapter<User, ClassVideoAdapter.ViewHolder> {
+class ClassVideoAdapter extends BaseQuickAdapter<User, ClassVideoAdapter.ViewHolder> {
 
     private int localUid;
 
@@ -73,11 +73,11 @@ public class ClassVideoAdapter extends BaseQuickAdapter<User, ClassVideoAdapter.
     protected void convert(@NonNull ViewHolder viewHolder, User user) {
         viewHolder.convert(user);
 
-        if (user.uid == localUid) { // local render
-            VideoMediator.setupLocalVideo(viewHolder.view);
-        } else { // remote render
-            VideoMediator.setupRemoteVideo(viewHolder.view, user.uid);
-        }
+//        if (user.uid == localUid) { // local render
+//            VideoMediator.setupLocalVideo(viewHolder.view);
+//        } else { // remote render
+//            VideoMediator.setupRemoteVideo(viewHolder.view, user.uid);
+//        }
     }
 
     static class ViewHolder extends BaseViewHolder {

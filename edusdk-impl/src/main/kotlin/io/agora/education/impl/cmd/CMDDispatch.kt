@@ -1,5 +1,6 @@
 package io.agora.education.impl.cmd
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.agora.Convert
@@ -113,6 +114,7 @@ class CMDDispatch {
                     /**根据回调数据，维护本地存储的流列表*/
                     when (cmdStreamActionMsg.action) {
                         CMDStreamAction.Add.value -> {
+                            Log.e("CMDDispatch", "收到新添加流的通知：${text}")
                             val validAddStreams = CMDProcessor.addStreamWithAction(cmdStreamActionMsg,
                                     (eduRoom as EduRoomImpl).getCurStreamList(), (eduRoom as EduRoomImpl).getCurRoomType())
                             /**如果当前正在加入房间的过程中，不回调数据;只保证更新的数据合并到集合中即可*/
@@ -120,7 +122,7 @@ class CMDDispatch {
                                 eventListener?.onRemoteStreamsAdded(validAddStreams, eduRoom)
                                 /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
                                 for (element in validAddStreams) {
-                                    if (element.modifiedStream.publisher.userUuid == eduRoom.localUser.userInfo.userUuid) {
+                                    if (element.modifiedStream.publisher == eduRoom.localUser.userInfo) {
                                         updateLocalStream(element.modifiedStream.hasAudio, element.modifiedStream.hasVideo)
                                         eduRoom.localUser.eventListener?.onLocalStreamAdded(element)
                                     }
@@ -128,6 +130,7 @@ class CMDDispatch {
                             }
                         }
                         CMDStreamAction.Modify.value -> {
+                            Log.e("CMDDispatch", "收到修改流的通知：${text}")
                             val validModifyStreams = CMDProcessor.modifyStreamWithAction(cmdStreamActionMsg,
                                     (eduRoom as EduRoomImpl).getCurStreamList(), (eduRoom as EduRoomImpl).getCurRoomType())
                             /**如果当前正在加入房间的过程中，不回调数据;只保证更新的数据合并到集合中即可*/
@@ -135,7 +138,7 @@ class CMDDispatch {
                                 eventListener?.onRemoteStreamsUpdated(validModifyStreams, eduRoom)
                                 /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
                                 for (element in validModifyStreams) {
-                                    if (element.modifiedStream.publisher.userUuid == eduRoom.localUser.userInfo.userUuid) {
+                                    if (element.modifiedStream.publisher == eduRoom.localUser.userInfo) {
                                         updateLocalStream(element.modifiedStream.hasAudio, element.modifiedStream.hasVideo)
                                         eduRoom.localUser.eventListener?.onLocalStreamUpdated(element)
                                     }
@@ -143,6 +146,7 @@ class CMDDispatch {
                             }
                         }
                         CMDStreamAction.Remove.value -> {
+                            Log.e("CMDDispatch", "收到移除流的通知：${text}")
                             val validRemoveStreams = CMDProcessor.removeStreamWithAction(cmdStreamActionMsg,
                                     (eduRoom as EduRoomImpl).getCurStreamList(), (eduRoom as EduRoomImpl).getCurRoomType())
                             /**如果当前正在加入房间的过程中，不回调数据;只保证更新的数据合并到集合中即可*/
@@ -150,7 +154,7 @@ class CMDDispatch {
                                 eventListener?.onRemoteStreamsRemoved(validRemoveStreams, eduRoom)
                                 /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
                                 for (element in validRemoveStreams) {
-                                    if (element.modifiedStream.publisher.userUuid == eduRoom.localUser.userInfo.userUuid) {
+                                    if (element.modifiedStream.publisher == eduRoom.localUser.userInfo) {
                                         updateLocalStream(element.modifiedStream.hasAudio, element.modifiedStream.hasVideo)
                                         eduRoom.localUser.eventListener?.onLocalSteamRemoved(element)
                                     }

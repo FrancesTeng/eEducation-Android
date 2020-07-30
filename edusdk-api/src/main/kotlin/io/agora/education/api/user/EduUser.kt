@@ -2,6 +2,7 @@ package io.agora.education.api.user
 
 import android.view.ViewGroup
 import io.agora.education.api.EduCallback
+import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduMsg
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduUserInfo
@@ -25,6 +26,7 @@ interface EduUser {
 
     fun unPublishStream(stream: EduStreamInfo, callback: EduCallback<Boolean>)
 
+    /**发送自定义消息*/
     fun sendRoomMessage(message: String, callback: EduCallback<EduMsg>)
 
     /**
@@ -32,9 +34,9 @@ interface EduUser {
     fun sendUserMessage(message: String, user: EduUserInfo, callback: EduCallback<EduMsg>)
 
     /**发送聊天消息*/
-    fun sendRoomChatMessage(message: String, callback: EduCallback<EduMsg>)
+    fun sendRoomChatMessage(message: String, callback: EduCallback<EduChatMsg>)
 
-    fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduMsg>)
+    fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduChatMsg>)
 
     fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig = VideoRenderConfig())
 

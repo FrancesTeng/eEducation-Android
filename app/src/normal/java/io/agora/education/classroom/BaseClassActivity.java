@@ -2,14 +2,13 @@ package io.agora.education.classroom;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Message;
-import android.os.Messenger;
+import android.os.Handler;
+import android.util.Log;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import androidx.core.util.Pair;
+import androidx.annotation.NonNull;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 import butterknife.BindView;
-import io.agora.base.ToastManager;
 import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.RoomEntry;
@@ -30,7 +28,6 @@ import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.room.data.RoomJoinOptions;
 import io.agora.education.api.room.data.RoomMediaOptions;
 import io.agora.education.api.room.data.RoomStatusEvent;
-import io.agora.education.api.room.data.RoomType;
 import io.agora.education.api.room.listener.EduRoomEventListener;
 import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.ConnectionStateChangeReason;
@@ -38,27 +35,22 @@ import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.user.EduStudent;
-import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
+import io.agora.education.api.user.listener.EduUserEventListener;
 import io.agora.education.base.BaseActivity;
 import io.agora.education.classroom.bean.channel.Room;
-import io.agora.education.classroom.bean.channel.User;
-import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.fragment.ChatRoomFragment;
 import io.agora.education.classroom.fragment.WhiteBoardFragment;
-import io.agora.education.classroom.strategy.context.ClassContext;
-import io.agora.education.classroom.strategy.context.ClassContextFactory;
-import io.agora.education.classroom.strategy.context.ClassEventListener;
 import io.agora.education.classroom.widget.TitleView;
 import io.agora.education.widget.ConfirmDialog;
-import io.agora.rtc.video.VideoCanvas;
-import io.agora.sdk.annotation.NetworkQuality;
-import io.agora.sdk.manager.RtcManager;
+import kotlin.Unit;
 
-import static io.agora.education.MainActivity.DATA;
+import static io.agora.education.MainActivity.CODE;
+import static io.agora.education.MainActivity.REASON;
 
-public abstract class BaseClassActivity extends BaseActivity implements ClassEventListener, EduRoomEventListener {
+public abstract class BaseClassActivity extends BaseActivity implements EduRoomEventListener, EduUserEventListener {
+    private static final String TAG = BaseClassActivity.class.getSimpleName();
 
     public static final String ROOMENTRY = "roomEntry";
     public static final int RESULT_CODE = 808;
@@ -74,20 +66,28 @@ public abstract class BaseClassActivity extends BaseActivity implements ClassEve
     protected WhiteBoardFragment whiteboardFragment = new WhiteBoardFragment();
     protected ChatRoomFragment chatRoomFragment = new ChatRoomFragment();
 
-    protected ClassContext classContext;
-
     private RoomEntry roomEntry;
     private boolean isJoining;
     private EduRoom eduRoom;
-    private EduStreamInfo localStream;
+    protected EduStreamInfo localStream;
+
+    @Override
+    protected void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
 
     @Override
     protected void initData() {
-        init();
+        roomEntry = getIntent().getParcelableExtra(ROOMENTRY);
+        createRoom(roomEntry.getRoomName(), roomEntry.getUserUuid(), roomEntry.getRoomName(),
+                roomEntry.getRoomUuid(), roomEntry.getRoomType());
     }
 
     @Override
     protected void initView() {
+    }
+
+    protected final void init() {
         title_view.setTitle(getRoomName());
 
         getSupportFragmentManager().beginTransaction()
@@ -99,17 +99,6 @@ public abstract class BaseClassActivity extends BaseActivity implements ClassEve
                 .add(R.id.layout_chat_room, chatRoomFragment)
                 .show(chatRoomFragment)
                 .commit();
-    }
-
-    protected final void init() {
-        roomEntry = getIntent().getParcelableExtra(ROOMENTRY);
-        createRoom(roomEntry.getRoomName(), roomEntry.getUserUuid(), roomEntry.getRoomName(),
-                roomEntry.getRoomUuid(), roomEntry.getRoomType());
-
-
-//        classContext = new ClassContextFactory(this).getClassContext(getClassType(), getRoomUuid(), getLocal());
-//        classContext.setClassEventListener(this);
-//        classContext.joinChannel();
     }
 
     private void createRoom(String yourNameStr, String yourUuid, String roomNameStr, String roomUuid, int roomType) {
@@ -142,6 +131,8 @@ public abstract class BaseClassActivity extends BaseActivity implements ClassEve
             @Override
             public void onSuccess(@Nullable EduStudent res) {
                 isJoining = false;
+                eduRoom.getLocalUser().setEventListener(BaseClassActivity.this);
+                init();
             }
 
             @Override
@@ -156,10 +147,7 @@ public abstract class BaseClassActivity extends BaseActivity implements ClassEve
      * 加入失败，回传数据并结束当前页面
      */
     private void joinFailed(int code, String reason) {
-        Message msg = new Message();
-        msg.what = code;
-        msg.obj = reason;
-        Intent intent = getIntent().putExtra(DATA, msg);
+        Intent intent = getIntent().putExtra(CODE, code).putExtra(REASON, reason);
         setResult(RESULT_CODE, intent);
         finish();
     }
@@ -206,12 +194,26 @@ public abstract class BaseClassActivity extends BaseActivity implements ClassEve
         return eduRoom.localUser.getUserInfo();
     }
 
+    public final void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
+        eduRoom.getLocalUser().sendRoomChatMessage(msg, callback);
+    }
+
     @Room.Type
     protected abstract int getClassType();
 
     @Override
     protected void onDestroy() {
-        classContext.release();
+        eduRoom.leave(new EduCallback<Unit>() {
+            @Override
+            public void onSuccess(@Nullable Unit res) {
+                Log.e(TAG, "成功退出房间");
+            }
+
+            @Override
+            public void onFailure(int code, @Nullable String reason) {
+                Log.e(TAG, "退出房间失败：" + reason);
+            }
+        });
         whiteboardFragment.releaseBoard();
         super.onDestroy();
     }
@@ -241,78 +243,80 @@ public abstract class BaseClassActivity extends BaseActivity implements ClassEve
         return getRoomFromIntent().getRoomName();
     }
 
-    @Override
-    public void onTeacherInit(User teacher) {
-        if (teacher == null) {
-            ToastManager.showShort(R.string.there_is_no_teacher_in_this_classroom);
-        }
+    /**
+     * 为流(主要是食品流)设置一个渲染区域
+     */
+    public final void renderStream(EduStreamInfo eduStreamInfo, ViewGroup viewGroup) {
+        runOnUiThread(() -> eduRoom.getLocalUser().setStreamView(eduStreamInfo, viewGroup));
     }
 
-    @Override
-    public void onNetworkQualityChanged(@NetworkQuality int quality) {
-        title_view.setNetworkQuality(quality);
-    }
+    /**
+     * @Override public void onTeacherInit(User teacher) {
+     * if (teacher == null) {
+     * ToastManager.showShort(R.string.there_is_no_teacher_in_this_classroom);
+     * }
+     * }
+     * @Override public void onWhiteboardChanged(String uuid, String roomToken) {
+     * whiteboardFragment.initBoardWithRoomToken(uuid, roomToken);
+     * }
+     * @Override public void onLockWhiteboard(boolean locked) {
+     * whiteboardFragment.disableCameraTransform(locked);
+     * }
+     */
 
-    @Override
-    public void onClassStateChanged(boolean isBegin, long time) {
-        title_view.setTimeState(isBegin, time);
-    }
+//    @Override
+//    public void onNetworkQualityChanged(@NetworkQuality int quality) {
+//        title_view.setNetworkQuality(quality);
+//    }
 
-    @Override
-    public void onWhiteboardChanged(String uuid, String roomToken) {
-        whiteboardFragment.initBoardWithRoomToken(uuid, roomToken);
-    }
+//    @Override
+//    public void onClassStateChanged(boolean isBegin, long time) {
+//        title_view.setTimeState(isBegin, time);
+//    }
 
-    @Override
-    public void onLockWhiteboard(boolean locked) {
-        whiteboardFragment.disableCameraTransform(locked);
-    }
+//    @Override
+//    public void onMuteLocalChat(boolean muted) {
+//        chatRoomFragment.setMuteLocal(muted);
+//    }
 
-    @Override
-    public void onMuteLocalChat(boolean muted) {
-        chatRoomFragment.setMuteLocal(muted);
-    }
+//    @Override
+//    public void onMuteAllChat(boolean muted) {
+//        chatRoomFragment.setMuteAll(muted);
+//    }
 
-    @Override
-    public void onMuteAllChat(boolean muted) {
-        chatRoomFragment.setMuteAll(muted);
-    }
+//    @Override
+//    public void onChatMsgReceived(ChannelMsg.ChatMsg msg) {
+//        chatRoomFragment.addMessage(msg);
+//    }
 
-    @Override
-    public void onChatMsgReceived(ChannelMsg.ChatMsg msg) {
-        chatRoomFragment.addMessage(msg);
-    }
-
-    @Override
-    public void onScreenShareJoined(int uid) {
-        if (surface_share_video == null) {
-            surface_share_video = RtcManager.instance().createRendererView(this);
-        }
-        layout_whiteboard.setVisibility(View.GONE);
-        layout_share_video.setVisibility(View.VISIBLE);
-
-        removeFromParent(surface_share_video);
-        surface_share_video.setTag(uid);
-        layout_share_video.addView(surface_share_video, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        RtcManager.instance().setupRemoteVideo(surface_share_video, VideoCanvas.RENDER_MODE_FIT, uid);
-    }
-
-
-    @Override
-    public void onScreenShareOffline(int uid) {
-        Object tag = surface_share_video.getTag();
-        if (tag instanceof Integer) {
-            if ((int) tag == uid) {
-                layout_whiteboard.setVisibility(View.VISIBLE);
-                layout_share_video.setVisibility(View.GONE);
-
-                removeFromParent(surface_share_video);
-                surface_share_video = null;
-            }
-        }
-    }
+//    @Override
+//    public void onScreenShareJoined(int uid) {
+//        if (surface_share_video == null) {
+//            surface_share_video = RtcManager.instance().createRendererView(this);
+//        }
+//        layout_whiteboard.setVisibility(View.GONE);
+//        layout_share_video.setVisibility(View.VISIBLE);
+//
+//        removeFromParent(surface_share_video);
+//        surface_share_video.setTag(uid);
+//        layout_share_video.addView(surface_share_video, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+//        RtcManager.instance().setupRemoteVideo(surface_share_video, VideoCanvas.RENDER_MODE_FIT, uid);
+//    }
 
 
+//    @Override
+//    public void onScreenShareOffline(int uid) {
+//        Object tag = surface_share_video.getTag();
+//        if (tag instanceof Integer) {
+//            if ((int) tag == uid) {
+//                layout_whiteboard.setVisibility(View.VISIBLE);
+//                layout_share_video.setVisibility(View.GONE);
+//
+//                removeFromParent(surface_share_video);
+//                surface_share_video = null;
+//            }
+//        }
+//    }
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
 
@@ -355,27 +359,40 @@ public abstract class BaseClassActivity extends BaseActivity implements ClassEve
 
     @Override
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom fromClassRoom) {
-        /**获取本地流数据*/
-        for (EduStreamInfo streamInfo : streams) {
-            if (streamInfo.getPublisher().equals(eduRoom.localUser)) {
-                localStream = streamInfo;
+    }
+
+    /**尝试获取并本地流数据*/
+    private void attemptUpdateLocalStream(@NonNull List list)
+    {
+        if(list.size() == 0) {
+            return;
+        }
+        if(list.get(0) instanceof EduStreamInfo){
+            for (EduStreamInfo streamInfo : ((List<EduStreamInfo>) list)) {
+                if (streamInfo.getPublisher().equals(eduRoom.localUser)) {
+                    localStream = streamInfo;
+                }
+            }
+        }
+        else if(list.get(0) instanceof EduStreamEvent) {
+            for (EduStreamEvent streamEvent : ((List<EduStreamEvent>) list)) {
+                if(streamEvent.getModifiedStream().getPublisher().equals(eduRoom.localUser)) {
+                    localStream = streamEvent.getModifiedStream();
+                }
             }
         }
     }
 
     @Override
     public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
-
     }
 
     @Override
     public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
-
     }
 
     @Override
     public void onRemoteStreamsRemoved(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
-
     }
 
     @Override
@@ -390,6 +407,27 @@ public abstract class BaseClassActivity extends BaseActivity implements ClassEve
 
     @Override
     public void onNetworkQualityChanged(@NotNull io.agora.education.api.statistics.NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom fromClassRoom) {
-        title_view.setNetworkQuality(quality.getValue());
+
+    }
+
+
+    @Override
+    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
+
+    }
+
+    @Override
+    public void onLocalStreamAdded(@NotNull EduStreamEvent streamInfo) {
+
+    }
+
+    @Override
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamInfo) {
+
+    }
+
+    @Override
+    public void onLocalSteamRemoved(@NotNull EduStreamEvent streamInfo) {
+
     }
 }

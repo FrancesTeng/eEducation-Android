@@ -164,8 +164,7 @@ internal class EduRoomImpl(
         if (getCurRoomType() != RoomType.LARGE_CLASS ||
                 (getCurRoomType() == RoomType.LARGE_CLASS && autoPublish)) {
             RteEngineImpl.rtcEngine.setClientRole(CLIENT_ROLE_BROADCASTER)
-        }
-        else{
+        } else {
             RteEngineImpl.rtcEngine.setClientRole(CLIENT_ROLE_AUDIENCE)
         }
         /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
@@ -192,7 +191,8 @@ internal class EduRoomImpl(
                         val channelMediaOptions = ChannelMediaOptions()
                         channelMediaOptions.autoSubscribeAudio = options.mediaOptions.autoSubscribeAudio
                         channelMediaOptions.autoSubscribeVideo = options.mediaOptions.autoSubscribeVideo
-                        joinRte(RTCTOKEN, RTMTOKEN, options.userUuid.toInt(), channelMediaOptions, object : ResultCallback<Void> {
+                        joinRte(RTCTOKEN, RTMTOKEN, classRoomEntryRes.user.streamUuid.toInt(),
+                                options.userUuid, channelMediaOptions, object : ResultCallback<Void> {
                             override fun onSuccess(p0: Void?) {
                                 var syncUserStreamSuccess = false
                                 var initUpdateSuccess = false
@@ -243,9 +243,9 @@ internal class EduRoomImpl(
                 }))
     }
 
-    private fun joinRte(rtcToken: String, rtmToken: String, uid: Int,
+    private fun joinRte(rtcToken: String, rtmToken: String, rtcUid: Int, rtmUid: String,
                         channelMediaOptions: ChannelMediaOptions, @NonNull callback: ResultCallback<Void>) {
-        RteEngineImpl[roomInfo.roomUuid]?.join(rtcToken, rtmToken, uid, channelMediaOptions, callback)
+        RteEngineImpl[roomInfo.roomUuid]?.join(rtcToken, rtmToken, rtcUid, rtmUid, channelMediaOptions, callback)
     }
 
     private fun syncUserStreamList(callback: EduCallback<Unit>) {

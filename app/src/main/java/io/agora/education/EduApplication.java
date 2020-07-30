@@ -78,11 +78,4 @@ public class EduApplication extends Application {
         return instance.config.multiLanguage;
     }
 
-    public static void setMultiLanguage(Map<String, Map<Integer, String>> multiLanguage) {
-        if (instance.config == null) {
-            instance.config = new AppConfigRes();
-        }
-        instance.config.multiLanguage = multiLanguage;
-    }
-
 }

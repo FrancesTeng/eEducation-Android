@@ -123,27 +123,27 @@ public abstract class ClassContext implements ChannelEventListener {
     @Override
     @SuppressLint("SwitchIntDef")
     public void onChannelMsgReceived(ChannelMsg msg) {
-        switch (msg.cmd) {
-            case CHAT:
-                ChannelMsg.ChatMsg chatMsg = msg.getMsg(ChannelMsg.ChatMsg.class);
-                chatMsg.isMe = TextUtils.equals(chatMsg.userId, channelStrategy.getLocal().userId);
-                runListener(() -> classEventListener.onChatMsgReceived(chatMsg));
-                break;
-            case ROOM:
-                ChannelMsg.RoomMsg roomMsg = msg.getMsg(ChannelMsg.RoomMsg.class);
-                channelStrategy.updateRoom(roomMsg);
-                break;
-            case USER:
-                ChannelMsg.CoVideoUserMsg coVideoUserMsg = msg.getMsg(ChannelMsg.CoVideoUserMsg.class);
-                channelStrategy.updateCoVideoUsers(coVideoUserMsg);
-                break;
-            case REPLAY:
-                ChannelMsg.ReplayMsg replayMsg = msg.getMsg(ChannelMsg.ReplayMsg.class);
-                runListener(() -> classEventListener.onChatMsgReceived(replayMsg));
-                break;
-            default:
-                break;
-        }
+//        switch (msg.cmd) {
+//            case CHAT:
+//                ChannelMsg.ChatMsg chatMsg = msg.getMsg(ChannelMsg.ChatMsg.class);
+//                chatMsg.isMe = TextUtils.equals(chatMsg.userId, channelStrategy.getLocal().userId);
+//                runListener(() -> classEventListener.onChatMsgReceived(chatMsg));
+//                break;
+//            case ROOM:
+//                ChannelMsg.RoomMsg roomMsg = msg.getMsg(ChannelMsg.RoomMsg.class);
+//                channelStrategy.updateRoom(roomMsg);
+//                break;
+//            case USER:
+//                ChannelMsg.CoVideoUserMsg coVideoUserMsg = msg.getMsg(ChannelMsg.CoVideoUserMsg.class);
+//                channelStrategy.updateCoVideoUsers(coVideoUserMsg);
+//                break;
+//            case REPLAY:
+//                ChannelMsg.ReplayMsg replayMsg = msg.getMsg(ChannelMsg.ReplayMsg.class);
+//                runListener(() -> classEventListener.onChatMsgReceived(replayMsg));
+//                break;
+//            default:
+//                break;
+//        }
     }
 
     @Override
