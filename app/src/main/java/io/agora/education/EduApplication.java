@@ -1,6 +1,7 @@
 package io.agora.education;
 
 import android.app.Application;
+import android.os.Handler;
 
 import androidx.annotation.Nullable;
 
@@ -12,6 +13,8 @@ import java.util.Map;
 import io.agora.base.PreferenceManager;
 import io.agora.base.ToastManager;
 import io.agora.base.network.ResponseBody;
+import io.agora.education.api.manager.EduManager;
+import io.agora.education.api.manager.EduManagerOptions;
 import io.agora.education.service.bean.request.UserReq;
 import io.agora.education.service.bean.response.AppConfigRes;
 import io.agora.log.LogManager;
@@ -23,6 +26,8 @@ public class EduApplication extends Application {
 
     private AppConfigRes config;
 
+    private EduManager eduManager;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -31,6 +36,23 @@ public class EduApplication extends Application {
         LogManager.init(this, BuildConfig.EXTRA);
         PreferenceManager.init(this);
         ToastManager.init(this);
+
+        String appId = getString(R.string.agora_app_id);
+        EduApplication.setAppId(appId);
+        String customerId = getString(R.string.agora_app_id);
+        String customerCertificate = getString(R.string.agora_app_id);
+        EduManagerOptions options = new EduManagerOptions(this, appId);
+        options.setCustomerId(customerId);
+        options.setCustomerCertificate(customerCertificate);
+        eduManager = EduManager.init(options);
+    }
+
+    public static EduManager getEduManager()
+    {
+        if(instance.eduManager == null) {
+            return null;
+        }
+        return instance.eduManager;
     }
 
     @Nullable

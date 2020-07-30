@@ -19,11 +19,11 @@ class EduBoardImpl : EduBoard() {
                 .updateBoardRoomState("", Constants.APPID, "", BoardRoomStateReq(if (enable) 1 else 0))
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<Nothing>> {
                     override fun onSuccess(res: ResponseBody<Nothing>?) {
-                        TODO("Not yet implemented")
+
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        TODO("Not yet implemented")
+
                     }
                 }))
     }
@@ -33,11 +33,11 @@ class EduBoardImpl : EduBoard() {
                 .updateBoardUserState("", Constants.APPID, "", user.userUuid, BoardUserStateReq(1))
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<Nothing>> {
                     override fun onSuccess(res: ResponseBody<Nothing>?) {
-                        TODO("Not yet implemented")
+
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        TODO("Not yet implemented")
+
                     }
                 }))
     }
@@ -47,11 +47,11 @@ class EduBoardImpl : EduBoard() {
                 .updateBoardUserState("", Constants.APPID, "", user.userUuid, BoardUserStateReq(0))
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<Nothing>> {
                     override fun onSuccess(res: ResponseBody<Nothing>?) {
-                        TODO("Not yet implemented")
+
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        TODO("Not yet implemented")
+
                     }
                 }))
     }
@@ -61,11 +61,11 @@ class EduBoardImpl : EduBoard() {
                 .getBoardRoom("", Constants.APPID, "")
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<BoardRoomRes>> {
                     override fun onSuccess(res: ResponseBody<BoardRoomRes>?) {
-                        TODO("Not yet implemented")
+
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        TODO("Not yet implemented")
+
                     }
                 }))
     }

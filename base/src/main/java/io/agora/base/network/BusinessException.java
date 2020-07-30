@@ -11,6 +11,11 @@ public class BusinessException extends RuntimeException {
         this.message = message;
     }
 
+    public BusinessException(@Nullable String message) {
+        this.code = -1;
+        this.message = message;
+    }
+
     public int getCode() {
         return code;
     }

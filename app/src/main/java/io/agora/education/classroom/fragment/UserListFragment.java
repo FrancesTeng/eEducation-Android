@@ -31,10 +31,10 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
 
     @Override
     protected void initData() {
-        if (context instanceof BaseClassActivity) {
-            adapter = new UserListAdapter(((BaseClassActivity) context).getLocal().uid);
-            adapter.setOnItemChildClickListener(this);
-        }
+//        if (context instanceof BaseClassActivity) {
+//            adapter = new UserListAdapter(((BaseClassActivity) context).getLocal().uid);
+//            adapter.setOnItemChildClickListener(this);
+//        }
     }
 
     @Override

@@ -6,7 +6,7 @@ import io.agora.education.api.user.data.EduUserInfo
 
 internal class EduStreamInfoImpl(
         streamUuid: String,
-        streamName: String,
+        streamName: String?,
         videoSourceType: VideoSourceType,
         hasVideo: Boolean,
         hasAudio: Boolean,

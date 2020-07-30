@@ -1,5 +1,6 @@
 package io.agora.education.impl.user
 
+import android.util.Log
 import android.view.ViewGroup
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
@@ -11,6 +12,8 @@ import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
 import io.agora.education.api.message.EduChatMsgType
 import io.agora.education.api.message.EduMsg
+import io.agora.education.api.room.data.RoomType
+import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserInfo
@@ -23,6 +26,7 @@ import io.agora.education.impl.user.data.request.EduRoomChatMsgReq
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
 import io.agora.education.impl.user.data.request.EduUserMsgReq
 import io.agora.rtc.Constants
+import io.agora.rtc.Constants.CLIENT_ROLE_BROADCASTER
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rte.RteEngineImpl
@@ -38,6 +42,7 @@ internal open class EduUserImpl(
     lateinit var USERTOKEN: String
 
     override fun initOrUpdateLocalStream(options: LocalStreamInitOptions, callback: EduCallback<EduStreamInfo>) {
+        Log.e("EduUserImpl", "开始初始化和更新本地流")
         RteEngineImpl.rtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING)
         RteEngineImpl.rtcEngine.setVideoEncoderConfiguration(
                 Convert.convertVideoEncoderConfig(videoEncoderConfig))
@@ -74,6 +79,7 @@ internal open class EduUserImpl(
      * 目前流程和设计不符，需要确认！！！
      * */
     override fun publishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
+        /**改变流状态的参数*/
         val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
                 if (streamInfo.hasAudio) 1 else 0)
@@ -82,8 +88,9 @@ internal open class EduUserImpl(
             /**流信息存在于本地，说明是更新*/
             if (eduRoom.getCurStreamList()[pos].hasAudio || eduRoom.getCurStreamList()[pos].hasVideo) {
                 /**unMute*/
+                Log.e("EduUserImpl", "开始更新本地流信息-unMute")
                 RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                        .updateStreamInfo(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                        .updateStreamInfo(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
                                 streamInfo.streamUuid, eduStreamStatusReq)
                         .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                             override fun onSuccess(res: ResponseBody<String>?) {
@@ -93,16 +100,18 @@ internal open class EduUserImpl(
                             }
 
                             override fun onFailure(throwable: Throwable?) {
-                                val error = throwable as BusinessException
-                                callback.onFailure(error.code, error.message)
+                                var error = throwable as? BusinessException
+                                callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                        error?.message ?: throwable?.message)
                             }
                         }))
             } else {
                 /**mute*/
+                Log.e("EduUserImpl", "开始初始化和更新本地流-mute")
                 RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
                 RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
                 RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                        .updateStreamInfo(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                        .updateStreamInfo(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
                                 streamInfo.streamUuid, eduStreamStatusReq)
                         .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                             override fun onSuccess(res: ResponseBody<String>?) {
@@ -110,15 +119,17 @@ internal open class EduUserImpl(
                             }
 
                             override fun onFailure(throwable: Throwable?) {
-                                val error = throwable as BusinessException
-                                callback.onFailure(error.code, error.message)
+                                var error = throwable as? BusinessException
+                                callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                        error?.message ?: throwable?.message)
                             }
                         }))
             }
         } else {
             /**流信息不存在于本地，说明是新建*/
+            Log.e("EduUserImpl", "新建本地流信息")
             RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                    .createStream(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                    .createStream(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
                             streamInfo.streamUuid, eduStreamStatusReq)
                     .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                         override fun onSuccess(res: ResponseBody<String>?) {
@@ -128,16 +139,18 @@ internal open class EduUserImpl(
                         }
 
                         override fun onFailure(throwable: Throwable?) {
-                            val error = throwable as BusinessException
-                            callback.onFailure(error.code, error.message)
+                            var error = throwable as? BusinessException
+                            callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                    error?.message ?: throwable?.message)
                         }
                     }))
         }
     }
 
     override fun unPublishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
+        Log.e("EduUserImpl", "删除本地流")
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                .deleteStream(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                .deleteStream(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
                         streamInfo.streamUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
@@ -147,8 +160,9 @@ internal open class EduUserImpl(
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        val error = throwable as BusinessException
-                        callback.onFailure(error.code, error.message)
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
                     }
                 }))
     }
@@ -156,7 +170,7 @@ internal open class EduUserImpl(
     override fun sendRoomMessage(message: String, callback: EduCallback<EduMsg>) {
         val roomMsgReq = EduRoomMsgReq(message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendChannelCustomMessage(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, roomMsgReq)
+                .sendChannelCustomMessage(APPID, eduRoom.roomInfo.roomUuid, roomMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
@@ -164,8 +178,9 @@ internal open class EduUserImpl(
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        val error = throwable as BusinessException
-                        callback.onFailure(error.code, error.message)
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
                     }
                 }))
     }
@@ -173,8 +188,7 @@ internal open class EduUserImpl(
     override fun sendUserMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduMsg>) {
         val userMsgReq = EduUserMsgReq(message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendPeerCustomMessage(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, remoteUser.userUuid,
-                        userMsgReq)
+                .sendPeerCustomMessage(APPID, eduRoom.roomInfo.roomUuid, remoteUser.userUuid, userMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
@@ -182,8 +196,9 @@ internal open class EduUserImpl(
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        val error = throwable as BusinessException
-                        callback.onFailure(error.code, error.message)
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
                     }
                 }))
     }
@@ -191,7 +206,7 @@ internal open class EduUserImpl(
     override fun sendRoomChatMessage(message: String, callback: EduCallback<EduMsg>) {
         val roomChatMsgReq = EduRoomChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendRoomChatMsg(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, roomChatMsgReq)
+                .sendRoomChatMsg(APPID, eduRoom.roomInfo.roomUuid, roomChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
@@ -199,8 +214,9 @@ internal open class EduUserImpl(
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        val error = throwable as BusinessException
-                        callback.onFailure(error.code, error.message)
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
                     }
                 }))
     }
@@ -208,8 +224,7 @@ internal open class EduUserImpl(
     override fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduMsg>) {
         val userChatMsgReq = EduUserChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendPeerChatMsg(USERTOKEN, APPID, eduRoom.roomInfo.roomUuid, remoteUser.userUuid,
-                        userChatMsgReq)
+                .sendPeerChatMsg(APPID, eduRoom.roomInfo.roomUuid, remoteUser.userUuid, userChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
@@ -217,8 +232,9 @@ internal open class EduUserImpl(
                     }
 
                     override fun onFailure(throwable: Throwable?) {
-                        val error = throwable as BusinessException
-                        callback.onFailure(error.code, error.message)
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
                     }
                 }))
     }

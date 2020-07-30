@@ -1,5 +1,6 @@
 package io.agora.education.impl.room.data.request
 
+import io.agora.Convert
 import io.agora.education.api.room.data.RoomCreateOptions
 import io.agora.education.api.room.data.RoomProperty
 import io.agora.education.api.room.data.RoomProperty.Companion.KEY_STUDENT_LIMIT
@@ -24,7 +25,7 @@ class RoomCreateOptionsReq constructor() {
 
             var roomProperties = roomCreateOptions.properties
             for (roomProperty in roomProperties) {
-                modifyRoleConfig(mRoleConfig, roomProperty, roomCreateOptions.roomType)
+                modifyRoleConfig(mRoleConfig, roomProperty, Convert.convertRoomType(roomCreateOptions.roomType))
             }
             roomCreateOptionsReq.roleConfig = mRoleConfig
             return roomCreateOptionsReq
@@ -61,7 +62,7 @@ class RoleConfig constructor() {
 }
 
 class LimitConfig constructor(val limit: Int) {
-    var verifyType = VerifyType.NotAllow.value
+    var verifyType = VerifyType.Allow.value
 
     constructor(limit: Int, verifyType: Int) : this(limit) {
         this.verifyType = verifyType

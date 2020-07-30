@@ -15,7 +15,7 @@ internal interface RoomService {
 
     /**创建房间*/
     /**@return 房间id(roomId)*/
-    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/config")
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/config")
     fun createClassroom(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -25,7 +25,6 @@ internal interface RoomService {
     /**查询房间信息*/
     @GET("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/info")
     fun queryClassroomState(
-            @Header("userToken") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String
     ): Call<ResponseBody<EduEntryRoomRes>>
@@ -33,7 +32,6 @@ internal interface RoomService {
     /**更新课堂状态*/
     @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
     fun updateClassroomState(
-            @Header("userToken")userToken: String,
             @Path("appId")  appId: String,
             @Path("roomUUid") roomUUid: String,
             @Path("state") state: Int
@@ -43,7 +41,6 @@ internal interface RoomService {
      * 包括禁止聊天、禁止摄像头、禁用麦克风*/
     @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/roles/mute")
     fun updateClassroomMuteState(
-            @Header("userToken")userToken: String,
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,
             @Body eduRoomMuteStateReq: EduRoomMuteStateReq
@@ -52,7 +49,6 @@ internal interface RoomService {
     /**发送自定义的频道消息*/
     @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/channel")
     fun sendChannelCustomMessage(
-            @Header("userToken") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Body eduRoomMsgReq: EduRoomMsgReq
@@ -61,7 +57,6 @@ internal interface RoomService {
     /**发送自定义的点对点消息*/
     @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/peer")
     fun sendPeerCustomMessage(
-            @Header("userToken") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Path("toUserUuid") toUserUuid: String,
@@ -71,7 +66,6 @@ internal interface RoomService {
     /**发送课堂内群聊消息*/
     @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/chat")
     fun sendRoomChatMsg(
-            @Header("userToken") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Body eduRoomChatMsgReq: EduRoomChatMsgReq
@@ -80,7 +74,6 @@ internal interface RoomService {
     /**发送用户间的私聊消息*/
     @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/peer")
     fun sendPeerChatMsg(
-            @Header("userToken") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Path("toUserUuid") toUserUuid: String,

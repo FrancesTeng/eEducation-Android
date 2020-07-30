@@ -2,6 +2,8 @@ package io.agora.base.network;
 
 import androidx.annotation.NonNull;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,7 +92,15 @@ public class RetrofitManager {
         public void onResponse(@NonNull Call<T> call, @NonNull Response<T> response) {
             if (response.errorBody() != null) {
                 try {
-                    throwableCallback(new Throwable(response.errorBody().string()));
+                    String errorBodyStr = new String(response.errorBody().bytes());
+                    ResponseBody errorBody = new Gson().fromJson(errorBodyStr, ResponseBody.class);
+                    if(errorBody == null){
+                        throwableCallback(new Throwable(response.errorBody().string()));
+                    }
+                    else
+                    {
+                        throwableCallback(new BusinessException(errorBody.code, errorBody.msg.toString()));
+                    }
                 } catch (IOException e) {
                     throwableCallback(e);
                 }

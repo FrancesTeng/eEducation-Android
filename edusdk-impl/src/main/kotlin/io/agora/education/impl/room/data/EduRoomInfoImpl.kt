@@ -14,8 +14,8 @@ enum class IncludeOffline(var value: Int) {
     Include(1)
 }
 
-/**请求增强数据时，用于分辨此用户是上线用户还是下线用户*/
-enum class OnlineState(var value: Int) {
-    Online(1),
-    Offline(0)
+/**请求增量数据时，用于分辨此用户是有效还是无效*/
+enum class ValidState(var value: Int) {
+    Valid(1),
+    Invalid(0)
 }

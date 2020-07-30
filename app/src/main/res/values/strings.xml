@@ -37,4 +37,5 @@
     <string name="request_error">Server request error: %1$d</string>
     <string name="wait_record">Please wait for recording finished</string>
     <string name="follow_tips">The teacher is moving the whiteboard. Please do not draw on it</string>
+    <string name="function_error">Function Error(code:%d;reason:%s)</string>
 </resources>

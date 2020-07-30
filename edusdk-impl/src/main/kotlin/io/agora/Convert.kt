@@ -56,6 +56,20 @@ class Convert {
             return videoEncoderConfiguration
         }
 
+        fun convertRoomType(roomType: Int): RoomType {
+            return when (roomType) {
+                RoomType.ONE_ON_ONE.value -> {
+                    RoomType.ONE_ON_ONE
+                }
+                RoomType.SMALL_CLASS.value -> {
+                    RoomType.SMALL_CLASS
+                }
+                else -> {
+                    RoomType.LARGE_CLASS
+                }
+            }
+        }
+
         /**根据EduUserRole枚举返回角色字符串;大班课状态下，如果学生自动发流，那么他就是broadcaster*/
         fun convertUserRole(role: EduUserRole, roomType: RoomType, autoPublish: Boolean): String {
             return if (role == EduUserRole.TEACHER) {

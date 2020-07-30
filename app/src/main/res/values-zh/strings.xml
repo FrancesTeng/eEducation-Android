@@ -34,4 +34,5 @@
     <string name="request_error">服务器请求失败：%1$d</string>
     <string name="wait_record">请等待录制完成</string>
     <string name="follow_tips">老师正在控制白板，请勿书写</string>
+    <string name="function_error">功能出错（code：%d；原因：%s）</string>
 </resources>

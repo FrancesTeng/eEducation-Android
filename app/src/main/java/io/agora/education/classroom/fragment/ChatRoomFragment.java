@@ -101,7 +101,7 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
                 ChannelMsg.ReplayMsg msg = (ChannelMsg.ReplayMsg) object;
                 if (context instanceof BaseClassActivity) {
                     RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, RecordService.class)
-                            .record(EduApplication.getAppId(), ((BaseClassActivity) context).getRoomId(), msg.recordId)
+                            .record(EduApplication.getAppId(), ((BaseClassActivity) context).getRoomUuid(), msg.recordId)
                             .enqueue(new BaseCallback<>(data -> {
                                 if (data.isFinished()) {
                                     String url = data.getTeacherRecordUrl();
@@ -131,7 +131,7 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
         if (KeyEvent.KEYCODE_ENTER == keyCode && KeyEvent.ACTION_DOWN == event.getAction() && text.trim().length() > 0) {
             if (context instanceof BaseClassActivity) {
                 RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, RoomService.class)
-                        .roomChat(EduApplication.getAppId(), ((BaseClassActivity) context).getRoomId(), new ChatReq(text, TEXT))
+                        .roomChat(EduApplication.getAppId(), ((BaseClassActivity) context).getRoomUuid(), new ChatReq(text, TEXT))
                         .enqueue(new BaseCallback<>(data -> edit_send_msg.setText("")));
             }
             return true;

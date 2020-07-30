@@ -14,7 +14,7 @@ internal class RteChannelImpl(
 
     private val rtmChannelListener = object : RtmChannelListener {
         override fun onAttributesUpdated(p0: MutableList<RtmChannelAttribute>?) {
-            TODO("Not yet implemented")
+
         }
 
         /**收到频道内消息(包括频道内的群聊消息和各种房间配置、人员信息、流信息等)*/
@@ -23,15 +23,15 @@ internal class RteChannelImpl(
         }
 
         override fun onMemberJoined(p0: RtmChannelMember?) {
-            TODO("Not yet implemented")
+
         }
 
         override fun onMemberLeft(p0: RtmChannelMember?) {
-            TODO("Not yet implemented")
+
         }
 
         override fun onMemberCountUpdated(p0: Int) {
-            TODO("Not yet implemented")
+
         }
     }
 
@@ -91,11 +91,11 @@ internal class RteChannelImpl(
     override fun leave() {
         rtmChannel.leave(object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onFailure(p0: ErrorInfo?) {
-                TODO("Not yet implemented")
+
             }
         })
         rtcChannel.leaveChannel()
