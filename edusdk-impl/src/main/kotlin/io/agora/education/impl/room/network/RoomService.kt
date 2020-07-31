@@ -1,6 +1,7 @@
 package io.agora.education.impl.room.network
 
 import io.agora.education.impl.ResponseBody
+import io.agora.education.impl.room.data.request.EduSyncRoomReq
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.data.response.EduEntryRoomRes
 import io.agora.education.impl.user.data.request.*
@@ -29,6 +30,25 @@ internal interface RoomService {
             @Path("roomUuid") roomUuid: String
     ): Call<ResponseBody<EduEntryRoomRes>>
 
+    /**请求同步房间的信息（包括RoomInfo以及人流信息）*/
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/sync")
+    fun syncRoom(
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Body eduSyncRoomReq: EduSyncRoomReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**为房间添加自定义属性
+     * @param key 属性key
+     * @param value 属性值（null为删除）*/
+    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/properties/{key}")
+    fun setProperty(
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Path("key") key: String,
+            @Field("value") value: String
+    )
+
     /**更新课堂状态*/
     @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
     fun updateClassroomState(
@@ -55,7 +75,7 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送自定义的点对点消息*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/peer")
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{toUserUuid}/messages/peer")
     fun sendPeerCustomMessage(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -64,7 +84,7 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送课堂内群聊消息*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/chat")
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/chat/channel")
     fun sendRoomChatMsg(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -72,7 +92,7 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送用户间的私聊消息*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/peer")
+    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{toUserUuid}/chat/peer")
     fun sendPeerChatMsg(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,

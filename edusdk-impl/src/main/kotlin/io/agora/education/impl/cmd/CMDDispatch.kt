@@ -19,9 +19,36 @@ import io.agora.rte.RteEngineImpl
 class CMDDispatch {
 
     companion object {
+        /**数据同步期间屏蔽针对room和userStream的改变*/
+        var roomStateChangeEnable: Boolean = true
+        var userStreamChangeEnable: Boolean = true
+
+        fun disableDataChangeEnable() {
+            roomStateChangeEnable = false
+            userStreamChangeEnable = false
+        }
+
+        private fun filterMsg(cmdResponseBody: CMDResponseBody<Any>): Boolean {
+            var pass = true
+            when (cmdResponseBody.cmd) {
+                CMDId.RoomStateChange.value, CMDId.RoomMuteStateChange.value -> {
+                    pass = roomStateChangeEnable
+                }
+                CMDId.UserStateChange.value, CMDId.UserJoinOrLeave.value,
+                CMDId.StreamStateChange.value -> {
+                    pass = userStreamChangeEnable
+                }
+            }
+            return pass
+        }
+
         fun dispatchChannelMsg(text: String, eduRoom: EduRoom, eventListener: EduRoomEventListener?) {
             val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(text, object :
                     TypeToken<CMDResponseBody<CMDRoomState>>() {}.type)
+            /**过滤消息*/
+            if (filterMsg(cmdResponseBody)) {
+                return
+            }
             when (cmdResponseBody.cmd) {
                 CMDId.RoomStateChange.value -> {
                     /**课堂状态发生改变*/
@@ -60,7 +87,9 @@ class CMDDispatch {
                 }
                 CMDId.ChannelMsgReceived.value -> {
                     /**频道内的聊天消息*/
+                    Log.e("CMDDispatch", "收到频道内聊天消息")
                     val eduMsg = buildEduMsg(text, eduRoom) as EduChatMsg
+                    Log.e("CMDDispatch", "构造出eduMsg")
                     eventListener?.onRoomChatMessageReceived(eduMsg, eduRoom)
                 }
                 CMDId.ChannelCustomMsgReceived.value -> {
@@ -177,6 +206,7 @@ class CMDDispatch {
                     TypeToken<CMDResponseBody<RtmMsg>>() {}.type)
             val rtmMsg = cmdResponseBody.data
             val fromUser = Convert.convertUserInfo(rtmMsg.fromUser, (eduRoom as EduRoomImpl).getCurRoomType())
+            Log.e("CMDDispatch", "构造buildEduMsg")
             return if (rtmMsg.type != null) {
                 EduChatMsg(fromUser, rtmMsg.message, cmdResponseBody.timestamp, rtmMsg.type)
             } else {
@@ -206,6 +236,23 @@ class CMDDispatch {
                     /**点对点的自定义消息(可以是用户自定义的信令)*/
                     val eduMsg = buildEduMsg(text, eduRoom)
                     eventListener?.onUserMessageReceived(eduMsg, eduRoom)
+                }
+                CMDId.SyncRoomInfo.value -> {
+                    /**接收到需要同步的房间信息*/
+                    val cmdSyncRoomInfoRes = Gson().fromJson<CMDResponseBody<CMDSyncRoomInfoRes>>(text,
+                            object : TypeToken<CMDResponseBody<CMDSyncRoomInfoRes>>() {}.type)
+                    val event = CMDProcessor.syncRoomInfoToEduRoom(cmdSyncRoomInfoRes.data, eduRoom)
+                    /**roomInfo同步完成，打开开关*/
+                    roomStateChangeEnable = true
+                    /**数据发生来改变就回调出去*/
+                    event?.let {
+                        eventListener?.onRoomStatusChanged(event, null, eduRoom)
+                    }
+                }
+                CMDId.SyncUsrStreamList.value -> {
+                    /**接收到需要同步的人流信息*/
+                    val cmdSyncUserStreamRes = Gson().fromJson<CMDResponseBody<CMDSyncUsrStreamRes>>(text,
+                            object : TypeToken<CMDResponseBody<CMDSyncUsrStreamRes>>() {}.type)
                 }
             }
         }

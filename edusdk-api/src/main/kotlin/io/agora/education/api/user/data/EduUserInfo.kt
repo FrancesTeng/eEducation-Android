@@ -11,6 +11,8 @@ open class EduUserInfo(
         val role: EduUserRole,
         var isChatAllowed: Boolean?
 ) {
+    var userProperties: Any? = null
+
     override fun equals(other: Any?): Boolean {
         if(other == null || other !is EduUserInfo)
         {

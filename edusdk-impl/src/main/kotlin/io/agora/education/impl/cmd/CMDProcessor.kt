@@ -1,6 +1,8 @@
 package io.agora.education.impl.cmd
 
 import io.agora.Convert
+import io.agora.education.api.room.EduRoom
+import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.stream.data.EduStreamInfo
@@ -271,6 +273,44 @@ class CMDProcessor {
                 }
             }
             return removedStreams
+        }
+
+
+        /**把RTM通知过来的房间信息同步至eduRoom中
+         * @return 房间中那种信息发生了改变
+         *     RoomStatusEvent.COURSE_STATE : 课堂信息(自定义信息或状态)发生了改变
+         *     RoomStatusEvent.STUDENT_STATE : 课堂中关于学生的设置发生了改变
+         *     null   没有任何改变发生*/
+        fun syncRoomInfoToEduRoom(roomInfoRes: CMDSyncRoomInfoRes, eduRoom: EduRoom): RoomStatusEvent? {
+            var event: RoomStatusEvent? = null
+            /**roomUuid和roomName是final，也不会被改变，不用同步*/
+            if (eduRoom.roomInfo.roomProperties != roomInfoRes.roomInfo.roomProperties) {
+                eduRoom.roomInfo.roomProperties = roomInfoRes.roomInfo.roomProperties
+                event = RoomStatusEvent.COURSE_STATE
+            }
+            val roomState = roomInfoRes.roomState
+            val courseState = Convert.convertRoomState(roomState?.state!!)
+            if (eduRoom.roomStatus.courseState != courseState) {
+                eduRoom.roomStatus.courseState = courseState
+                event = RoomStatusEvent.COURSE_STATE
+            }
+            if (eduRoom.roomStatus.startTime != roomState.startTime) {
+                eduRoom.roomStatus.startTime = roomState.startTime
+                event = RoomStatusEvent.COURSE_STATE
+            }
+            val isStudentChatAllowed = Convert.extractStudentChatAllowState(roomState,
+                    (eduRoom as EduRoomImpl).getCurRoomType())
+            if (eduRoom.roomStatus.isStudentChatAllowed != isStudentChatAllowed) {
+                eduRoom.roomStatus.isStudentChatAllowed = isStudentChatAllowed
+                event = RoomStatusEvent.STUDENT_CHAT
+            }
+
+            return event
+        }
+
+        /**把RTM通知过来的人流信息同步至eduRoom中*/
+        fun syncUsrStreamListToEduRoom(useStreamRes: CMDSyncUsrStreamRes, eduRoom: EduRoom) {
+
         }
     }
 }

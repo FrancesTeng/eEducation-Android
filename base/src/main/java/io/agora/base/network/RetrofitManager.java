@@ -99,7 +99,7 @@ public class RetrofitManager {
                     }
                     else
                     {
-                        throwableCallback(new BusinessException(errorBody.code, errorBody.msg.toString()));
+                        throwableCallback(new BusinessException(errorBody.code, String.valueOf(errorBody.msg)));
                     }
                 } catch (IOException e) {
                     throwableCallback(e);

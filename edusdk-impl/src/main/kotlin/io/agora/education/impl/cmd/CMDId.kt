@@ -26,5 +26,9 @@ enum class CMDId(var value: Int) {
     /**点对点-用户-私聊*/
     PeerMsgReceived(1),
     /**点对点--自定义消息(可以使用户的信令)*/
-    PeerCustomMsgReceived(99)
+    PeerCustomMsgReceived(99),
+    /**同步房间信息的通知*/
+    SyncRoomInfo(2),
+    /**同步人流列表的通知*/
+    SyncUsrStreamList(3)
 }
