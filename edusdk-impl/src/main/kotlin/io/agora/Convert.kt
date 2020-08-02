@@ -14,11 +14,10 @@ import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.education.impl.cmd.CMDStreamActionMsg
+import io.agora.education.impl.cmd.CMDSyncStreamRes
 import io.agora.education.impl.cmd.CMDUserStateMsg
 import io.agora.rtc.video.VideoEncoderConfiguration
-import io.agora.rtm.RtmStatusCode
 import io.agora.rtm.RtmStatusCode.ConnectionChangeReason.*
-import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED
 import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
 
 class Convert {
@@ -192,6 +191,15 @@ class Convert {
                     fromUserInfo, cmdStreamActionMsg.updateTime)
         }
 
+        fun convertStreamInfo(syncStreamRes: CMDSyncStreamRes, eduUserInfo: EduUserInfo): EduStreamInfo {
+            val videoSourceType = Convert.convertVideoSourceType(syncStreamRes.videoSourceType)
+            val hasVideo = syncStreamRes.videoState == EduVideoState.Open.value
+            val hasAudio = syncStreamRes.audioState == EduAudioState.Open.value
+            return EduStreamInfoImpl(syncStreamRes.streamUuid,
+                    syncStreamRes.streamName, videoSourceType, hasVideo, hasAudio, eduUserInfo,
+                    syncStreamRes.updateTime)
+        }
+
         fun convertVideoSourceType(value: Int): VideoSourceType {
             return when (value) {
                 VideoSourceType.CAMERA.value -> {
@@ -218,7 +226,7 @@ class Convert {
             var allow = false
             when (roomType) {
                 RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
-                    eduEntryRoomStateRes.muteChat?.audience?.let {
+                    eduEntryRoomStateRes.muteChat?.broadcaster?.let {
                         allow = eduEntryRoomStateRes.muteChat?.broadcaster?.toInt() == EduMuteState.Enable.value
                     }
                 }

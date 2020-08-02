@@ -13,8 +13,12 @@ import io.agora.education.api.room.listener.EduRoomEventListener
 import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.user.data.EduUserEvent
+import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.room.EduRoomImpl
+import io.agora.education.impl.room.data.request.EduSyncFinished
+import io.agora.education.impl.room.data.request.EduSyncStep
 import io.agora.rte.RteEngineImpl
+import java.util.*
 
 class CMDDispatch {
 
@@ -23,10 +27,22 @@ class CMDDispatch {
         var roomStateChangeEnable: Boolean = true
         var userStreamChangeEnable: Boolean = true
 
+        /**关闭 数据改变开关，说明因为某种原因需要同步数据
+         * 1：join流程
+         * 2：断线重连
+         * 3：数据超时，重新求情*/
         fun disableDataChangeEnable() {
             roomStateChangeEnable = false
             userStreamChangeEnable = false
         }
+
+        /**数据同步的第二阶段，发生改变的有效数据*/
+        val validOnlineUserList = mutableListOf<EduUserInfo>()
+        val validModifiedUserList = mutableListOf<EduUserEvent>()
+        val validOfflineUserList = mutableListOf<EduUserEvent>()
+        val validAddedStreamList = mutableListOf<EduStreamEvent>()
+        val validModifiedStreamList = mutableListOf<EduStreamEvent>()
+        val validRemovedStreamList = mutableListOf<EduStreamEvent>()
 
         private fun filterMsg(cmdResponseBody: CMDResponseBody<Any>): Boolean {
             var pass = true
@@ -237,22 +253,107 @@ class CMDDispatch {
                     val eduMsg = buildEduMsg(text, eduRoom)
                     eventListener?.onUserMessageReceived(eduMsg, eduRoom)
                 }
+                /**join流程中才会接收到此消息*/
                 CMDId.SyncRoomInfo.value -> {
                     /**接收到需要同步的房间信息*/
                     val cmdSyncRoomInfoRes = Gson().fromJson<CMDResponseBody<CMDSyncRoomInfoRes>>(text,
                             object : TypeToken<CMDResponseBody<CMDSyncRoomInfoRes>>() {}.type)
-                    val event = CMDProcessor.syncRoomInfoToEduRoom(cmdSyncRoomInfoRes.data, eduRoom)
-                    /**roomInfo同步完成，打开开关*/
-                    roomStateChangeEnable = true
-                    /**数据发生来改变就回调出去*/
-                    event?.let {
-                        eventListener?.onRoomStatusChanged(event, null, eduRoom)
+                    /**数据同步流程中需要根据requestId判断，此次接收到的数据是否对应于当前请求*/
+                    if (cmdResponseBody.requestId == (eduRoom as EduRoomImpl).eduSyncRoomReq.requestId) {
+                        val event = CMDProcessor.syncRoomInfoToEduRoom(cmdSyncRoomInfoRes.data, eduRoom)
+                        /**roomInfo同步完成，打开开关*/
+                        roomStateChangeEnable = true
+                        /**数据发生来改变就回调出去*/
+                        event?.let {
+                            eventListener?.onRoomStatusChanged(event, null, eduRoom)
+                        }
+                        /**roomInfo同步成功*/
+                        (eduRoom as EduRoomImpl).syncRoomOrAllUserStreamSuccess(true, null)
                     }
                 }
+                /**至于发起数据同步请求*/
                 CMDId.SyncUsrStreamList.value -> {
                     /**接收到需要同步的人流信息*/
-                    val cmdSyncUserStreamRes = Gson().fromJson<CMDResponseBody<CMDSyncUsrStreamRes>>(text,
-                            object : TypeToken<CMDResponseBody<CMDSyncUsrStreamRes>>() {}.type)
+                    val cmdSyncUserStreamRes = Gson().fromJson<CMDResponseBody<CMDSyncUserStreamRes>>(text,
+                            object : TypeToken<CMDResponseBody<CMDSyncUserStreamRes>>() {}.type)
+                    /**数据同步流程中需要根据requestId判断，此次接收到的数据是否对应于当前请求*/
+                    if (cmdResponseBody.requestId == (eduRoom as EduRoomImpl).eduSyncRoomReq.requestId) {
+                        val syncUserStreamData = cmdSyncUserStreamRes.data
+                        /**第一阶段（属于join流程）（根据nextId全量），如果中间断连，可根据nextId续传;
+                         * 第二阶段（不属于join流程）（根据ts增量），如果中间断连，可根据ts续传*/
+                        when (syncUserStreamData.step) {
+                            EduSyncStep.FIRST.value -> {
+                                /**把全量人流数据同步到本地缓存中*/
+                                CMDProcessor.syncUserStreamListToEduRoomWithFirst(syncUserStreamData, eduRoom)
+                                /**更新全局的nextId,方便在后续出现异常的时候可以以当前节点为起始步骤继续同步*/
+                                (eduRoom as EduRoomImpl).eduSyncRoomReq.nextId = syncUserStreamData.nextId.toString()
+                                /**如果步骤一同步完成，则说明join流程中的同步全量人流数据阶段完成
+                                 * 同时还需要把全局的step改为2，防止在步骤二过程出现异常后，再次发起的同步请求中step还是1*/
+                                val firstFinished = syncUserStreamData.isFinished == EduSyncFinished.YES.value
+                                if (firstFinished) {
+                                    (eduRoom as EduRoomImpl).eduSyncRoomReq.step = EduSyncStep.SECOND.value
+                                }
+                                /**接收到一部分全量数据，就调用一次，目的是为了刷新rtm超时任务*/
+                                (eduRoom as EduRoomImpl).syncRoomOrAllUserStreamSuccess(null, firstFinished)
+                            }
+                            EduSyncStep.SECOND.value -> {
+                                val validDatas = CMDProcessor.syncUserStreamListToEduRoomWithSecond(
+                                        syncUserStreamData, eduRoom)
+                                /**获取有效数据*/
+                                validOnlineUserList.addAll(validDatas[0] as MutableList<EduUserInfo>)
+                                validModifiedUserList.addAll(validDatas[1] as MutableList<EduUserEvent>)
+                                validOfflineUserList.addAll(validDatas[2] as MutableList<EduUserEvent>)
+                                validAddedStreamList.addAll(validDatas[3] as MutableList<EduStreamEvent>)
+                                validModifiedStreamList.addAll(validDatas[4] as MutableList<EduStreamEvent>)
+                                validRemovedStreamList.addAll(validDatas[5] as MutableList<EduStreamEvent>)
+                                /**更新全局的nextTs,方便在后续出现异常的时候可以以当前节点为起始步骤继续同步*/
+                                (eduRoom as EduRoomImpl).eduSyncRoomReq.nextTs = syncUserStreamData.nextTs
+                                val secondFinished = syncUserStreamData.isFinished == EduSyncFinished.YES.value
+                                if(secondFinished) {
+                                    /**第二阶段完成，增量的人流数据同步完成；把有效的增量数据回调出去*/
+                                    if(validOnlineUserList.size > 0) {
+                                        val list = mutableListOf<EduUserInfo>()
+                                        Collections.copy(list, validOnlineUserList)
+                                        eduRoom.eventListener?.onRemoteUsersJoined(list, eduRoom)
+                                    }
+                                    if(validModifiedUserList.size > 0) {
+                                        val list = mutableListOf<EduUserEvent>()
+                                        Collections.copy(list, validModifiedUserList)
+                                        eduRoom.eventListener?.onRemoteUserUpdated(list, eduRoom)
+                                    }
+                                    if(validOfflineUserList.size > 0) {
+                                        val list = mutableListOf<EduUserEvent>()
+                                        Collections.copy(list, validOfflineUserList)
+                                        eduRoom.eventListener?.onRemoteUsersLeft(list, eduRoom)
+                                    }
+                                    if(validAddedStreamList.size > 0) {
+                                        val list = mutableListOf<EduStreamEvent>()
+                                        Collections.copy(list, validAddedStreamList)
+                                        eduRoom.eventListener?.onRemoteStreamsAdded(list, eduRoom)
+                                    }
+                                    if(validModifiedStreamList.size > 0) {
+                                        val list = mutableListOf<EduStreamEvent>()
+                                        Collections.copy(list, validModifiedStreamList)
+                                        eduRoom.eventListener?.onRemoteStreamsUpdated(list, eduRoom)
+                                    }
+                                    if(validRemovedStreamList.size > 0) {
+                                        val list = mutableListOf<EduStreamEvent>()
+                                        Collections.copy(list, validRemovedStreamList)
+                                        eduRoom.eventListener?.onRemoteStreamsRemoved(list, eduRoom)
+                                    }
+                                    /**此次增量统计完成，清空集合*/
+                                    validOnlineUserList.clear()
+                                    validModifiedUserList.clear()
+                                    validOfflineUserList.clear()
+                                    validAddedStreamList.clear()
+                                    validModifiedStreamList.clear()
+                                    validRemovedStreamList.clear()
+                                }
+                                /**接收到一部分增量数据，就调用一次，目的是为了刷新rtm超时任务*/
+                                (eduRoom as EduRoomImpl).interruptRtmTimeout(secondFinished)
+                            }
+                        }
+                    }
                 }
             }
         }

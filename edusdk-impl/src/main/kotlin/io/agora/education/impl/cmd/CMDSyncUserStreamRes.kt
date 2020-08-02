@@ -1,18 +1,19 @@
 package io.agora.education.impl.cmd
 
-class CMDSyncUsrStreamRes(
+class CMDSyncUserStreamRes(
         val step: Int,
         val isFinished: Int,
         val count: Int,
         val total: Int,
         val nextId: Int,
         val nextTs: Long,
-        val list: MutableList<CMDSyncUsrRes>
+        val list: MutableList<CMDSyncUserRes>
 ) {
 }
 
 
-class CMDSyncUsrRes(
+/**更新流数据，必定更新用户数据*/
+class CMDSyncUserRes(
         val userName: String,
         val userUuid: String,
         val role: String,
@@ -21,6 +22,7 @@ class CMDSyncUsrRes(
         val updateTime: Long,
         /**标识此用户是新下线用户还是新上线用户(ValidState)*/
         val state: Int,
+        /**这些流的所有者是Uuid代表的用户(因为用户可能有多路流，所以用集合)*/
         val streams: MutableList<CMDSyncStreamRes>
 ) {
 }

@@ -4,5 +4,6 @@ class CMDResponseBody<T>(
         val cmd: Int,
         val version: Int,
         val timestamp: Long,
+        val requestId: String?,
         val data: T) {
 }

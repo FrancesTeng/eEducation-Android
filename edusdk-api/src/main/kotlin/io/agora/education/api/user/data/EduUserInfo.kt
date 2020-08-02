@@ -10,7 +10,7 @@ open class EduUserInfo(
         val userName: String,
         val role: EduUserRole,
         var isChatAllowed: Boolean?
-) {
+): Cloneable {
     var userProperties: Any? = null
 
     override fun equals(other: Any?): Boolean {
@@ -30,6 +30,8 @@ open class EduUserInfo(
         var1 = (var1 + (var2?.hashCode() ?: 0)) * 31
         return var1
     }
+
+
 }
 enum class EduChatState(var value: Int) {
     NotAllow(1),

@@ -39,7 +39,7 @@ interface EduRoomEventListener {
 
     fun onRemoteStreamsRemoved(streamEvents: MutableList<EduStreamEvent>, fromClassRoom: EduRoom)
 
-    fun onRoomStatusChanged(event: RoomStatusEvent, operatorUser: EduUserInfo, fromClassRoom: EduRoom)
+    fun onRoomStatusChanged(event: RoomStatusEvent, operatorUser: EduUserInfo?, fromClassRoom: EduRoom)
 
     fun onConnectionStateChanged(state: ConnectionState, reason: ConnectionStateChangeReason, fromClassRoom: EduRoom)
 

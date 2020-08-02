@@ -20,7 +20,13 @@ class EduSyncRoomReq(
 }
 
 /**1第一阶段（根据nextId全量）2.第二阶段（根据ts增量）*/
-enum class EduSncStep(var value: Int) {
+enum class EduSyncStep(var value: Int) {
     FIRST(1),
     SECOND(2)
+}
+
+/**同步数据过程是否结束*/
+enum class EduSyncFinished(var value: Int) {
+    NO(0),
+    YES(1)
 }
