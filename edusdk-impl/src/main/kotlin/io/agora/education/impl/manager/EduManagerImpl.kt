@@ -41,7 +41,7 @@ internal class EduManagerImpl(
 
     override fun createClassroom(config: RoomCreateOptions, callback: EduCallback<EduRoom>) {
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .createClassroom(APPID, config.roomUuid, RoomCreateOptionsReq.convertToSelf(config))
+                .createClassroom(APPID, config.roomUuid, Convert.convertRoomCreateOptions(config))
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
                     /**接口返回Int类型的roomId*/
                     override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {

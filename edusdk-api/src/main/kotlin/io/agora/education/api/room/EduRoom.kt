@@ -17,6 +17,8 @@ abstract class EduRoom(
         val roomInfo: EduRoomInfo,
         var roomStatus: EduRoomStatus
 ) {
+    var roomProperties: Map<String, String?>? = null
+
     lateinit var localUser: EduUser
     lateinit var board: EduBoard
     lateinit var record: EduRecord
@@ -27,9 +29,19 @@ abstract class EduRoom(
 
     abstract fun joinClassroomAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
 
+    abstract fun getStudentCount(): Int
+
+    abstract fun getTeacherCount(): Int
+
+    abstract fun getStudentList(): MutableList<EduUserInfo>
+
+    abstract fun getTeacherList(): MutableList<EduUserInfo>
+
     abstract fun getFullStreamList(): MutableList<EduStreamInfo>
 
     abstract fun getFullUserList(): MutableList<EduUserInfo>
 
     abstract fun leave(callback: EduCallback<Unit>)
+
+    abstract fun release(callback: EduCallback<Unit>)
 }

@@ -5,5 +5,4 @@ open class EduRoomInfo(
         val roomUuid: String,
         val roomName: String
 ) {
-        var roomProperties: Any? = null
 }

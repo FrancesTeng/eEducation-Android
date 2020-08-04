@@ -22,6 +22,7 @@ import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.network.RoomService
+import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.stream.network.StreamService
 import io.agora.education.impl.user.data.request.*
 import io.agora.education.impl.user.data.request.EduRoomChatMsgReq
@@ -98,6 +99,8 @@ internal open class EduUserImpl(
                                 streamInfo.streamUuid, eduStreamStatusReq)
                         .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                             override fun onSuccess(res: ResponseBody<String>?) {
+                                /**更新流信息的更新时间*/
+                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
                                 RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
                                 RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
                                 callback.onSuccess(true)
@@ -119,6 +122,7 @@ internal open class EduUserImpl(
                                 streamInfo.streamUuid, eduStreamStatusReq)
                         .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                             override fun onSuccess(res: ResponseBody<String>?) {
+                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
                                 callback.onSuccess(true)
                             }
 

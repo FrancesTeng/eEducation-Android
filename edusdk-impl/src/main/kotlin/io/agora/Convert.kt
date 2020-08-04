@@ -2,6 +2,7 @@ package io.agora
 
 import io.agora.education.api.room.data.EduMuteState
 import io.agora.education.api.room.data.EduRoomState
+import io.agora.education.api.room.data.RoomCreateOptions
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.statistics.ConnectionState
 import io.agora.education.api.statistics.ConnectionStateChangeReason
@@ -16,12 +17,36 @@ import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.education.impl.cmd.CMDStreamActionMsg
 import io.agora.education.impl.cmd.CMDSyncStreamRes
 import io.agora.education.impl.cmd.CMDUserStateMsg
+import io.agora.education.impl.room.data.request.LimitConfig
+import io.agora.education.impl.room.data.request.RoleConfig
+import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.RtmStatusCode.ConnectionChangeReason.*
 import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
 
 class Convert {
     companion object {
+
+        fun convertRoomCreateOptions(roomCreateOptions: RoomCreateOptions): RoomCreateOptionsReq {
+            var roomCreateOptionsReq = RoomCreateOptionsReq()
+            roomCreateOptionsReq.roomName = roomCreateOptions.roomName
+
+            val mRoleConfig = convertRoleConfig(roomCreateOptions)
+            roomCreateOptionsReq.roleConfig = mRoleConfig
+            return roomCreateOptionsReq
+        }
+
+        fun convertRoleConfig(roomCreateOptions: RoomCreateOptions): RoleConfig {
+            val mRoleConfig = RoleConfig()
+            mRoleConfig.host = LimitConfig(roomCreateOptions.teacherLimit)
+            val roomType = convertRoomType(roomCreateOptions.roomType)
+            if (roomType == RoomType.LARGE_CLASS) {
+                mRoleConfig.audience = LimitConfig(roomCreateOptions.studentLimit)
+            } else {
+                mRoleConfig.broadcaster = LimitConfig(roomCreateOptions.studentLimit)
+            }
+            return mRoleConfig
+        }
 
         fun convertVideoEncoderConfig(videoEncoderConfig: VideoEncoderConfig): VideoEncoderConfiguration {
             var videoDimensions = VideoEncoderConfiguration.VideoDimensions(
@@ -223,7 +248,8 @@ class Convert {
 
         /**根据roomType从RTM返回的教室信息(EduEntryRoomStateRes)中提取muteChat(针对student而言)的状态*/
         fun extractStudentChatAllowState(eduEntryRoomStateRes: EduEntryRoomStateRes, roomType: RoomType): Boolean {
-            var allow = false
+            /**任何场景下，默认都允许学生聊天*/
+            var allow = true
             when (roomType) {
                 RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
                     eduEntryRoomStateRes.muteChat?.broadcaster?.let {

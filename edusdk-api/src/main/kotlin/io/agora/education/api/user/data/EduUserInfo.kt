@@ -11,7 +11,7 @@ open class EduUserInfo(
         val role: EduUserRole,
         var isChatAllowed: Boolean?
 ): Cloneable {
-    var userProperties: Any? = null
+    var userProperties: Map<String, String?>? = null
 
     override fun equals(other: Any?): Boolean {
         if(other == null || other !is EduUserInfo)

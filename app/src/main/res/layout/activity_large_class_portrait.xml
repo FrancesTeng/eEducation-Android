@@ -17,7 +17,8 @@
         android:id="@+id/layout_video_teacher"
         android:layout_width="match_parent"
         android:layout_height="@dimen/dp_204"
-        app:layout_constraintTop_toBottomOf="@id/title_view" />
+        app:layout_constraintTop_toBottomOf="@id/title_view"
+        tools:layout_editor_absoluteX="0dp" />
 
     <FrameLayout
         android:id="@+id/layout_video_student"

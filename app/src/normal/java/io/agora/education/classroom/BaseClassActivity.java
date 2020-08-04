@@ -35,8 +35,10 @@ import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.user.EduStudent;
+import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
+import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.api.user.listener.EduUserEventListener;
 import io.agora.education.base.BaseActivity;
 import io.agora.education.classroom.bean.channel.Room;
@@ -69,7 +71,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     private RoomEntry roomEntry;
     private boolean isJoining;
     private EduRoom eduRoom;
-    protected EduStreamInfo localStream;
+    private EduStreamInfo localStream;
 
     @Override
     protected void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
@@ -190,12 +192,34 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         });
     }
 
-    public final EduUserInfo getLocal() {
-        return eduRoom.localUser.getUserInfo();
+    public final EduUser getLocalUser() {
+        return eduRoom.localUser;
+    }
+
+    public EduStreamInfo getLocalStream() {
+        return localStream;
     }
 
     public final void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
         eduRoom.getLocalUser().sendRoomChatMessage(msg, callback);
+    }
+
+    protected List<EduStreamInfo> getCurFullStream() {
+        return eduRoom.getFullStreamList();
+    }
+
+    protected List<EduUserInfo> getCurFullUser() {
+        return eduRoom.getFullUserList();
+    }
+
+    protected EduStreamInfo getTeacherStream() {
+        for (EduStreamInfo streamInfo : getCurFullStream()) {
+            if(streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER))
+            {
+                return streamInfo;
+            }
+        }
+        return null;
     }
 
     @Room.Type
@@ -244,7 +268,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     /**
-     * 为流(主要是食品流)设置一个渲染区域
+     * 为流(主要是视频流)设置一个渲染区域
      */
     public final void renderStream(EduStreamInfo eduStreamInfo, ViewGroup viewGroup) {
         runOnUiThread(() -> eduRoom.getLocalUser().setStreamView(eduStreamInfo, viewGroup));
@@ -361,27 +385,27 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom fromClassRoom) {
     }
 
-    /**尝试获取并本地流数据*/
-    private void attemptUpdateLocalStream(@NonNull List list)
-    {
-        if(list.size() == 0) {
-            return;
-        }
-        if(list.get(0) instanceof EduStreamInfo){
-            for (EduStreamInfo streamInfo : ((List<EduStreamInfo>) list)) {
-                if (streamInfo.getPublisher().equals(eduRoom.localUser)) {
-                    localStream = streamInfo;
-                }
-            }
-        }
-        else if(list.get(0) instanceof EduStreamEvent) {
-            for (EduStreamEvent streamEvent : ((List<EduStreamEvent>) list)) {
-                if(streamEvent.getModifiedStream().getPublisher().equals(eduRoom.localUser)) {
-                    localStream = streamEvent.getModifiedStream();
-                }
-            }
-        }
-    }
+    /**尝试获取本地流数据*/
+//    private void attemptUpdateLocalStream(@NonNull List list)
+//    {
+//        if(list.size() == 0) {
+//            return;
+//        }
+//        if(list.get(0) instanceof EduStreamInfo){
+//            for (EduStreamInfo streamInfo : ((List<EduStreamInfo>) list)) {
+//                if (streamInfo.getPublisher().equals(eduRoom.localUser)) {
+//                    localStream = streamInfo;
+//                }
+//            }
+//        }
+//        else if(list.get(0) instanceof EduStreamEvent) {
+//            for (EduStreamEvent streamEvent : ((List<EduStreamEvent>) list)) {
+//                if(streamEvent.getModifiedStream().getPublisher().equals(eduRoom.localUser)) {
+//                    localStream = streamEvent.getModifiedStream();
+//                }
+//            }
+//        }
+//    }
 
     @Override
     public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
@@ -417,17 +441,17 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onLocalStreamAdded(@NotNull EduStreamEvent streamInfo) {
-
+    public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
+        localStream = streamEvent.getModifiedStream();
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamInfo) {
-
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
+        localStream = streamEvent.getModifiedStream();
     }
 
     @Override
-    public void onLocalSteamRemoved(@NotNull EduStreamEvent streamInfo) {
-
+    public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
+        localStream = null;
     }
 }

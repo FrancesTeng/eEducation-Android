@@ -8,9 +8,9 @@ import io.agora.education.api.user.data.EduUserInfo
 interface EduUserEventListener {
     fun onLocalUserUpdated(userEvent: EduUserEvent)
 
-    fun onLocalStreamAdded(streamInfo: EduStreamEvent)
+    fun onLocalStreamAdded(streamEvent: EduStreamEvent)
 
-    fun onLocalStreamUpdated(streamInfo: EduStreamEvent)
+    fun onLocalStreamUpdated(streamEvent: EduStreamEvent)
 
-    fun onLocalSteamRemoved(streamInfo: EduStreamEvent)
+    fun onLocalStreamRemoved(streamEvent: EduStreamEvent)
 }

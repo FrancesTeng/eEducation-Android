@@ -21,22 +21,23 @@ class RoomCreateOptions(
         var roomName: String,
         val roomType: Int
 ) {
-    val properties: MutableList<RoomProperty> = mutableListOf()
+    var teacherLimit: Int = 0
+    var studentLimit: Int = 0
 
     init {
 
-        properties.add(RoomProperty(RoomProperty.KEY_TEACHER_LIMIT, when (roomType) {
-            RoomType.ONE_ON_ONE.value -> "1"
-            RoomType.SMALL_CLASS.value -> "1"
-            RoomType.LARGE_CLASS.value -> "1"
+        teacherLimit = when (roomType) {
+            RoomType.ONE_ON_ONE.value -> 1
+            RoomType.SMALL_CLASS.value -> 1
+            RoomType.LARGE_CLASS.value -> 1
             /**-1表示不做限制*/
-            else -> "-1"
-        }))
-        properties.add(RoomProperty(RoomProperty.KEY_STUDENT_LIMIT, when (roomType) {
-            RoomType.ONE_ON_ONE.value -> "1"
-            RoomType.SMALL_CLASS.value -> "16"
-            RoomType.LARGE_CLASS.value -> "-1"
-            else -> "-1"
-        }))
+            else -> -1
+        }
+        studentLimit = when (roomType) {
+            RoomType.ONE_ON_ONE.value -> 1
+            RoomType.SMALL_CLASS.value -> 16
+            RoomType.LARGE_CLASS.value -> -1
+            else -> -1
+        }
     }
 }

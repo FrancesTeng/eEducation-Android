@@ -19,7 +19,7 @@ class EduSyncRoomReq(
     }
 }
 
-/**1第一阶段（根据nextId全量）2.第二阶段（根据ts增量）*/
+/**1第一阶段（根据nextId全量）2.第二阶段（根据ts增量）（也可理解为是RTM 重连之后的数据同步阶段）*/
 enum class EduSyncStep(var value: Int) {
     FIRST(1),
     SECOND(2)

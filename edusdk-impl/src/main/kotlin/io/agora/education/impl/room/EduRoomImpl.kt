@@ -71,8 +71,11 @@ internal class EduRoomImpl(
     /**join过程中，请求数据同步接口的body；初始化时，默认为第一阶段*/
     var eduSyncRoomReq = EduSyncRoomReq(EduSyncStep.FIRST.value)
 
-    /**join过程中，标识同步人流数据是否完成*/
-    var syncUserStreamSuccess = false
+    /**标识join过程中同步全量人流数据是否完成*/
+    var syncAllUserStreamSuccess = false
+
+    /**标识join过程中同步增量人流数据是否完成*/
+    var syncIncrementUserStreamSuccess = false
 
     /**join过程中，标识本地流的初始化过程是否完成*/
     var initUpdateSuccess = false
@@ -84,48 +87,45 @@ internal class EduRoomImpl(
     var joining = false
 
     /**最近一次的RTM连接状态*/
-    private var lastConnectionState: Int = RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
+    var lastConnectionState: Int = RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
+
+    /**当前RTM状态是否是断线重连成功后的状态*/
+    var isReconnected: Boolean = false
+
+    /**截止目前，接收到的RTM的消息的序号*/
+    var rtmMsgSeq: Long = 0
 
     /***/
-    private val handler: Handler = Handler()
+    private var handler: Handler? = Handler()
 
-    /**rtm超时,说明服务端挂掉,我们要从当前节点重新开始同步数据(step、nextId、nextTs均已当前值为准);
+    /**rtm超时,说明服务端挂掉,我们要从当前节点重新开始同步数据(重新发起数据同步请求)(step、nextId、nextTs均已当前值为准);
      * 注意：我们只处理RTM正常连接状态下的超时，如果因为RTM断开而超时则另行处理*/
     private val rtmTimeout = Runnable {
         if (lastConnectionState != RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED) {
-            /**第一阶段(全量)超时，则join流程失败*/
-            if (eduSyncRoomReq.step == EduSyncStep.FIRST.value) {
-                joinFailed(AgoraError.INTERNAL_ERROR.value, null, studentJoinCallback as
-                        EduCallback<EduUser>)
-            }
-            else
-            {
-                /**第二阶段(增量)超时，无限重试*/
-                launchSyncRoomReq(object : EduCallback<Unit> {
-                    override fun onSuccess(res: Unit?) {
-                    }
+            launchSyncRoomReq(object : EduCallback<Unit> {
+                override fun onSuccess(res: Unit?) {
+                }
 
-                    override fun onFailure(code: Int, reason: String?) {
-                        /**请求发送失败就一直尝试*/
-                        launchSyncRoomReq(this)
-                    }
-                })
-            }
+                override fun onFailure(code: Int, reason: String?) {
+                    /**请求发送失败就一直尝试*/
+                    launchSyncRoomReq(this)
+                }
+            })
         }
     }
 
     /**开始超时计时*/
     private fun startRtmTimeout() {
-        handler.postDelayed(rtmTimeout, 5 * 1000)
+        handler?.postDelayed(rtmTimeout, 30 * 1000)
     }
 
     /**打断超时计时(在同步RoomData和同步增量数据的过程中，每接收到一次数据就打断一次；
      * 是否重新开始取决于数据是否成功同步完成)
      * @param restart 是否重新开始*/
     fun interruptRtmTimeout(restart: Boolean) {
-        handler.removeCallbacks(rtmTimeout)
+        handler?.removeCallbacks(rtmTimeout)
         if (restart) {
-            handler.postDelayed(rtmTimeout, 5 * 1000)
+            startRtmTimeout()
         }
     }
 
@@ -215,7 +215,7 @@ internal class EduRoomImpl(
     override fun joinClassroomAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>) {
         joining = true
         this.studentJoinCallback = callback
-        val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.STUDENT, null)
+        val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.STUDENT, true)
         /**此处需要把localUserInfo设置进localUser中*/
         localUser = EduStudentImpl(localUserInfo)
         (localUser as EduUserImpl).eduRoom = this
@@ -263,7 +263,6 @@ internal class EduRoomImpl(
                                     }
 
                                     override fun onFailure(code: Int, reason: String?) {
-                                        syncRoomInfoSuccess = false
                                         joinFailed(code, reason, callback as EduCallback<EduUser>)
                                     }
                                 })
@@ -274,8 +273,8 @@ internal class EduRoomImpl(
                                         object : EduCallback<Unit> {
                                             override fun onSuccess(res: Unit?) {
                                                 initUpdateSuccess = true
-                                                if (syncRoomInfoSuccess && syncUserStreamSuccess &&
-                                                        initUpdateSuccess) {
+                                                if (syncRoomInfoSuccess && syncAllUserStreamSuccess &&
+                                                        syncIncrementUserStreamSuccess && initUpdateSuccess) {
                                                     joinSuccess(localUser, callback as EduCallback<EduUser>)
                                                 }
                                             }
@@ -309,7 +308,8 @@ internal class EduRoomImpl(
 
     /**发起同步教室数据得请求，对应的数据通过RTM通知到本地
      * 注意：每发起一次请求，eduSyncRoomReq.requestId就刷新一次，requestId用于过滤数据*/
-    private fun launchSyncRoomReq(callback: EduCallback<Unit>) {
+    fun launchSyncRoomReq(callback: EduCallback<Unit>) {
+        Log.e("EduRoomImpl", "发起数据同步请求")
         eduSyncRoomReq.requestId = UUID.randomUUID().toString()
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
                 .syncRoom(APPID, roomInfo.roomUuid, eduSyncRoomReq)
@@ -319,7 +319,7 @@ internal class EduRoomImpl(
                          * 屏蔽其他RTM消息针对room和userStream的改变*/
                         CMDDispatch.disableDataChangeEnable()
                         /**开始rtm超时计时*/
-                        startRtmTimeout()
+                        interruptRtmTimeout(true)
                         callback.onSuccess(Unit)
                     }
 
@@ -333,14 +333,18 @@ internal class EduRoomImpl(
 
     /**同步教室数据或全量人流成功；
      * @param syncRoomInfoSuccess 同步roomInfo是否成功 true or null
-     * @param syncUserStreamSuccess 同步syncUserStream是否成功 true or null*/
-    fun syncRoomOrAllUserStreamSuccess(syncRoomInfoSuccess: Boolean?, syncUserStreamSuccess: Boolean?) {
+     * @param syncAllUserStreamSuccess 同步syncUserStream是否成功 true or null*/
+    fun syncRoomOrAllUserStreamSuccess(syncRoomInfoSuccess: Boolean?, syncAllUserStreamSuccess:
+    Boolean?, syncIncrementUserStreamSuccess: Boolean?) {
         syncRoomInfoSuccess?.let { this.syncRoomInfoSuccess = true }
-        syncUserStreamSuccess?.let { this.syncUserStreamSuccess = true }
-        val sync = this.syncRoomInfoSuccess && this.syncUserStreamSuccess
-        /**roomInfo和userStream均同步完成，才算RoomData同步成功*/
-        interruptRtmTimeout(sync)
-        if (this.syncRoomInfoSuccess && this.syncUserStreamSuccess && initUpdateSuccess) {
+        syncAllUserStreamSuccess?.let { this.syncAllUserStreamSuccess = true }
+        syncIncrementUserStreamSuccess?.let { this.syncIncrementUserStreamSuccess = true }
+        val sync = this.syncRoomInfoSuccess && this.syncAllUserStreamSuccess &&
+                this.syncIncrementUserStreamSuccess
+        /**在同步roomInfo和allUserStream的过程中，每接收到一次数据就刷新一次超时任务；*/
+        interruptRtmTimeout(!sync)
+        if (this.syncRoomInfoSuccess && this.syncAllUserStreamSuccess &&
+                this.syncIncrementUserStreamSuccess && this.initUpdateSuccess) {
             /**join流程成功完成*/
             joinSuccess(localUser, studentJoinCallback as EduCallback<EduUser>)
         }
@@ -423,15 +427,13 @@ internal class EduRoomImpl(
         if (joining) {
             joining = false
             joinSuccess = false
-            getCurStreamList().clear()
-            getCurUserList().clear()
-            RteEngineImpl[roomInfo.roomUuid]?.leave()
+            clearData(false)
             callback.onFailure(code, reason)
         }
     }
 
     /**获取本地缓存中，人流信息的最新更新时间*/
-    fun getLastUpdatetime(): Long {
+    private fun getLastUpdatetime(): Long {
         var lastTime: Long = 0
         for (element in getCurUserList()) {
             if ((element as EduStreamInfoImpl).updateTime!! > lastTime) {
@@ -462,6 +464,45 @@ internal class EduRoomImpl(
         return pos
     }
 
+    /**清楚本地缓存，离开RTM的当前频道；退出RTM*/
+    private fun clearData(release: Boolean) {
+        handler?.removeCallbacksAndMessages(null)
+        getCurUserList().clear()
+        getCurStreamList().clear()
+        RteEngineImpl[roomInfo.roomUuid]?.leave()
+        if (release) {
+            RteEngineImpl[roomInfo.roomUuid]?.release()
+        }
+    }
+
+    override fun getStudentCount(): Int {
+        return getStudentList().size
+    }
+
+    override fun getTeacherCount(): Int {
+        return getTeacherList().size
+    }
+
+    override fun getStudentList(): MutableList<EduUserInfo> {
+        val studentList = mutableListOf<EduUserInfo>()
+        for (element in eduUserInfoList) {
+            if (element.role == EduUserRole.STUDENT) {
+                studentList.add(element)
+            }
+        }
+        return studentList
+    }
+
+    override fun getTeacherList(): MutableList<EduUserInfo> {
+        val teacherList = mutableListOf<EduUserInfo>()
+        for (element in eduUserInfoList) {
+            if (element.role == EduUserRole.TEACHER) {
+                teacherList.add(element)
+            }
+        }
+        return teacherList
+    }
+
     override fun getFullStreamList(): MutableList<EduStreamInfo> {
         return eduStreamInfoList
     }
@@ -471,27 +512,15 @@ internal class EduRoomImpl(
     }
 
     override fun leave(callback: EduCallback<Unit>) {
-        RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
-                .leaveClassroom(APPID, roomInfo.roomUuid, localUser.userInfo.userUuid)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
-                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
-                        getCurUserList().clear()
-                        getCurStreamList().clear()
-                        RteEngineImpl[roomInfo.roomUuid]?.leave()
-                        RteEngineImpl[roomInfo.roomUuid]?.release()
-                        /**此处也是会有离开房间的RTM的通知的，但是离开房间只是通知一下后台并不依赖RTM通知，
-                         * 所以此处的回调可以作为成功离开房间的依据*/
-                        callback.onSuccess(Unit)
-                    }
-
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
-                    }
-                }))
+        clearData(false)
+        callback.onSuccess(Unit)
     }
 
+    override fun release(callback: EduCallback<Unit>) {
+        clearData(true)
+        handler = null
+        callback.onSuccess(Unit)
+    }
 
     override fun onChannelMsgReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
         p0?.text?.let {
@@ -500,7 +529,6 @@ internal class EduRoomImpl(
     }
 
     override fun onNetworkQuality(uid: Int, txQuality: Int, rxQuality: Int) {
-
     }
 
 
@@ -509,16 +537,22 @@ internal class EduRoomImpl(
                 p0 == RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED) {
             /**断线重连成功
              * 增量更新，重走数据同步的第二阶段，同步房间信息和增量数据*/
+            isReconnected = true
             val lastTime = getLastUpdatetime()
-            eduSyncRoomReq.step = EduSyncStep.SECOND.value
             eduSyncRoomReq.nextTs = lastTime
+            interruptRtmTimeout(false)
             launchSyncRoomReq(object : EduCallback<Unit> {
                 override fun onSuccess(res: Unit?) {
-
                 }
 
                 override fun onFailure(code: Int, reason: String?) {
-
+                    if (joining) {
+                        /**join流程失败*/
+                        joinFailed(code, reason, studentJoinCallback as EduCallback<EduUser>)
+                    } else if (joinSuccess) {
+                        /**无限重试，保证数据同步成功*/
+                        launchSyncRoomReq(this)
+                    }
                 }
             })
         } else {

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
+    android:orientation="vertical"
     android:layout_height="match_parent">
 
     <EditText
@@ -28,6 +29,7 @@
 
     <EditText
         android:id="@+id/userUuid"
+        android:layout_marginTop="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
@@ -47,4 +49,4 @@
         android:layout_height="wrap_content"
         android:text="群聊"/>
 
-</RelativeLayout>
+</LinearLayout>

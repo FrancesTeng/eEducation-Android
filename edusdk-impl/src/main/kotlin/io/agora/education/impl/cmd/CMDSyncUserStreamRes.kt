@@ -5,9 +5,9 @@ class CMDSyncUserStreamRes(
         val isFinished: Int,
         val count: Int,
         val total: Int,
-        val nextId: Int,
+        val nextId: String,
         val nextTs: Long,
-        val list: MutableList<CMDSyncUserRes>
+        val list: MutableList<CMDSyncUserRes>?
 ) {
 }
 
@@ -18,12 +18,12 @@ class CMDSyncUserRes(
         val userUuid: String,
         val role: String,
         val muteChat: Int,
-        val userProperties: Any,
+        val userProperties: Map<String, String>,
         val updateTime: Long,
         /**标识此用户是新下线用户还是新上线用户(ValidState)*/
         val state: Int,
         /**这些流的所有者是Uuid代表的用户(因为用户可能有多路流，所以用集合)*/
-        val streams: MutableList<CMDSyncStreamRes>
+        val streams: MutableList<CMDSyncStreamRes>?
 ) {
 }
 

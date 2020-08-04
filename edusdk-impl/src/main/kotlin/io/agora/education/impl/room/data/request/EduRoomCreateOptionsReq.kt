@@ -15,41 +15,6 @@ class RoomCreateOptionsReq constructor() {
         this.roomName = roomName
         this.roleConfig = roleConfig
     }
-
-    companion object {
-
-        fun convertToSelf(roomCreateOptions: RoomCreateOptions): RoomCreateOptionsReq {
-            var roomCreateOptionsReq = RoomCreateOptionsReq()
-            roomCreateOptionsReq.roomName = roomCreateOptions.roomName
-            var mRoleConfig = RoleConfig()
-
-            var roomProperties = roomCreateOptions.properties
-            for (roomProperty in roomProperties) {
-                modifyRoleConfig(mRoleConfig, roomProperty, Convert.convertRoomType(roomCreateOptions.roomType))
-            }
-            roomCreateOptionsReq.roleConfig = mRoleConfig
-            return roomCreateOptionsReq
-        }
-
-        private fun modifyRoleConfig(roleConfig: RoleConfig, roomProperty: RoomProperty, roomType: RoomType) {
-            var teacherLimit = 0
-            var studentLimit = 0
-            when (roomProperty.key) {
-                KEY_TEACHER_LIMIT -> {
-                    teacherLimit = roomProperty.value?.toInt() ?: 0
-                }
-                KEY_STUDENT_LIMIT -> {
-                    studentLimit = roomProperty.value?.toInt() ?: 0
-                }
-            }
-            roleConfig.host = LimitConfig(teacherLimit)
-            if (roomType == RoomType.LARGE_CLASS) {
-                roleConfig.audience = LimitConfig(studentLimit)
-            } else {
-                roleConfig.broadcaster = LimitConfig(studentLimit)
-            }
-        }
-    }
 }
 
 class RoleConfig constructor() {

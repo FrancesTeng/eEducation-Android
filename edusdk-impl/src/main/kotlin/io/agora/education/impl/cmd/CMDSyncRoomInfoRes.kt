@@ -7,6 +7,6 @@ import io.agora.education.impl.room.data.response.EduEntryRoomStateRes
 class CMDSyncRoomInfoRes(
         val roomInfo: EduRoomInfo,
         val roomState: EduEntryRoomStateRes,
-        val roomProperties: Any
+        val roomProperties: Map<String, String>?
 ) {
 }

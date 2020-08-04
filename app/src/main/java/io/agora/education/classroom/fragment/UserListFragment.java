@@ -12,10 +12,11 @@ import java.util.List;
 
 import butterknife.BindView;
 import io.agora.education.R;
+import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.base.BaseFragment;
 import io.agora.education.classroom.BaseClassActivity;
 import io.agora.education.classroom.adapter.UserListAdapter;
-import io.agora.education.classroom.bean.channel.User;
 
 public class UserListFragment extends BaseFragment implements OnItemChildClickListener {
 
@@ -31,10 +32,12 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
 
     @Override
     protected void initData() {
-//        if (context instanceof BaseClassActivity) {
-//            adapter = new UserListAdapter(((BaseClassActivity) context).getLocal().uid);
-//            adapter.setOnItemChildClickListener(this);
-//        }
+        if (context instanceof BaseClassActivity) {
+            BaseClassActivity baseClass = ((BaseClassActivity) context);
+            adapter = new UserListAdapter(baseClass.getLocalUser().getUserInfo().getUserUuid(),
+                    baseClass.getLocalStream());
+            adapter.setOnItemChildClickListener(this);
+        }
     }
 
     @Override
@@ -44,8 +47,12 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
         rcv_users.setAdapter(adapter);
     }
 
-    public void setUserList(List<User> userList) {
-        adapter.setNewData(userList);
+    public void setUserList(List<EduUserInfo> userList) {
+        adapter.setDiffNewData(userList);
+    }
+
+    public void updateLocalStream(EduStreamInfo streamInfo) {
+        adapter.setEduStreamInfo(streamInfo);
     }
 
     @Override
@@ -58,6 +65,8 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
                     break;
                 case R.id.iv_btn_mute_video:
                     ((BaseClassActivity) context).muteLocalVideo(isSelected);
+                    break;
+                default:
                     break;
             }
         }
