@@ -73,12 +73,14 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     }
 
     public void initBoardWithRoomToken(String uuid, String roomToken) {
-        if (TextUtils.isEmpty(uuid) || TextUtils.isEmpty(roomToken)) return;
+        if (TextUtils.isEmpty(uuid) || TextUtils.isEmpty(roomToken)) {
+            return;
+        }
         boardManager.getRoomPhase(new Promise<RoomPhase>() {
             @Override
             public void then(RoomPhase phase) {
                 if (phase != RoomPhase.connected) {
-                    pb_loading.setVisibility(View.VISIBLE);
+                    runOnUiThread(() -> pb_loading.setVisibility(View.VISIBLE));
                     RoomParams params = new RoomParams(uuid, roomToken);
                     boardManager.init(whiteSdk, params);
                 }

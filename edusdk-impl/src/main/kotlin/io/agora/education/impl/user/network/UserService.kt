@@ -9,7 +9,7 @@ import io.agora.education.impl.room.data.response.EduEntryRes
 import retrofit2.Call
 import retrofit2.http.*
 
-interface UserService {
+internal interface UserService {
 
     /**加入房间*/
     @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/entry")
@@ -74,11 +74,11 @@ interface UserService {
      * @param key 属性key
      * @param value 属性值（null为删除）*/
     @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/properties/{key}")
-    fun setProperty(
+    fun addProperty(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Path("userUuid") userUuid: String,
             @Path("key") key: String,
             @Field("value") value: String
-    )
+    ): Call<io.agora.base.network.ResponseBody<String>>
 }

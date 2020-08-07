@@ -1,5 +1,6 @@
 package io.agora.education.api.stream.data
 
+import io.agora.education.api.user.data.EduBaseUserInfo
 import io.agora.education.api.user.data.EduUserInfo
 
 enum class VideoSourceType(var value: Int) {
@@ -17,7 +18,7 @@ open class EduStreamInfo(
         var videoSourceType: VideoSourceType,
         var hasVideo: Boolean,
         var hasAudio: Boolean,
-        val publisher: EduUserInfo
+        val publisher: EduBaseUserInfo
 ) {
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is EduStreamInfo) {
@@ -36,6 +37,10 @@ open class EduStreamInfo(
         val var4 = publisher
         var1 = (var1 + (var4?.hashCode() ?: 0)) * 31
         return var1
+    }
+
+    fun copy(): EduStreamInfo {
+        return EduStreamInfo(streamUuid, streamName, videoSourceType, hasVideo, hasAudio, publisher)
     }
 }
 

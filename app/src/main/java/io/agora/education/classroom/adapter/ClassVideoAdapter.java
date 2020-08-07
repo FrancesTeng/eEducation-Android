@@ -89,7 +89,7 @@ public class ClassVideoAdapter extends BaseQuickAdapter<EduStreamInfo, ClassVide
                 streamInfoIterator.remove();
             }
         }
-        setNewData(data);
+        setDiffNewData(data);
     }
 
     static class ViewHolder extends BaseViewHolder {

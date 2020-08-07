@@ -14,7 +14,7 @@ import io.agora.education.api.EduCallback
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduChatMsgType
 import io.agora.education.api.message.EduMsg
-import io.agora.education.api.room.data.RoomType
+import io.agora.education.api.room.data.Property
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
@@ -28,8 +28,8 @@ import io.agora.education.impl.user.data.request.*
 import io.agora.education.impl.user.data.request.EduRoomChatMsgReq
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
 import io.agora.education.impl.user.data.request.EduUserMsgReq
+import io.agora.education.impl.user.network.UserService
 import io.agora.rtc.Constants
-import io.agora.rtc.Constants.CLIENT_ROLE_BROADCASTER
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rte.RteEngineImpl
@@ -57,8 +57,8 @@ internal open class EduUserImpl(
         RteEngineImpl.rtcEngine.enableLocalAudio(options.enableMicrophone)
 
         /**根据当前配置生成一个流信息*/
-        val streamInfo = EduStreamInfo(options.streamUuid, options.streamName, VideoSourceType.CAMERA,
-                options.enableCamera, options.enableMicrophone, this.userInfo)
+        val streamInfo = EduStreamInfoImpl(options.streamUuid, options.streamName, VideoSourceType.CAMERA,
+                options.enableCamera, options.enableMicrophone, this.userInfo, System.currentTimeMillis())
         callback.onSuccess(streamInfo)
     }
 
@@ -273,9 +273,15 @@ internal open class EduUserImpl(
             surfaceViewList.add(surfaceView)
         }
         if (stream.publisher.userUuid == this.userInfo.userUuid) {
-            RteEngineImpl.rtcEngine.setupLocalVideo(videoCanvas)
+            val code = RteEngineImpl.rtcEngine.setupLocalVideo(videoCanvas)
+            if (code == 0) {
+                Log.e("EduUserImpl", "setupLocalVideo成功")
+            }
         } else {
-            RteEngineImpl.rtcEngine.setupRemoteVideo(videoCanvas)
+            val code = RteEngineImpl.rtcEngine.setupRemoteVideo(videoCanvas)
+            if (code == 0) {
+                Log.e("EduUserImpl", "setupRemoteVideo成功")
+            }
         }
     }
 
@@ -286,10 +292,43 @@ internal open class EduUserImpl(
     private fun checkAndRemoveSurfaceView(tag: Int): SurfaceView? {
         for (surfaceView in surfaceViewList) {
             if (surfaceView.tag == tag) {
-                surfaceViewList.remove(surfaceView);
+                surfaceViewList.remove(surfaceView)
                 return surfaceView
             }
         }
         return null
+    }
+
+    override fun updateRoomProperty(property: Property, callback: EduCallback<Unit>) {
+        RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
+                .addRoomProperty(APPID, eduRoom.roomInfo.roomUuid, property.key, property.value)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
+                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
+                        callback.onSuccess(Unit)
+                    }
+
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
+                    }
+                }))
+    }
+
+    override fun updateUserProperty(property: Property, targetUser: EduUserInfo, callback: EduCallback<Unit>) {
+        RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
+                .addProperty(APPID, eduRoom.roomInfo.roomUuid, eduRoom.roomInfo.roomUuid,
+                        property.key, property.value)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
+                    override fun onSuccess(res: ResponseBody<String>?) {
+                        callback.onSuccess(Unit)
+                    }
+
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
+                    }
+                }))
     }
 }

@@ -1,4 +1,4 @@
-package io.agora.education.impl.cmd
+package io.agora.education.impl.cmd.bean
 
 enum class CMDStreamAction(var value: Int) {
     Add(1),

@@ -1,4 +1,6 @@
-package io.agora.education.impl.cmd
+package io.agora.education.impl.cmd.bean
+
+import io.agora.education.api.room.data.Property
 
 class CMDSyncUserStreamRes(
         val step: Int,

@@ -1,6 +1,7 @@
 package io.agora.education.api.user
 
 import io.agora.education.api.EduCallback
+import io.agora.education.api.room.data.Property
 import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.education.api.stream.data.ScreenStreamInitOptions
 import io.agora.education.api.user.data.EduUserInfo

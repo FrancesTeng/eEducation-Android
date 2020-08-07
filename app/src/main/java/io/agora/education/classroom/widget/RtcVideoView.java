@@ -3,6 +3,7 @@ package io.agora.education.classroom.widget;
 import android.app.Activity;
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.SurfaceView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -73,6 +74,7 @@ public class RtcVideoView extends ConstraintLayout {
             }
             layout_video.setVisibility(muted ? GONE : VISIBLE);
             layout_place_holder.setVisibility(muted ? VISIBLE : GONE);
+            Log.e("RtcVideoView", "muteVideo：" + muted);
         });
     }
 

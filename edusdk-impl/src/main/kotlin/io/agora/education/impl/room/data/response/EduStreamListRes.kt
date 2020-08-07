@@ -1,6 +1,6 @@
 package io.agora.education.impl.room.data.response
 
-class EduStreamListRes(
+internal class EduStreamListRes(
         var count: Int,
         var total: Int,
         var nextId: String,
@@ -8,7 +8,7 @@ class EduStreamListRes(
 ) {
 }
 
-open class EduStreamRes(
+ open class EduStreamRes(
         var fromUser: EduFromUserRes,
         var streamUuid: String,
         var streamName: String,
@@ -20,7 +20,7 @@ open class EduStreamRes(
         var state: Int?) {
 }
 
-class EduFromUserRes(
+ class EduFromUserRes(
         var userUuid: String,
         var userName: String,
         var role: String

@@ -5,6 +5,7 @@ import io.agora.education.api.board.EduBoard
 import io.agora.education.api.record.EduRecord
 import io.agora.education.api.room.data.EduRoomInfo
 import io.agora.education.api.room.data.EduRoomStatus
+import io.agora.education.api.room.data.Property
 import io.agora.education.api.room.data.RoomJoinOptions
 import io.agora.education.api.room.listener.EduRoomEventListener
 import io.agora.education.api.stream.data.EduStreamInfo
@@ -17,7 +18,7 @@ abstract class EduRoom(
         val roomInfo: EduRoomInfo,
         var roomStatus: EduRoomStatus
 ) {
-    var roomProperties: Map<String, String?>? = null
+    var roomProperties: Map<String, Any>? = mapOf()
 
     lateinit var localUser: EduUser
     lateinit var board: EduBoard
@@ -41,7 +42,7 @@ abstract class EduRoom(
 
     abstract fun getFullUserList(): MutableList<EduUserInfo>
 
-    abstract fun leave(callback: EduCallback<Unit>)
+    abstract fun leave()
 
-    abstract fun release(callback: EduCallback<Unit>)
+    abstract fun release()
 }

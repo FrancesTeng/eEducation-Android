@@ -14,6 +14,8 @@ import com.chad.library.adapter.base.listener.OnItemChildClickListener;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+
 import butterknife.BindView;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
@@ -80,8 +82,10 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
     public void addMessage(ChannelMsg.ChatMsg chatMsg) {
         runOnUiThread(() -> {
             if (rcv_msg != null) {
+//                adapter.setNewData(Collections.singletonList(chatMsg));
                 adapter.addData(chatMsg);
                 rcv_msg.scrollToPosition(adapter.getItemPosition(chatMsg));
+                adapter.notifyDataSetChanged();
             }
         });
     }

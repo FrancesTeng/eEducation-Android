@@ -17,6 +17,12 @@ class EduSyncRoomReq(
         this.nextId = nextId
         this.nextTs = nextTs
     }
+
+    /**注意：每发起一次请求，requestId就刷新一次，requestId用于过滤数据*/
+    fun updateRequestId(): EduSyncRoomReq {
+        this.requestId == UUID.randomUUID().toString()
+        return this
+    }
 }
 
 /**1第一阶段（根据nextId全量）2.第二阶段（根据ts增量）（也可理解为是RTM 重连之后的数据同步阶段）*/

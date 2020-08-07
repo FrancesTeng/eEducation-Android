@@ -19,8 +19,7 @@ data class EduRoomStatus(
 
 enum class RoomStatusEvent {
     STUDENT_CHAT,
-    COURSE_STATE,
-
+    COURSE_STATE
 }
 
 enum class EduMuteState(var value: Int) {

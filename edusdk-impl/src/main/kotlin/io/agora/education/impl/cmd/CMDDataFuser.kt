@@ -1,19 +1,19 @@
 package io.agora.education.impl.cmd
 
+import android.util.Log
+import com.google.gson.Gson
 import io.agora.Convert
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
-import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.stream.data.EduStreamInfo
-import io.agora.education.api.stream.data.EduVideoState
+import io.agora.education.api.user.data.EduBaseUserInfo
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
+import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.request.EduSyncFinished
-import io.agora.education.impl.room.data.request.EduSyncStep
 import io.agora.education.impl.room.data.response.EduFromUserRes
 import io.agora.education.impl.room.data.response.EduUserRes
 import io.agora.education.impl.stream.EduStreamInfoImpl
@@ -21,6 +21,8 @@ import io.agora.education.impl.user.data.EduUserInfoImpl
 
 class CMDDataFuser {
     companion object {
+        val TAG = "CMDDataFuser"
+
 
         /**调用此函数之前须确保first和second代表的是同一个用户
          *
@@ -40,10 +42,10 @@ class CMDDataFuser {
         }
 
         /**operator有可能为空(说明用户自己就是操作者)，我们需要把当前用户设置为操作者*/
-        private fun getOperator(operator: Any?, userInfo: EduUserInfo, roomType: RoomType):
-                EduUserInfo {
+        private fun getOperator(operator: Any?, userInfo: EduBaseUserInfo, roomType: RoomType):
+                EduBaseUserInfo {
             /**operator为空说明操作者是自己*/
-            var operatorUser: EduUserInfo? = null
+            var operatorUser: EduBaseUserInfo? = null
             operator?.let {
                 if (operator is EduUserRes) {
                     operatorUser = Convert.convertUserInfo(operator, roomType)
@@ -83,8 +85,8 @@ class CMDDataFuser {
                         }
                     }
                 }
+                return validUserInfoList
             }
-            return validUserInfoList
         }
 
         fun addUserWithOnline(onlineUserList: MutableList<EduUserRes>,
@@ -111,11 +113,11 @@ class CMDDataFuser {
                         validUserInfoList.add(userInfo1)
                     }
                 }
+                return validUserInfoList
             }
-            return validUserInfoList
         }
 
-        fun modifyUserWithUserStateChange(cmdUserStateMsg: CMDUserStateMsg,
+        fun updateUserWithUserStateChange(cmdUserStateMsg: CMDUserStateMsg,
                                           eduUserInfos: MutableList<EduUserInfo>, roomType: RoomType)
                 : MutableList<EduUserEvent> {
             val userStateChangedList = mutableListOf<EduUserInfo>()
@@ -138,8 +140,19 @@ class CMDDataFuser {
                         }
                     }
                 }
+                return validUserEventList
             }
-            return validUserEventList
+        }
+
+        fun updateUserPropertyWithChange(cmdUsrPropertyRes: CMDUserPropertyRes,
+                                         eduUserInfos: MutableList<EduUserInfo>): EduUserInfo? {
+            for (element in eduUserInfos) {
+                if(cmdUsrPropertyRes.fromUserRes.userUuid == element.userUuid) {
+                    element.userProperties = cmdUsrPropertyRes.userProperties
+                    return element
+                }
+            }
+            return null
         }
 
 
@@ -203,16 +216,17 @@ class CMDDataFuser {
                         validStreamList.add(userEvent)
                     }
                 }
+                return validStreamList
             }
-            return validStreamList
         }
 
-        fun modifyStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
+        fun updateStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
                                    streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType):
                 MutableList<EduStreamEvent> {
             val validStreamList = mutableListOf<EduStreamEvent>()
             val streamInfos = mutableListOf<EduStreamInfo>()
             streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
+            Log.e(TAG, "本地流缓存:" + Gson().toJson(streamInfoList))
             synchronized(streamInfoList) {
                 for (element in streamInfos) {
                     if (streamInfoList.contains(element)) {
@@ -230,8 +244,8 @@ class CMDDataFuser {
                         }
                     }
                 }
+                return validStreamList
             }
-            return validStreamList
         }
 
         fun removeStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
@@ -257,8 +271,8 @@ class CMDDataFuser {
                         }
                     }
                 }
+                return validStreamList
             }
-            return validStreamList
         }
 
         fun removeStreamWithUserLeave(removedUserEvents: MutableList<EduUserEvent>,
@@ -275,8 +289,8 @@ class CMDDataFuser {
                         }
                     }
                 }
+                return removedStreams
             }
-            return removedStreams
         }
 
 
@@ -323,7 +337,7 @@ class CMDDataFuser {
                     val role = Convert.convertUserRole(element.role, (eduRoom as EduRoomImpl).getCurRoomType())
                     val eduUserInfo: EduUserInfoImpl = EduUserInfoImpl(element.userUuid, element.userName, role,
                             element.muteChat == EduChatState.Allow.value, element.updateTime)
-                    /**设置可能存在的用户自定义数据*/
+                    /**更新用户自定义数据*/
                     eduUserInfo.userProperties = element.userProperties
                     (eduRoom as EduRoomImpl).getCurUserList().add(eduUserInfo)
                     element.streams?.let {
@@ -352,13 +366,12 @@ class CMDDataFuser {
             val eduUserList = (eduRoom as EduRoomImpl).getCurUserList()
             val eduStreamList = (eduRoom as EduRoomImpl).getCurStreamList()
             userStreamRes.list?.let {
-            }
-            userStreamRes.list?.forEach {
+
                 for ((index, element) in userStreamRes.list.withIndex()) {
                     val role = Convert.convertUserRole(element.role, (eduRoom as EduRoomImpl).getCurRoomType())
                     val eduUserInfo: EduUserInfo = EduUserInfoImpl(element.userUuid, element.userName, role,
                             element.muteChat == EduChatState.Allow.value, element.updateTime)
-                    /**设置可能存在的用户自定义数据*/
+                    /**更新用户自定义数据*/
                     eduUserInfo.userProperties = element.userProperties
                     if (element.state == CMDUserState.Online.value) {
                         if (eduUserList.contains(eduUserInfo)) {

@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -16,6 +17,7 @@ import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
 import io.agora.education.api.room.data.EduRoomState;
 import io.agora.education.api.room.data.EduRoomStatus;
+import io.agora.education.api.room.data.Property;
 import io.agora.education.api.room.data.RoomStatusEvent;
 import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.ConnectionStateChangeReason;
@@ -24,6 +26,7 @@ import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
+import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.widget.RtcVideoView;
@@ -46,7 +49,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     protected void initView() {
         super.initView();
-        video_teacher.init(R.layout.layout_video_one2one_class, false);
+        video_teacher.init(R.layout.layout_video_one2one_class, true);
         video_student.init(R.layout.layout_video_one2one_class, true);
         video_student.setOnClickAudioListener(v -> OneToOneClassActivity.this.muteLocalAudio(!video_student.isAudioMuted()));
         video_student.setOnClickVideoListener(v -> OneToOneClassActivity.this.muteLocalVideo(!video_student.isVideoMuted()));
@@ -63,7 +66,6 @@ public class OneToOneClassActivity extends BaseClassActivity {
         view.setSelected(!isSelected);
         layout_im.setVisibility(isSelected ? View.VISIBLE : View.GONE);
     }
-
 
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
@@ -116,6 +118,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
                 eduChatMsg.getTimeStamp(), eduChatMsg.getType());
         chatMsg.isMe = chatMsg.getFromUser().equals(fromClassRoom.localUser.getUserInfo());
         chatRoomFragment.addMessage(chatMsg);
+        Log.e(TAG, "成功添加一条聊天消息");
     }
 
     /**
@@ -131,10 +134,12 @@ public class OneToOneClassActivity extends BaseClassActivity {
         super.onRemoteStreamsInitialized(streams, fromClassRoom);
         Log.e(TAG, "onRemoteStreamsInitialized");
         EduStreamInfo streamInfo = getTeacherStream();
-        video_teacher.setName(streamInfo.getPublisher().getUserName());
-        renderStream(streamInfo, video_teacher.getVideoLayout());
-        video_teacher.muteVideo(!streamInfo.getHasVideo());
-        video_teacher.muteAudio(!streamInfo.getHasAudio());
+        if(streamInfo != null) {
+            video_teacher.setName(streamInfo.getPublisher().getUserName());
+            renderStream(streamInfo, video_teacher.getVideoLayout());
+            video_teacher.muteVideo(!streamInfo.getHasVideo());
+            video_teacher.muteAudio(!streamInfo.getHasAudio());
+        }
     }
 
     @Override
@@ -220,6 +225,15 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
+    public void onRoomPropertyChanged(@NotNull EduRoom fromClassRoom) {
+        super.onRoomPropertyChanged(fromClassRoom);
+    }
+
+    @Override
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom fromClassRoom) {
+    }
+
+    @Override
     public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom fromClassRoom) {
         super.onConnectionStateChanged(state, reason, fromClassRoom);
     }
@@ -229,9 +243,6 @@ public class OneToOneClassActivity extends BaseClassActivity {
         super.onNetworkQualityChanged(quality, user, fromClassRoom);
         title_view.setNetworkQuality(quality.getValue());
     }
-
-
-
 
 
     @Override
@@ -244,13 +255,18 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
+        super.onLocalUserPropertyUpdated(userInfo);
+    }
+
+    @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
         EduStreamInfo streamInfo = streamEvent.getModifiedStream();
         renderStream(streamInfo, video_student.getVideoLayout());
         video_student.muteVideo(!streamInfo.getHasVideo());
         video_student.muteAudio(!streamInfo.getHasAudio());
-        Log.e(TAG, "姓名显示状态1:" + video_student.getTv_name().getVisibility());
+        Log.e(TAG, "本地流被添加：" + getLocalCameraStream().getHasAudio() + "," + streamInfo.getHasVideo());
     }
 
     @Override
@@ -259,7 +275,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
         EduStreamInfo streamInfo = streamEvent.getModifiedStream();
         video_student.muteVideo(!streamInfo.getHasVideo());
         video_student.muteAudio(!streamInfo.getHasAudio());
-        Log.e(TAG, "姓名显示状态2:" + video_student.getTv_name().getVisibility());
+        Log.e(TAG, "本地流被修改：" + streamInfo.getHasAudio() + "," + streamInfo.getHasVideo());
     }
 
     @Override
@@ -268,8 +284,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
         /**一对一场景下，此回调被调用就说明classroom结束，人员退出；所以此回调可以不处理*/
         EduStreamInfo streamInfo = streamEvent.getModifiedStream();
         renderStream(streamInfo, null);
-        video_student.muteVideo(!streamInfo.getHasVideo());
-        video_student.muteAudio(!streamInfo.getHasAudio());
-        Log.e(TAG, "姓名显示状态3:" + video_student.getTv_name().getVisibility());
+        video_student.muteVideo(true);
+        video_student.muteAudio(true);
+        Log.e(TAG, "本地流被移除");
     }
 }

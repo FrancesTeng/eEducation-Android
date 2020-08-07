@@ -22,6 +22,8 @@ abstract class EduManager(
 
     abstract fun createClassroom(config: RoomCreateOptions, callback: EduCallback<EduRoom>)
 
+    abstract fun releaseRoom(roomUuid: String)
+
     abstract fun logMessage(message: String, level: LogLevel)
 
     abstract fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>)

@@ -32,6 +32,7 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
@@ -269,11 +270,13 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         super.onRemoteStreamsInitialized(streams, fromClassRoom);
         /**大班课场景下，远端流就是老师的流;初始化成功后只可能有Camera的流*/
         EduStreamInfo streamInfo = getTeacherStream();
-        EduUserInfo userInfo = streamInfo.getPublisher();
-        video_teacher.setName(userInfo.getUserName());
-        getLocalUser().setStreamView(streamInfo, video_teacher.getVideoLayout());
-        video_teacher.muteVideo(!streamInfo.getHasVideo());
-        video_teacher.muteAudio(!streamInfo.getHasAudio());
+       if(streamInfo != null) {
+           EduBaseUserInfo userInfo = streamInfo.getPublisher();
+           video_teacher.setName(userInfo.getUserName());
+           getLocalUser().setStreamView(streamInfo, video_teacher.getVideoLayout());
+           video_teacher.muteVideo(!streamInfo.getHasVideo());
+           video_teacher.muteAudio(!streamInfo.getHasAudio());
+       }
     }
 
     @Override
@@ -283,7 +286,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
             switch (streamInfo.getVideoSourceType()) {
                 case CAMERA:
-                    EduUserInfo userInfo = streamInfo.getPublisher();
+                    EduBaseUserInfo userInfo = streamInfo.getPublisher();
                     video_teacher.setName(userInfo.getUserName());
                     renderStream(streamInfo, video_teacher.getVideoLayout());
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
@@ -308,7 +311,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         /**屏幕分享流只有新建和移除，不会有修改行为，所以此处的流都是Camera类型的*/
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            EduUserInfo userInfo = streamInfo.getPublisher();
+            EduBaseUserInfo userInfo = streamInfo.getPublisher();
             video_teacher.setName(userInfo.getUserName());
             renderStream(streamInfo, video_teacher.getVideoLayout());
             video_teacher.muteVideo(!streamInfo.getHasVideo());
@@ -360,6 +363,15 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
+    public void onRoomPropertyChanged(@NotNull EduRoom fromClassRoom) {
+        super.onRoomPropertyChanged(fromClassRoom);
+    }
+
+    @Override
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom fromClassRoom) {
+    }
+
+    @Override
     public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom fromClassRoom) {
         super.onConnectionStateChanged(state, reason, fromClassRoom);
     }
@@ -376,6 +388,11 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         /**更新用户信息*/
         EduUserInfo userInfo = userEvent.getModifiedUser();
         chatRoomFragment.setMuteLocal(!userInfo.isChatAllowed());
+    }
+
+    @Override
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
+        super.onLocalUserPropertyUpdated(userInfo);
     }
 
     @Override

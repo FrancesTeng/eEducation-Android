@@ -1,4 +1,4 @@
-package io.agora.education.impl.cmd
+package io.agora.education.impl.cmd.bean
 
 enum class CMDId(var value: Int) {
     /**频道-房间-开始/结束*/
@@ -7,6 +7,8 @@ enum class CMDId(var value: Int) {
     RoomMuteStateChange(2),
     /**频道-房间-即时聊天--*/
     ChannelMsgReceived(3),
+    /**房间属性发生变更*/
+    RoomPropertyChanged(4),
     /**频道--自定义消息(可以是用户的信令)*/
     ChannelCustomMsgReceived(99),
     /**频道-用户-进出
@@ -14,6 +16,8 @@ enum class CMDId(var value: Int) {
     UserJoinOrLeave(20),
     /**人员信息改变会触发*/
     UserStateChange(21),
+    /**人员自定义信息发生改变*/
+    UserPropertiedChanged(22),
     /**频道-流-新增/更新/删除*/
     StreamStateChange(40),
     /**频道-白板房间状态*/

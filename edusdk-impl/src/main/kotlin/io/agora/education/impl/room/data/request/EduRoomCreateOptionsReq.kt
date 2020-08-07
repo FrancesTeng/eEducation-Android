@@ -1,11 +1,5 @@
 package io.agora.education.impl.room.data.request
 
-import io.agora.Convert
-import io.agora.education.api.room.data.RoomCreateOptions
-import io.agora.education.api.room.data.RoomProperty
-import io.agora.education.api.room.data.RoomProperty.Companion.KEY_STUDENT_LIMIT
-import io.agora.education.api.room.data.RoomProperty.Companion.KEY_TEACHER_LIMIT
-import io.agora.education.api.room.data.RoomType
 
 class RoomCreateOptionsReq constructor() {
     lateinit var roomName: String

@@ -1,7 +1,10 @@
 package io.agora
 
+import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduMuteState
 import io.agora.education.api.room.data.EduRoomState
+import io.agora.education.api.room.data.Property.Companion.KEY_STUDENT_LIMIT
+import io.agora.education.api.room.data.Property.Companion.KEY_TEACHER_LIMIT
 import io.agora.education.api.room.data.RoomCreateOptions
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.statistics.ConnectionState
@@ -14,9 +17,10 @@ import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
-import io.agora.education.impl.cmd.CMDStreamActionMsg
-import io.agora.education.impl.cmd.CMDSyncStreamRes
-import io.agora.education.impl.cmd.CMDUserStateMsg
+import io.agora.education.impl.cmd.bean.CMDStreamActionMsg
+import io.agora.education.impl.cmd.bean.CMDSyncStreamRes
+import io.agora.education.impl.cmd.bean.CMDUserStateMsg
+import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.request.LimitConfig
 import io.agora.education.impl.room.data.request.RoleConfig
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
@@ -24,7 +28,7 @@ import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.RtmStatusCode.ConnectionChangeReason.*
 import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
 
-class Convert {
+internal class Convert {
     companion object {
 
         fun convertRoomCreateOptions(roomCreateOptions: RoomCreateOptions): RoomCreateOptionsReq {
@@ -37,15 +41,27 @@ class Convert {
         }
 
         fun convertRoleConfig(roomCreateOptions: RoomCreateOptions): RoleConfig {
-            val mRoleConfig = RoleConfig()
-            mRoleConfig.host = LimitConfig(roomCreateOptions.teacherLimit)
-            val roomType = convertRoomType(roomCreateOptions.roomType)
-            if (roomType == RoomType.LARGE_CLASS) {
-                mRoleConfig.audience = LimitConfig(roomCreateOptions.studentLimit)
-            } else {
-                mRoleConfig.broadcaster = LimitConfig(roomCreateOptions.studentLimit)
+
+            val roleConfig = RoleConfig()
+            var teacherLimit = 0
+            var studentLimit = 0
+            for (element in roomCreateOptions.roomProperties) {
+                when (element.key) {
+                    KEY_TEACHER_LIMIT -> {
+                        teacherLimit = element.value.toInt() ?: 0
+                    }
+                    KEY_STUDENT_LIMIT -> {
+                        studentLimit = element.value.toInt() ?: 0
+                    }
+                }
             }
-            return mRoleConfig
+            roleConfig.host = LimitConfig(teacherLimit)
+            if (roomCreateOptions.roomType == RoomType.LARGE_CLASS.value) {
+                roleConfig.audience = LimitConfig(studentLimit)
+            } else {
+                roleConfig.broadcaster = LimitConfig(studentLimit)
+            }
+            return roleConfig
         }
 
         fun convertVideoEncoderConfig(videoEncoderConfig: VideoEncoderConfig): VideoEncoderConfiguration {
@@ -94,8 +110,8 @@ class Convert {
             }
         }
 
-        /**根据EduUserRole枚举返回角色字符串;大班课状态下，如果学生自动发流，那么他就是broadcaster*/
-        fun convertUserRole(role: EduUserRole, roomType: RoomType, autoPublish: Boolean): String {
+        /**根据EduUserRole枚举返回角色字符串*/
+        fun convertUserRole(role: EduUserRole, roomType: RoomType): String {
             return if (role == EduUserRole.TEACHER) {
                 EduUserRoleStr.host.name
             } else {
@@ -107,11 +123,7 @@ class Convert {
                         EduUserRoleStr.broadcaster.name
                     }
                     RoomType.LARGE_CLASS -> {
-                        if (autoPublish) {
-                            EduUserRoleStr.broadcaster.name
-                        } else {
-                            EduUserRoleStr.audience.name
-                        }
+                        EduUserRoleStr.audience.name
                     }
                 }
             }
@@ -214,6 +226,25 @@ class Convert {
                     cmdStreamActionMsg.videoState == EduVideoState.Open.value,
                     cmdStreamActionMsg.audioState == EduAudioState.Open.value,
                     fromUserInfo, cmdStreamActionMsg.updateTime)
+        }
+
+        fun convertStreamInfo(streamResList: MutableList<EduEntryStreamRes>, eduRoom: EduRoom): MutableList<EduStreamEvent> {
+            val streamEvents = mutableListOf<EduStreamEvent>()
+            val eduStreamInfos = (eduRoom as EduRoomImpl).getCurStreamList()
+            synchronized(eduStreamInfos) {
+                streamResList.forEach {
+                    val videoSourceType = Convert.convertVideoSourceType(it.videoSourceType)
+                    val streamInfo = EduStreamInfoImpl(it.streamUuid, it.streamName, videoSourceType,
+                            it.videoState == EduVideoState.Open.value,
+                            it.audioState == EduAudioState.Open.value, eduRoom.localUser.userInfo,
+                            it.updateTime
+                    )
+                    /**整合流信息到本地缓存中*/
+                    eduStreamInfos.add(streamInfo)
+                    streamEvents.add(EduStreamEvent(streamInfo, null))
+                }
+                return streamEvents
+            }
         }
 
         fun convertStreamInfo(syncStreamRes: CMDSyncStreamRes, eduUserInfo: EduUserInfo): EduStreamInfo {

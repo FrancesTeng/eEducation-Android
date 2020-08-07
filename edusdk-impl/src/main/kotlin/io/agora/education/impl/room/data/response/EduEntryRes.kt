@@ -1,6 +1,7 @@
 package io.agora.education.impl.room.data.response
 
 import io.agora.education.api.room.data.EduRoomInfo
+import io.agora.education.api.room.data.Property
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.user.data.request.RoleMuteConfig
 
@@ -9,7 +10,8 @@ import io.agora.education.impl.user.data.request.RoleMuteConfig
 class EduEntryRes(val room: EduEntryRoomRes, val user: EduEntryUserRes) {
 }
 
-class EduEntryRoomRes(val roomInfo: EduRoomInfo, val roomState: EduEntryRoomStateRes) {
+class EduEntryRoomRes(val roomInfo: EduRoomInfo, val roomState: EduEntryRoomStateRes,
+                      val roomProperties: Map<String, Any>?) {
 
 }
 
@@ -19,6 +21,20 @@ class EduEntryRoomStateRes(val state: Int, val startTime: Long,
 
 }
 
-class EduEntryUserRes(val userUuid: String, val streamUuid: String, val userToken: String,
-                      val rtmToken: String, val rtcToken: String, val muteChat: Int) {
+class EduEntryUserRes(val userUuid: String, val userName: String, val role: String,
+                      val streamUuid: String, val userToken: String, val rtmToken: String,
+                      val rtcToken: String, val muteChat: Int, val userProperties: Map<String, String>,
+                      val streams: MutableList<EduEntryStreamRes>?) {
+}
+
+class EduEntryStreamRes(
+        var streamUuid: String,
+        var streamName: String,
+        var videoSourceType: Int,
+        var audioSourceType: Int,
+        var videoState: Int,
+        var audioState: Int,
+        var updateTime: Long,
+        var rtcToken: String
+) {
 }

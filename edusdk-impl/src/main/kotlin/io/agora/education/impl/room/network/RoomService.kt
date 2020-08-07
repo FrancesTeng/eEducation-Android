@@ -101,4 +101,14 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
 
+    /**为room添加自定义属性
+     * @param key 属性key
+     * @param value 属性值（null为删除）*/
+    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/properties/{key}")
+    fun addRoomProperty(
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Path("key") key: String,
+            @Field("value") value: String
+    ): Call<io.agora.base.network.ResponseBody<String>>
 }

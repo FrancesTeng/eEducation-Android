@@ -5,7 +5,6 @@ import android.app.DownloadManager;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Message;
 import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,43 +13,26 @@ import android.widget.EditText;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 
-import org.jetbrains.annotations.Nullable;
-
 import butterknife.BindView;
 import butterknife.OnClick;
 import butterknife.OnTouch;
 import io.agora.base.ToastManager;
-import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.RetrofitManager;
-import io.agora.education.api.EduCallback;
-import io.agora.education.api.manager.EduManager;
-import io.agora.education.api.manager.EduManagerOptions;
-import io.agora.education.api.room.EduRoom;
-import io.agora.education.api.room.data.RoomCreateOptions;
-import io.agora.education.api.room.data.RoomJoinOptions;
-import io.agora.education.api.room.data.RoomMediaOptions;
-import io.agora.education.api.room.data.RoomProperty;
 import io.agora.education.api.room.data.RoomType;
-import io.agora.education.api.user.EduStudent;
-import io.agora.education.api.user.EduUser;
 import io.agora.education.base.BaseActivity;
 import io.agora.education.base.BaseCallback;
 import io.agora.education.broadcast.DownloadReceiver;
 import io.agora.education.classroom.BaseClassActivity;
+import io.agora.education.classroom.LargeClassActivity;
 import io.agora.education.classroom.OneToOneClassActivity;
+import io.agora.education.classroom.SmallClassActivity;
 import io.agora.education.classroom.bean.channel.Room;
-import io.agora.education.classroom.bean.channel.User;
 import io.agora.education.service.CommonService;
-import io.agora.education.service.RoomService;
-import io.agora.education.service.bean.request.RoomEntryReq;
 import io.agora.education.util.AppUtil;
 import io.agora.education.util.UUIDUtil;
 import io.agora.education.widget.ConfirmDialog;
 import io.agora.education.widget.PolicyDialog;
 import io.agora.sdk.manager.RtmManager;
-import kotlin.random.Random;
-import kotlin.random.RandomKt;
-import kotlin.ranges.LongRange;
 
 import static io.agora.education.classroom.BaseClassActivity.RESULT_CODE;
 
@@ -259,11 +241,11 @@ public class MainActivity extends BaseActivity {
         if (roomType == RoomType.ONE_ON_ONE.getValue()) {
             intent.setClass(this, OneToOneClassActivity.class);
         }
-//        else if (roomType == RoomType.SMALL_CLASS.getValue()) {
-//            intent.setClass(this, SmallClassActivity.class);
-//        } else {
-//            intent.setClass(this, LargeClassActivity.class);
-//        }
+        else if (roomType == RoomType.SMALL_CLASS.getValue()) {
+            intent.setClass(this, SmallClassActivity.class);
+        } else {
+            intent.setClass(this, LargeClassActivity.class);
+        }
         intent.putExtra(BaseClassActivity.ROOMENTRY, roomEntry);
         return intent;
     }

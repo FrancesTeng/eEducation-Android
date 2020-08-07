@@ -37,32 +37,36 @@ internal class EduManagerImpl(
         RetrofitManager.instance().addHeader("Authorization", CryptoUtil.getAuth(auth))
     }
 
-    private lateinit var eduRoom: EduRoom
+    val eduRooms: MutableMap<String, EduRoom> = mutableMapOf()
 
     override fun createClassroom(config: RoomCreateOptions, callback: EduCallback<EduRoom>) {
-        RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .createClassroom(APPID, config.roomUuid, Convert.convertRoomCreateOptions(config))
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
-                    /**接口返回Int类型的roomId*/
-                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
-                        createSuccess(config, callback)
-                    }
+        if(config.createRemoteClassroom) {
+            RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
+                    .createClassroom(APPID, config.roomUuid, Convert.convertRoomCreateOptions(config))
+                    .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
+                        /**接口返回Int类型的roomId*/
+                        override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
+                            createSuccess(config, callback)
+                        }
 
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        error?.code?.let {
-                            if(error?.code == AgoraError.ROOM_ALREADY_EXISTS.value)
-                            {
-                                createSuccess(config, callback)
-                            }else
-                            {
-                                callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                        error?.message ?: throwable?.message)
+                        override fun onFailure(throwable: Throwable?) {
+                            var error = throwable as? BusinessException
+                            error?.code?.let {
+                                if(error?.code == AgoraError.ROOM_ALREADY_EXISTS.value)
+                                {
+                                    createSuccess(config, callback)
+                                }else
+                                {
+                                    callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                            error?.message ?: throwable?.message)
+                                }
                             }
                         }
-                    }
-                }))
-
+                    }))
+        }
+        else {
+            createSuccess(config, callback)
+        }
     }
 
     private fun createSuccess(config: RoomCreateOptions, callback: EduCallback<EduRoom>)
@@ -76,9 +80,14 @@ internal class EduManagerImpl(
         /**为RteEngine设置eventListener*/
         RteEngineImpl.eventListener = eduRoomImpl
         /**转换为抽象对象并回调出去*/
-        eduRoom = eduRoomImpl
-        callback.onSuccess(eduRoom)
+        eduRooms[eduRoomInfo.roomUuid] = eduRoomImpl
+        callback.onSuccess(eduRooms[eduRoomInfo.roomUuid])
         Convert
+    }
+
+    override fun releaseRoom(roomUuid: String) {
+        eduRooms[roomUuid]?.release()
+        eduRooms.remove(roomUuid)
     }
 
     override fun logMessage(message: String, level: LogLevel) {

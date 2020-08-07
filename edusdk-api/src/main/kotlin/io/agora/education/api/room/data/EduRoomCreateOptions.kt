@@ -6,9 +6,9 @@ enum class RoomType(var value: Int) {
     LARGE_CLASS(2)
 }
 
-data class RoomProperty(
+data class Property(
         val key: String,
-        val value: String?
+        val value: String
 ) {
     companion object {
         const val KEY_TEACHER_LIMIT = "TeacherLimit"
@@ -16,28 +16,29 @@ data class RoomProperty(
     }
 }
 
+/**@param createRemoteClassroom 是否调用远端接口创建房间*/
 class RoomCreateOptions(
         var roomUuid: String,
         var roomName: String,
-        val roomType: Int
+        val roomType: Int,
+        val createRemoteClassroom: Boolean
 ) {
-    var teacherLimit: Int = 0
-    var studentLimit: Int = 0
+    val roomProperties: MutableList<Property> = mutableListOf()
 
     init {
 
-        teacherLimit = when (roomType) {
-            RoomType.ONE_ON_ONE.value -> 1
-            RoomType.SMALL_CLASS.value -> 1
-            RoomType.LARGE_CLASS.value -> 1
+        roomProperties.add(Property(Property.KEY_TEACHER_LIMIT, when (roomType) {
+            RoomType.ONE_ON_ONE.value -> "1"
+            RoomType.SMALL_CLASS.value -> "1"
+            RoomType.LARGE_CLASS.value -> "1"
             /**-1表示不做限制*/
-            else -> -1
-        }
-        studentLimit = when (roomType) {
-            RoomType.ONE_ON_ONE.value -> 1
-            RoomType.SMALL_CLASS.value -> 16
-            RoomType.LARGE_CLASS.value -> -1
-            else -> -1
-        }
+            else -> "-1"
+        }))
+        roomProperties.add(Property(Property.KEY_STUDENT_LIMIT, when (roomType) {
+            RoomType.ONE_ON_ONE.value -> "1"
+            RoomType.SMALL_CLASS.value -> "16"
+            RoomType.LARGE_CLASS.value -> "-1"
+            else -> "-1"
+        }))
     }
 }

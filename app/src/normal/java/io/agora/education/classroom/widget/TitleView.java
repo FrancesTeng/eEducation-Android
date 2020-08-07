@@ -1,5 +1,6 @@
 package io.agora.education.classroom.widget;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.util.AttributeSet;
@@ -56,25 +57,27 @@ public class TitleView extends ConstraintLayout {
     }
 
     public void setTitle(String title) {
-        tv_room_name.setText(title);
+        ((Activity) getContext()).runOnUiThread(() -> tv_room_name.setText(title));
     }
 
     public void setNetworkQuality(@NetworkQuality int quality) {
-        if (iv_quality != null) {
-            switch (quality) {
-                case Constants.QUALITY_EXCELLENT:
-                case Constants.QUALITY_GOOD:
-                    iv_quality.setImageResource(R.drawable.ic_signal_good);
-                    break;
-                case Constants.QUALITY_VBAD:
-                case Constants.QUALITY_DOWN:
-                    iv_quality.setImageResource(R.drawable.ic_signal_bad);
-                    break;
-                default:
-                    iv_quality.setImageResource(R.drawable.ic_signal_normal);
-                    break;
+        ((Activity) getContext()).runOnUiThread(() -> {
+            if (iv_quality != null) {
+                switch (quality) {
+                    case Constants.QUALITY_EXCELLENT:
+                    case Constants.QUALITY_GOOD:
+                        iv_quality.setImageResource(R.drawable.ic_signal_good);
+                        break;
+                    case Constants.QUALITY_VBAD:
+                    case Constants.QUALITY_DOWN:
+                        iv_quality.setImageResource(R.drawable.ic_signal_bad);
+                        break;
+                    default:
+                        iv_quality.setImageResource(R.drawable.ic_signal_normal);
+                        break;
+                }
             }
-        }
+        });
     }
 
     public void setTimeState(boolean start, long time) {

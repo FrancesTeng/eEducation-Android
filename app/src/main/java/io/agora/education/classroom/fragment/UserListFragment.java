@@ -34,8 +34,7 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
     protected void initData() {
         if (context instanceof BaseClassActivity) {
             BaseClassActivity baseClass = ((BaseClassActivity) context);
-            adapter = new UserListAdapter(baseClass.getLocalUser().getUserInfo().getUserUuid(),
-                    baseClass.getLocalStream());
+            adapter = new UserListAdapter(baseClass.getLocalCameraStream());
             adapter.setOnItemChildClickListener(this);
         }
     }
@@ -48,11 +47,21 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
     }
 
     public void setUserList(List<EduUserInfo> userList) {
-        adapter.setDiffNewData(userList);
+        adapter.setNewData(userList);
+    }
+
+    public void setLocalUserUuid(String userUuid) {
+        adapter.setLocalUserUuid(userUuid);
     }
 
     public void updateLocalStream(EduStreamInfo streamInfo) {
-        adapter.setEduStreamInfo(streamInfo);
+        if (rcv_users.isComputingLayout()) {
+            rcv_users.postDelayed(() -> {
+                adapter.updateLocalCameraStream(streamInfo);
+            }, 300);
+        } else {
+            rcv_users.post(() -> adapter.updateLocalCameraStream(streamInfo));
+        }
     }
 
     @Override

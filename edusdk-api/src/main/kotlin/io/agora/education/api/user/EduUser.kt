@@ -4,6 +4,7 @@ import android.view.ViewGroup
 import io.agora.education.api.EduCallback
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduMsg
+import io.agora.education.api.room.data.Property
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
@@ -41,4 +42,8 @@ interface EduUser {
     fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig = VideoRenderConfig())
 
     fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup)
+
+    fun updateRoomProperty(property: Property, callback: EduCallback<Unit>)
+
+    fun updateUserProperty(property: Property, targetUser: EduUserInfo, callback: EduCallback<Unit>)
 }

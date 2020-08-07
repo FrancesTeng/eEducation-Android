@@ -2,20 +2,23 @@ package io.agora.education.classroom;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import androidx.annotation.NonNull;
+import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 
 import butterknife.BindView;
+import io.agora.base.callback.ThrowableCallback;
+import io.agora.base.network.RetrofitManager;
 import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.RoomEntry;
@@ -41,15 +44,20 @@ import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.api.user.listener.EduUserEventListener;
 import io.agora.education.base.BaseActivity;
+import io.agora.education.classroom.bean.board.BoardBean;
+import io.agora.education.classroom.bean.board.BoardFollowMode;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.fragment.ChatRoomFragment;
 import io.agora.education.classroom.fragment.WhiteBoardFragment;
 import io.agora.education.classroom.widget.TitleView;
+import io.agora.education.service.BoardService;
+import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.widget.ConfirmDialog;
-import kotlin.Unit;
 
+import static io.agora.education.BuildConfig.API_BASE_URL;
 import static io.agora.education.MainActivity.CODE;
 import static io.agora.education.MainActivity.REASON;
+import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
 
 public abstract class BaseClassActivity extends BaseActivity implements EduRoomEventListener, EduUserEventListener {
     private static final String TAG = BaseClassActivity.class.getSimpleName();
@@ -71,11 +79,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     private RoomEntry roomEntry;
     private boolean isJoining;
     private EduRoom eduRoom;
-    private EduStreamInfo localStream;
+    private EduStreamInfo localCameraStream, localScreenStream;
+    protected BoardBean boardBean;
 
     @Override
     protected void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.e(TAG, "onCreate");
     }
 
     @Override
@@ -89,9 +99,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     protected void initView() {
     }
 
-    protected final void init() {
+    protected void onJoinRoomSuccess() {
         title_view.setTitle(getRoomName());
-
         getSupportFragmentManager().beginTransaction()
                 .remove(whiteboardFragment)
                 .remove(chatRoomFragment)
@@ -99,8 +108,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         getSupportFragmentManager().beginTransaction()
                 .add(R.id.layout_whiteboard, whiteboardFragment)
                 .add(R.id.layout_chat_room, chatRoomFragment)
+                .show(whiteboardFragment)
                 .show(chatRoomFragment)
-                .commit();
+                .commitNow();
     }
 
     private void createRoom(String yourNameStr, String yourUuid, String roomNameStr, String roomUuid, int roomType) {
@@ -110,13 +120,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         isJoining = true;
         /**createClassroom时，room不存在则新建，存在则返回room信息(此接口非必须调用)，
          * 只要保证在调用joinClassroom之前，classroom在服务端存在即可*/
-        RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType);
+        RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType, true);
         EduApplication.getEduManager().createClassroom(options, new EduCallback<EduRoom>() {
             @Override
             public void onSuccess(@Nullable EduRoom res) {
                 eduRoom = res;
                 eduRoom.setEventListener(BaseClassActivity.this);
-                joinRoom(res, yourNameStr, yourUuid);
+                joinRoom(eduRoom, yourNameStr, yourUuid);
             }
 
             @Override
@@ -134,7 +144,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             public void onSuccess(@Nullable EduStudent res) {
                 isJoining = false;
                 eduRoom.getLocalUser().setEventListener(BaseClassActivity.this);
-                init();
+                onJoinRoomSuccess();
             }
 
             @Override
@@ -159,18 +169,18 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
      * 禁止本地音频
      */
     public final void muteLocalAudio(boolean isMute) {
-        switchLocalVideoAudio(localStream.getHasVideo(), !isMute);
+        switchLocalVideoAudio(localCameraStream.getHasVideo(), !isMute);
 //        classContext.muteLocalAudio(isMute);
     }
 
     public final void muteLocalVideo(boolean isMute) {
-        switchLocalVideoAudio(!isMute, localStream.getHasAudio());
+        switchLocalVideoAudio(!isMute, localCameraStream.getHasAudio());
 //        classContext.muteLocalVideo(isMute);
     }
 
     private void switchLocalVideoAudio(boolean openVideo, boolean openAudio) {
         /**先更新本地流信息和rte状态*/
-        eduRoom.localUser.initOrUpdateLocalStream(new LocalStreamInitOptions(localStream.getStreamUuid(),
+        eduRoom.localUser.initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
                 openVideo, openAudio), new EduCallback<EduStreamInfo>() {
             @Override
             public void onSuccess(@Nullable EduStreamInfo res) {
@@ -196,8 +206,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return eduRoom.localUser;
     }
 
-    public EduStreamInfo getLocalStream() {
-        return localStream;
+    public EduStreamInfo getLocalCameraStream() {
+        return localCameraStream;
     }
 
     public final void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
@@ -214,8 +224,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     protected EduStreamInfo getTeacherStream() {
         for (EduStreamInfo streamInfo : getCurFullStream()) {
-            if(streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER))
-            {
+            if (streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
                 return streamInfo;
             }
         }
@@ -227,17 +236,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     protected void onDestroy() {
-        eduRoom.leave(new EduCallback<Unit>() {
-            @Override
-            public void onSuccess(@Nullable Unit res) {
-                Log.e(TAG, "成功退出房间");
-            }
-
-            @Override
-            public void onFailure(int code, @Nullable String reason) {
-                Log.e(TAG, "退出房间失败：" + reason);
-            }
-        });
+        /**退出activity之前释放eduRoom资源*/
+        EduApplication.getEduManager().releaseRoom(eduRoom.getRoomInfo().getRoomUuid());
         whiteboardFragment.releaseBoard();
         super.onDestroy();
     }
@@ -250,7 +250,11 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     public final void showLeaveDialog() {
         ConfirmDialog.normal(getString(R.string.confirm_leave_room_content), confirm -> {
             if (confirm) {
-                BaseClassActivity.this.finish();
+                /**退出activity之前离开eduRoom*/
+                if (eduRoom != null) {
+                    eduRoom.leave();
+                    BaseClassActivity.this.finish();
+                }
             }
         }).show(getSupportFragmentManager(), null);
     }
@@ -274,6 +278,17 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         runOnUiThread(() -> eduRoom.getLocalUser().setStreamView(eduStreamInfo, viewGroup));
     }
 
+    protected String getProperty(Map<String, Object> properties, String key) {
+        if (properties != null) {
+            for (Map.Entry<String, Object> property : properties.entrySet()) {
+                if (property.getKey().equals(key)) {
+                    return String.valueOf(property.getValue());
+                }
+            }
+        }
+        return null;
+    }
+
     /**
      * @Override public void onTeacherInit(User teacher) {
      * if (teacher == null) {
@@ -288,62 +303,33 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
      * }
      */
 
-//    @Override
-//    public void onNetworkQualityChanged(@NetworkQuality int quality) {
-//        title_view.setNetworkQuality(quality);
-//    }
 
-//    @Override
-//    public void onClassStateChanged(boolean isBegin, long time) {
-//        title_view.setTimeState(isBegin, time);
-//    }
-
-//    @Override
-//    public void onMuteLocalChat(boolean muted) {
-//        chatRoomFragment.setMuteLocal(muted);
-//    }
-
-//    @Override
-//    public void onMuteAllChat(boolean muted) {
-//        chatRoomFragment.setMuteAll(muted);
-//    }
-
-//    @Override
-//    public void onChatMsgReceived(ChannelMsg.ChatMsg msg) {
-//        chatRoomFragment.addMessage(msg);
-//    }
-
-//    @Override
-//    public void onScreenShareJoined(int uid) {
-//        if (surface_share_video == null) {
-//            surface_share_video = RtcManager.instance().createRendererView(this);
-//        }
-//        layout_whiteboard.setVisibility(View.GONE);
-//        layout_share_video.setVisibility(View.VISIBLE);
 //
-//        removeFromParent(surface_share_video);
-//        surface_share_video.setTag(uid);
-//        layout_share_video.addView(surface_share_video, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-//        RtcManager.instance().setupRemoteVideo(surface_share_video, VideoCanvas.RENDER_MODE_FIT, uid);
-//    }
-
-
-//    @Override
-//    public void onScreenShareOffline(int uid) {
-//        Object tag = surface_share_video.getTag();
-//        if (tag instanceof Integer) {
-//            if ((int) tag == uid) {
-//                layout_whiteboard.setVisibility(View.VISIBLE);
-//                layout_share_video.setVisibility(View.GONE);
-//
-//                removeFromParent(surface_share_video);
-//                surface_share_video = null;
-//            }
-//        }
-//    }
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
+        Map<String, Object> roomProperties = fromClassRoom.getRoomProperties();
+        /**判断roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
+        String boardJson = getProperty(roomProperties, BOARD);
+        if (TextUtils.isEmpty(boardJson)) {
+            RetrofitManager.instance().getService(API_BASE_URL, BoardService.class)
+                    .getBoardInfo(getString(R.string.agora_app_id), fromClassRoom.getRoomInfo().getRoomUuid())
+                    .enqueue(new RetrofitManager.Callback(0, new ThrowableCallback<ResponseBody<BoardBean>>() {
+                        @Override
+                        public void onFailure(@androidx.annotation.Nullable Throwable throwable) {
+                        }
 
+                        @Override
+                        public void onSuccess(@androidx.annotation.Nullable ResponseBody<BoardBean> res) {
+                        }
+                    }));
+        } else {
+            boardBean = new Gson().fromJson(boardJson, BoardBean.class);
+            whiteboardFragment.initBoardWithRoomToken(boardBean.getInfo().getBoardId(),
+                    boardBean.getInfo().getBoardToken());
+            if (boardBean.getState().getFollow() == BoardFollowMode.FOLLOW) {
+                whiteboardFragment.disableCameraTransform(true);
+            }
+        }
     }
 
     @Override
@@ -385,7 +371,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom fromClassRoom) {
     }
 
-    /**尝试获取本地流数据*/
+    /**
+     * 尝试获取本地流数据
+     */
 //    private void attemptUpdateLocalStream(@NonNull List list)
 //    {
 //        if(list.size() == 0) {
@@ -406,7 +394,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 //            }
 //        }
 //    }
-
     @Override
     public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
     }
@@ -421,7 +408,33 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom fromClassRoom) {
+    }
 
+    @Override
+    public void onRoomPropertyChanged(@NotNull EduRoom fromClassRoom) {
+        Log.e(TAG, "收到roomProperty改变的数据");
+        Map<String, Object> roomProperties = fromClassRoom.getRoomProperties();
+        String boardJson = getProperty(roomProperties, BOARD);
+        if (boardBean == null) {
+            Log.e(TAG, "首次获取到白板信息");
+            /**首次获取到白板信息*/
+            boardBean = new Gson().fromJson(boardJson, BoardBean.class);
+            whiteboardFragment.initBoardWithRoomToken(boardBean.getInfo().getBoardId(),
+                    boardBean.getInfo().getBoardToken());
+            if (boardBean.getState().getFollow() == BoardFollowMode.FOLLOW) {
+                whiteboardFragment.disableCameraTransform(true);
+            }
+        } else {
+            Log.e(TAG, "更新白板信息");
+            /**更新白板信息*/
+            boardBean = new Gson().fromJson(boardJson, BoardBean.class);
+            whiteboardFragment.disableCameraTransform(boardBean.getState().getFollow() ==
+                    BoardFollowMode.FOLLOW);
+        }
+    }
+
+    @Override
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom fromClassRoom) {
     }
 
     @Override
@@ -441,17 +454,56 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
+
+    }
+
+    protected String aaa = "-1";
+
+    @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
-        localStream = streamEvent.getModifiedStream();
+        Log.e(TAG, "收到添加本地流的回调");
+        switch (streamEvent.getModifiedStream().getVideoSourceType()) {
+            case CAMERA:
+                aaa = "100";
+                localCameraStream = streamEvent.getModifiedStream();
+                Log.e(TAG, "收到添加本地Camera流的回调");
+                break;
+            case SCREEN:
+                localScreenStream = streamEvent.getModifiedStream();
+                break;
+            default:
+                break;
+        }
     }
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
-        localStream = streamEvent.getModifiedStream();
+        Log.e(TAG, "收到更新本地流的回到");
+        switch (streamEvent.getModifiedStream().getVideoSourceType()) {
+            case CAMERA:
+                localCameraStream = streamEvent.getModifiedStream();
+                break;
+            case SCREEN:
+                localScreenStream = streamEvent.getModifiedStream();
+                break;
+            default:
+                break;
+        }
     }
 
     @Override
     public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
-        localStream = null;
+        Log.e(TAG, "收到移除本地流的回到");
+        switch (streamEvent.getModifiedStream().getVideoSourceType()) {
+            case CAMERA:
+                localCameraStream = null;
+                break;
+            case SCREEN:
+                localScreenStream = null;
+                break;
+            default:
+                break;
+        }
     }
 }

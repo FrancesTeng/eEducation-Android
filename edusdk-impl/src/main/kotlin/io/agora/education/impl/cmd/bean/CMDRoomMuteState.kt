@@ -1,4 +1,4 @@
-package io.agora.education.impl.cmd
+package io.agora.education.impl.cmd.bean
 
 import io.agora.education.impl.room.data.request.RoleConfig
 import io.agora.education.impl.room.data.response.EduUserRes

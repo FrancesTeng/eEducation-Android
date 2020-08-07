@@ -41,6 +41,10 @@ interface EduRoomEventListener {
 
     fun onRoomStatusChanged(event: RoomStatusEvent, operatorUser: EduUserInfo?, fromClassRoom: EduRoom)
 
+    fun onRoomPropertyChanged(fromClassRoom: EduRoom)
+
+    fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, fromClassRoom: EduRoom)
+
     fun onConnectionStateChanged(state: ConnectionState, reason: ConnectionStateChangeReason, fromClassRoom: EduRoom)
 
     fun onNetworkQualityChanged(quality: NetworkQuality, user: EduUserInfo, fromClassRoom: EduRoom)

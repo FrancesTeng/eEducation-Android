@@ -12,4 +12,5 @@ internal class EduStreamInfoImpl(
         hasAudio: Boolean,
         publisher: EduUserInfo,
         var updateTime: Long?
-) : EduStreamInfo(streamUuid, streamName, videoSourceType, hasVideo, hasAudio, publisher)
+) : EduStreamInfo(streamUuid, streamName, videoSourceType, hasVideo, hasAudio, publisher) {
+}

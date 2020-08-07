@@ -33,7 +33,6 @@ import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
 import io.agora.education.classroom.bean.channel.Room;
-import io.agora.education.classroom.bean.channel.User;
 import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.fragment.UserListFragment;
 
@@ -75,14 +74,17 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             }
         });
         rcv_videos.setAdapter(classVideoAdapter);
-
         layout_tab.addOnTabSelectedListener(this);
-
         userListFragment = new UserListFragment();
         getSupportFragmentManager().beginTransaction()
                 .add(R.id.layout_chat_room, userListFragment)
-                .hide(userListFragment)
-                .commit();
+                .show(userListFragment)
+                .commitNow();
+    }
+
+    @Override
+    protected void onJoinRoomSuccess() {
+        super.onJoinRoomSuccess();
     }
 
     @Override
@@ -110,7 +112,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         } else {
             transaction.show(userListFragment).hide(chatRoomFragment);
         }
-        transaction.commit();
+        transaction.commitNow();
     }
     @Override
     public void onTabUnselected(TabLayout.Tab tab) {
@@ -120,7 +122,6 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     public void onTabReselected(TabLayout.Tab tab) {
 
     }
-
 
 
     @Override
@@ -177,7 +178,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom fromClassRoom) {
         super.onRemoteStreamsInitialized(streams, fromClassRoom);
-        classVideoAdapter.setDiffNewData(getCurFullStream());
+        userListFragment.setLocalUserUuid(fromClassRoom.localUser.getUserInfo().getUserUuid());
+        classVideoAdapter.setNewList(getCurFullStream());
     }
 
     @Override
@@ -203,7 +205,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         }
         /**有远端Camera流被移除，刷新视频列表*/
         if(notify) {
-            classVideoAdapter.setDiffNewData(getCurFullStream());
+            classVideoAdapter.setNewList(getCurFullStream());
         }
     }
 
@@ -211,7 +213,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
         super.onRemoteStreamsUpdated(streamEvents, fromClassRoom);
         /**屏幕分享流只有新建和移除，不会有修改行为，所以此处的流都是Camera类型的*/
-        classVideoAdapter.setDiffNewData(getCurFullStream());
+        classVideoAdapter.setNewList(getCurFullStream());
     }
 
     @Override
@@ -236,7 +238,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         }
         /**有远端Camera流被移除，刷新视频列表*/
         if(notify) {
-            classVideoAdapter.setDiffNewData(getCurFullStream());
+            classVideoAdapter.setNewList(getCurFullStream());
         }
     }
 
@@ -258,6 +260,15 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
+    public void onRoomPropertyChanged(@NotNull EduRoom fromClassRoom) {
+        super.onRoomPropertyChanged(fromClassRoom);
+    }
+
+    @Override
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom fromClassRoom) {
+    }
+
+    @Override
     public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom fromClassRoom) {
         super.onConnectionStateChanged(state, reason, fromClassRoom);
     }
@@ -274,22 +285,27 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         /**更新用户信息*/
         EduUserInfo userInfo = userEvent.getModifiedUser();
         chatRoomFragment.setMuteLocal(!userInfo.isChatAllowed());
-        classVideoAdapter.setDiffNewData(getCurFullStream());
-        userListFragment.updateLocalStream(getLocalStream());
+        classVideoAdapter.setNewList(getCurFullStream());
+        userListFragment.updateLocalStream(getLocalCameraStream());
+    }
+
+    @Override
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
+        super.onLocalUserPropertyUpdated(userInfo);
     }
 
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
-        classVideoAdapter.setDiffNewData(getCurFullStream());
-        userListFragment.updateLocalStream(getLocalStream());
+        classVideoAdapter.setNewList(getCurFullStream());
+        userListFragment.updateLocalStream(getLocalCameraStream());
     }
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamUpdated(streamEvent);
-        classVideoAdapter.setDiffNewData(getCurFullStream());
-        userListFragment.updateLocalStream(getLocalStream());
+        classVideoAdapter.setNewList(getCurFullStream());
+        userListFragment.updateLocalStream(getLocalCameraStream());
     }
 
     @Override
