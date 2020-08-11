@@ -28,7 +28,7 @@ interface StreamService {
     ): Call<ResponseBody<String>>
 
     /**删除流*/
-    @DELETE("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{useruuid}/streams/{streamUuid}")
+    @DELETE("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
     fun deleteStream(
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,

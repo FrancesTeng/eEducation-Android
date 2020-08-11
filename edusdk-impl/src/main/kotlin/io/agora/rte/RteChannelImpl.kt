@@ -2,12 +2,13 @@ package io.agora.rte
 
 import android.util.Log
 import androidx.annotation.NonNull
-import io.agora.rtc.Constants
 import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcChannelEventHandler
+import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rte.RteEngineImpl.rtmLoginSuccess
 import io.agora.rtm.*
+import io.agora.rtm.RtmStatusCode.LeaveChannelError.LEAVE_CHANNEL_ERR_USER_NOT_LOGGED_IN
 
 internal class RteChannelImpl(
         channelId: String,
@@ -38,23 +39,38 @@ internal class RteChannelImpl(
     }
 
     private val rtcChannelEventHandler = object : IRtcChannelEventHandler() {
+        override fun onClientRoleChanged(rtcChannel: RtcChannel?, oldRole: Int, newRole: Int) {
+            super.onClientRoleChanged(rtcChannel, oldRole, newRole)
+            Log.e("RteChannelImpl", rtcChannel?.channelId() + "," + oldRole + "," + newRole)
+        }
+
+        override fun onJoinChannelSuccess(rtcChannel: RtcChannel?, uid: Int, elapsed: Int) {
+            super.onJoinChannelSuccess(rtcChannel, uid, elapsed)
+            Log.e("RteChannelImpl", String.format("onJoinChannelSuccess channel %s uid %d", rtcChannel, uid));
+        }
+
+        override fun onUserJoined(rtcChannel: RtcChannel?, uid: Int, elapsed: Int) {
+            super.onUserJoined(rtcChannel, uid, elapsed)
+            Log.e("RteChannelImpl", "onUserJoined->$uid")
+        }
+
+        override fun onRemoteVideoStateChanged(rtcChannel: RtcChannel?, uid: Int, state: Int, reason: Int, elapsed: Int) {
+            super.onRemoteVideoStateChanged(rtcChannel, uid, state, reason, elapsed)
+            Log.e("RteChannelImpl", "onRemoteVideoStateChanged->$uid, state->$state, reason->$reason")
+        }
     }
 
     private val rtmChannel = RteEngineImpl.rtmClient.createChannel(channelId, rtmChannelListener)
-    private val rtcChannel = RteEngineImpl.rtcEngine.createRtcChannel(channelId)
-
-
+    val rtcChannel = RteEngineImpl.rtcEngine.createRtcChannel(channelId)
+    
     init {
         rtcChannel.setRtcChannelEventHandler(rtcChannelEventHandler)
     }
 
-    override fun join(rtcToken: String, rtmToken: String, rtcUid: Int, rtmUid: String,
-                      mediaOptions: ChannelMediaOptions,
-                      @NonNull callback: ResultCallback<Void>) {
-        val rtcCode = rtcChannel.joinChannel(rtcToken, null, rtcUid, ChannelMediaOptions().apply {
-            this.autoSubscribeAudio = mediaOptions.autoSubscribeAudio
-            autoSubscribeVideo = mediaOptions.autoSubscribeVideo
-        })
+    override fun join(rtcToken: String, rtmToken: String, rtcUid: Long, rtmUid: String,
+                      mediaOptions: ChannelMediaOptions, @NonNull callback: ResultCallback<Void>) {
+        val uid = (rtcUid and 0xffffffffL)
+        val rtcCode = rtcChannel.joinChannel(rtcToken, null, uid.toInt(), mediaOptions)
         /**rtm不能重复登录*/
         if (!rtmLoginSuccess) {
             RteEngineImpl.rtmClient.login(rtmToken, rtmUid, object : ResultCallback<Void> {
@@ -92,11 +108,11 @@ internal class RteChannelImpl(
     override fun leave() {
         rtmChannel.leave(object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
-                Log.e("RteEngineImpl", "成功离开RTM频道")
+                Log.e("RteChannelImpl", "成功离开RTM频道")
             }
 
             override fun onFailure(p0: ErrorInfo?) {
-                Log.e("RteEngineImpl", "离开RTM频道失败:${p0?.errorDescription}")
+                Log.e("RteChannelImpl", "离开RTM频道失败:${p0?.errorDescription}")
             }
         })
         rtcChannel.leaveChannel()
@@ -111,6 +127,9 @@ internal class RteChannelImpl(
 
             override fun onFailure(p0: ErrorInfo?) {
                 Log.e("RteEngineImpl", "退出RTM失败:${p0?.errorDescription}")
+                if (p0?.errorCode == LEAVE_CHANNEL_ERR_USER_NOT_LOGGED_IN) {
+                    rtmLoginSuccess = false
+                }
             }
         })
         rtmChannel.release()

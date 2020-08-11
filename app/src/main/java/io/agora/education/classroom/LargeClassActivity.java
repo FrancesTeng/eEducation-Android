@@ -1,6 +1,7 @@
 package io.agora.education.classroom;
 
 import android.content.res.Configuration;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -11,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 
 import com.google.android.material.tabs.TabLayout;
+import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -20,7 +22,9 @@ import java.util.Locale;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.agora.base.ToastManager;
 import io.agora.education.R;
+import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
@@ -38,9 +42,18 @@ import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.bean.msg.ChannelMsg;
+import io.agora.education.classroom.bean.msg.PeerMsg;
 import io.agora.education.classroom.widget.RtcVideoView;
 
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.ABORT;
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.ACCEPT;
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.APPLY;
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.CANCEL;
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.EXIT;
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.REJECT;
+
 public class LargeClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
+    private static final String TAG = "LargeClassActivity";
 
     @BindView(R.id.layout_video_teacher)
     protected FrameLayout layout_video_teacher;
@@ -134,12 +147,48 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         boolean isSelected = view.isSelected();
         if (isSelected) {
             /**取消举手(包括在老师处理前主动取消和老师同意后主动退出)*/
-//            ((LargeClassContext) classContext).cancel();
+            cancleCoVideo(new EduCallback<EduMsg>() {
+                @Override
+                public void onSuccess(@org.jetbrains.annotations.Nullable EduMsg res) {
+                }
+                @Override
+                public void onFailure(int code, @org.jetbrains.annotations.Nullable String reason) {
+                }
+            });
         } else {
             /**举手*/
-//            ((LargeClassContext) classContext).apply();
+            applyCoVideo(new EduCallback<EduMsg>() {
+                @Override
+                public void onSuccess(@org.jetbrains.annotations.Nullable EduMsg res) {
+                }
+                @Override
+                public void onFailure(int code, @org.jetbrains.annotations.Nullable String reason) {
+                }
+            });
         }
     }
+
+    /**
+     * 申请举手连麦
+     */
+    private void applyCoVideo(EduCallback<EduMsg> callback) {
+        PeerMsg.CoVideoMsg coVideoMsg = new PeerMsg.CoVideoMsg(
+                PeerMsg.CoVideoMsg.Type.APPLY,
+                getLocalUser().getUserInfo().getUserUuid(),
+                getLocalUser().getUserInfo().getUserName());
+        PeerMsg peerMsg = new PeerMsg(PeerMsg.Cmd.CO_VIDEO, coVideoMsg);
+        getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
+    }
+    /**取消举手(包括在老师处理前主动取消和老师同意后主动退出)*/
+    private void cancleCoVideo(EduCallback<EduMsg> callback) {
+        PeerMsg.CoVideoMsg coVideoMsg = new PeerMsg.CoVideoMsg(
+                isMineLink() ? EXIT : CANCEL,
+                getLocalUser().getUserInfo().getUserUuid(),
+                getLocalUser().getUserInfo().getUserName());
+        PeerMsg peerMsg = new PeerMsg(PeerMsg.Cmd.CO_VIDEO, coVideoMsg);
+        getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
+    }
+
 
 //    @Override
 //    public void onTeacherMediaChanged(@Nullable User user) {
@@ -150,7 +199,9 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
 //        video_teacher.muteAudio(!user.isAudioEnable());
 //    }
 
-    /**本地用户举手被老师同意*/
+    /**
+     * 本地用户举手被老师同意
+     */
 //    @Override
 //    public void onLinkMediaChanged(@Nullable User user) {
 //        linkUser = user;
@@ -173,16 +224,18 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
 //        }
 //    }
 
+    /**当前连麦用户是否是本人*/
     private boolean isMineLink() {
-        return linkedUser != null && linkedUser.getUserUuid() == getLocalUser().getUserInfo().getUserUuid();
+        return linkedUser != null && linkedUser.equals(getLocalUser().getUserInfo());
     }
 
-    /**被取消连麦*/
+    /**
+     * 被取消连麦
+     */
 //    @Override
 //    public void onHandUpCanceled() {
 //        layout_hand_up.setSelected(false);
 //    }
-
     private void resetHandState() {
         if (isMineLink()) {
             layout_hand_up.setEnabled(true);
@@ -212,9 +265,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     public void onTabReselected(TabLayout.Tab tab) {
 
     }
-
-
-
 
 
     @Override
@@ -248,6 +298,24 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom fromClassRoom) {
         super.onUserMessageReceived(message, fromClassRoom);
+        PeerMsg peerMsg = PeerMsg.fromJson(message.getMessage(), PeerMsg.class);
+        if (peerMsg.cmd == PeerMsg.Cmd.CO_VIDEO) {
+            PeerMsg.CoVideoMsg coVideoMsg = peerMsg.getMsg(PeerMsg.CoVideoMsg.class);
+            switch (coVideoMsg.type) {
+                case REJECT:
+                    linkedUser = null;
+                    ToastManager.showShort(R.string.reject_interactive);
+                    break;
+                case ACCEPT:
+                    linkedUser = getLocalUser().getUserInfo();
+                    ToastManager.showShort(R.string.accept_interactive);
+                    break;
+                case ABORT:
+                    linkedUser = null;
+                    ToastManager.showShort(R.string.abort_interactive);
+                    break;
+            }
+        }
     }
 
     @Override
@@ -270,13 +338,13 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         super.onRemoteStreamsInitialized(streams, fromClassRoom);
         /**大班课场景下，远端流就是老师的流;初始化成功后只可能有Camera的流*/
         EduStreamInfo streamInfo = getTeacherStream();
-       if(streamInfo != null) {
-           EduBaseUserInfo userInfo = streamInfo.getPublisher();
-           video_teacher.setName(userInfo.getUserName());
-           getLocalUser().setStreamView(streamInfo, video_teacher.getVideoLayout());
-           video_teacher.muteVideo(!streamInfo.getHasVideo());
-           video_teacher.muteAudio(!streamInfo.getHasAudio());
-       }
+        if (streamInfo != null) {
+            EduBaseUserInfo userInfo = streamInfo.getPublisher();
+            video_teacher.setName(userInfo.getUserName());
+            getLocalUser().setStreamView(streamInfo, getRoomUuid(), video_teacher.getVideoLayout());
+            video_teacher.muteVideo(!streamInfo.getHasVideo());
+            video_teacher.muteAudio(!streamInfo.getHasAudio());
+        }
     }
 
     @Override
@@ -324,7 +392,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         super.onRemoteStreamsRemoved(streamEvents, fromClassRoom);
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            if(streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
+            if (streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
                 switch (streamInfo.getVideoSourceType()) {
                     case CAMERA:
                         video_teacher.setName(streamInfo.getPublisher().getUserName());
@@ -334,6 +402,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                         break;
                     case SCREEN:
                         /**有屏幕分享的流离开，说明是老师关闭了屏幕分享，移除屏幕分享的布局*/
+                        layout_whiteboard.setVisibility(View.VISIBLE);
                         layout_share_video.removeAllViews();
                         layout_share_video.setVisibility(View.GONE);
                         renderStream(streamInfo, null);
@@ -408,5 +477,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamRemoved(streamEvent);
+        Log.e(TAG, "本地流被移除:" + streamEvent.getModifiedStream().getStreamUuid());
     }
 }

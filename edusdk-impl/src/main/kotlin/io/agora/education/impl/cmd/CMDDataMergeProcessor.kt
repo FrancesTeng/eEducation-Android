@@ -19,45 +19,9 @@ import io.agora.education.impl.room.data.response.EduUserRes
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 
-class CMDDataFuser {
+internal class CMDDataMergeProcessor: CMDProcessor() {
     companion object {
         val TAG = "CMDDataFuser"
-
-
-        /**调用此函数之前须确保first和second代表的是同一个用户
-         *
-         * 比较first的数据是否比second的更为接近当前时间(即找出一个最新数据)
-         * @return > 0（first > second）
-         *         !(> 0) first <= second*/
-        private fun compareUserInfoTime(first: EduUserInfo, second: EduUserInfo): Long {
-            /**判断更新时间是否为空(为空的有可能是原始数据)*/
-            if ((first as EduUserInfoImpl).updateTime == null) {
-                return -1
-            }
-            if ((second as EduUserInfoImpl).updateTime == null) {
-                return first.updateTime!!
-            }
-            /**最终判断出最新数据*/
-            return first.updateTime!!.minus(second.updateTime!!)
-        }
-
-        /**operator有可能为空(说明用户自己就是操作者)，我们需要把当前用户设置为操作者*/
-        private fun getOperator(operator: Any?, userInfo: EduBaseUserInfo, roomType: RoomType):
-                EduBaseUserInfo {
-            /**operator为空说明操作者是自己*/
-            var operatorUser: EduBaseUserInfo? = null
-            operator?.let {
-                if (operator is EduUserRes) {
-                    operatorUser = Convert.convertUserInfo(operator, roomType)
-                } else if (operator is EduFromUserRes) {
-                    operatorUser = Convert.convertUserInfo(operator, roomType)
-                }
-            }
-            if (operatorUser == null) {
-                operatorUser = userInfo
-            }
-            return operatorUser!!
-        }
 
         /**从 {@param userInfoList} 中过滤掉 离开课堂的用户 {@param offLineUserList}*/
         fun filterUserWithOffline(offLineUserList: MutableList<OffLineUserInfo>,
@@ -147,7 +111,7 @@ class CMDDataFuser {
         fun updateUserPropertyWithChange(cmdUsrPropertyRes: CMDUserPropertyRes,
                                          eduUserInfos: MutableList<EduUserInfo>): EduUserInfo? {
             for (element in eduUserInfos) {
-                if(cmdUsrPropertyRes.fromUserRes.userUuid == element.userUuid) {
+                if (cmdUsrPropertyRes.fromUserRes.userUuid == element.userUuid) {
                     element.userProperties = cmdUsrPropertyRes.userProperties
                     return element
                 }
@@ -173,19 +137,6 @@ class CMDDataFuser {
             return first.updateTime!!.minus(second.updateTime!!)
         }
 
-//        /**operator有可能为空(说明用户自己就是操作者)，我们需要把当前用户设置为操作者*/
-//        private fun getOperator(operator: EduFromUserRes?, userInfo: EduUserInfo, roomType: RoomType):
-//                EduUserInfo {
-//            /**operator为空说明操作者是自己*/
-//            var operatorUser: EduUserInfo? = null
-//            operator?.let {
-//                operatorUser = Convert.convertUserInfo(operator, roomType)
-//            }
-//            if (operatorUser == null) {
-//                operatorUser = userInfo
-//            }
-//            return operatorUser!!
-//        }
 
         fun addStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
                                 streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType):
@@ -280,11 +231,16 @@ class CMDDataFuser {
             val removedStreams = mutableListOf<EduStreamEvent>()
             synchronized(streamInfoList) {
                 for (element in streamInfoList) {
+
+                }
+                val iterable = streamInfoList.iterator()
+                while (iterable.hasNext()) {
+                    val element = iterable.next()
                     val publisher = element.publisher
                     for (userEvent in removedUserEvents) {
                         if (publisher == userEvent.modifiedUser) {
                             /**移除流*/
-                            streamInfoList.remove(element)
+                            iterable.remove()
                             removedStreams.add(EduStreamEvent(element, userEvent.operatorUser))
                         }
                     }
@@ -292,8 +248,6 @@ class CMDDataFuser {
                 return removedStreams
             }
         }
-
-
 
 
         /**把RTM通知过来的房间信息同步至eduRoom中
@@ -343,7 +297,7 @@ class CMDDataFuser {
                     element.streams?.let {
                         for (syncStreamRes in element.streams) {
                             val eduStreamInfo: EduStreamInfo = Convert.convertStreamInfo(syncStreamRes, eduUserInfo)
-                            (eduRoom as EduRoomImpl).getCurStreamList().add(eduStreamInfo)
+                            eduRoom.getCurStreamList().add(eduStreamInfo)
                         }
                     }
                 }
@@ -353,7 +307,7 @@ class CMDDataFuser {
         /**把RTM通知过来的增量人流信息同步至eduRoom中
          * 第二阶段（根据ts增量），如果中间断连，可根据ts续传
          * 第二阶段是增量数据，所以我们需要校验updateTime
-         * @return 第二阶段的增量数据是否同步完成*/
+         * @return 第二阶段的有效增量数据*/
         fun syncUserStreamListToEduRoomWithSecond(userStreamRes: CMDSyncUserStreamRes, eduRoom: EduRoom)
                 : Array<MutableList<Any>> {
             val validOnlineUserList = mutableListOf<Any>()

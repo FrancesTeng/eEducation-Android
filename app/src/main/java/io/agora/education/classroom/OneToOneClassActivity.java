@@ -71,6 +71,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
         super.onRemoteUsersInitialized(users, fromClassRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        /**小班课，默认学生可以针对白板进行输入*/
+        whiteboardFragment.disableDeviceInputs(false);
     }
 
     @Override
@@ -197,6 +199,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
                     break;
                 case SCREEN:
                     /**有屏幕分享的流离开，说明是老师关闭了屏幕分享，移除屏幕分享的布局*/
+                    layout_whiteboard.setVisibility(View.VISIBLE);
                     layout_share_video.removeAllViews();
                     layout_share_video.setVisibility(View.GONE);
                     renderStream(streamInfo, null);
@@ -227,6 +230,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRoomPropertyChanged(@NotNull EduRoom fromClassRoom) {
         super.onRoomPropertyChanged(fromClassRoom);
+        /**小班课，默认学生可以针对白板进行输入*/
+        whiteboardFragment.disableDeviceInputs(false);
     }
 
     @Override

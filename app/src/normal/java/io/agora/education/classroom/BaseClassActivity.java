@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
@@ -91,7 +92,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     @Override
     protected void initData() {
         roomEntry = getIntent().getParcelableExtra(ROOMENTRY);
-        createRoom(roomEntry.getRoomName(), roomEntry.getUserUuid(), roomEntry.getRoomName(),
+        createRoom(roomEntry.getUserName(), roomEntry.getUserUuid(), roomEntry.getRoomName(),
                 roomEntry.getRoomUuid(), roomEntry.getRoomType());
     }
 
@@ -144,7 +145,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             public void onSuccess(@Nullable EduStudent res) {
                 isJoining = false;
                 eduRoom.getLocalUser().setEventListener(BaseClassActivity.this);
-                onJoinRoomSuccess();
+                runOnUiThread(() -> onJoinRoomSuccess());
             }
 
             @Override
@@ -231,6 +232,15 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return null;
     }
 
+    protected EduUserInfo getTeacher() {
+        for (EduUserInfo userInfo : getCurFullUser()) {
+            if(userInfo.getRole().equals(EduUserRole.TEACHER)) {
+                return userInfo;
+            }
+        }
+        return null;
+    }
+
     @Room.Type
     protected abstract int getClassType();
 
@@ -259,23 +269,23 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         }).show(getSupportFragmentManager(), null);
     }
 
-    private EduRoomInfo getRoomFromIntent() {
+    private EduRoomInfo getRoomInfo() {
         return eduRoom.getRoomInfo();
     }
 
     public final String getRoomUuid() {
-        return getRoomFromIntent().getRoomUuid();
+        return getRoomInfo().getRoomUuid();
     }
 
     public final String getRoomName() {
-        return getRoomFromIntent().getRoomName();
+        return getRoomInfo().getRoomName();
     }
 
     /**
      * 为流(主要是视频流)设置一个渲染区域
      */
     public final void renderStream(EduStreamInfo eduStreamInfo, ViewGroup viewGroup) {
-        runOnUiThread(() -> eduRoom.getLocalUser().setStreamView(eduStreamInfo, viewGroup));
+        runOnUiThread(() -> eduRoom.getLocalUser().setStreamView(eduStreamInfo, getRoomUuid(), viewGroup));
     }
 
     protected String getProperty(Map<String, Object> properties, String key) {
@@ -287,6 +297,31 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             }
         }
         return null;
+    }
+
+    /**
+     * 当前白板是否开启跟随模式
+     */
+    protected boolean whiteBoardIsFollowMode() {
+        if (boardBean == null) {
+            return false;
+        }
+        return boardBean.getState().getFollow() == BoardFollowMode.FOLLOW;
+    }
+
+    /**
+     * 当前本地用户是否得到白板授权
+     */
+    protected boolean whiteBoardIsGranted() {
+        if (boardBean != null) {
+            String localUuid = getLocalUser().getUserInfo().getUserUuid();
+            for (String uuid : boardBean.getState().getGrantUsers()) {
+                if (uuid.equals(localUuid)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -324,27 +359,32 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                     }));
         } else {
             boardBean = new Gson().fromJson(boardJson, BoardBean.class);
-            whiteboardFragment.initBoardWithRoomToken(boardBean.getInfo().getBoardId(),
-                    boardBean.getInfo().getBoardToken());
-            if (boardBean.getState().getFollow() == BoardFollowMode.FOLLOW) {
-                whiteboardFragment.disableCameraTransform(true);
-            }
+            runOnUiThread(() -> {
+                whiteboardFragment.initBoardWithRoomToken(boardBean.getInfo().getBoardId(),
+                        boardBean.getInfo().getBoardToken());
+                whiteboardFragment.disableCameraTransform(whiteBoardIsFollowMode());
+                whiteboardFragment.disableDeviceInputs(!whiteBoardIsGranted());
+                if (whiteBoardIsGranted()) {
+                    layout_whiteboard.setVisibility(View.VISIBLE);
+                    layout_share_video.setVisibility(View.GONE);
+                }
+            });
         }
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
-
+        Log.e(TAG, "收到远端用户加入的回调");
     }
 
     @Override
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom fromClassRoom) {
-
+        Log.e(TAG, "收到远端用户离开的回调");
     }
 
     @Override
     public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom fromClassRoom) {
-
+        Log.e(TAG, "收到远端用户修改的回调");
     }
 
     @Override
@@ -354,7 +394,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom fromClassRoom) {
-
     }
 
     @Override
@@ -396,14 +435,17 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 //    }
     @Override
     public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
+        Log.e(TAG, "收到添加远端流的回调");
     }
 
     @Override
     public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
+        Log.e(TAG, "收到修改远端流的回调");
     }
 
     @Override
     public void onRemoteStreamsRemoved(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
+        Log.e(TAG, "收到移除远端流的回调");
     }
 
     @Override
@@ -419,17 +461,28 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             Log.e(TAG, "首次获取到白板信息");
             /**首次获取到白板信息*/
             boardBean = new Gson().fromJson(boardJson, BoardBean.class);
-            whiteboardFragment.initBoardWithRoomToken(boardBean.getInfo().getBoardId(),
-                    boardBean.getInfo().getBoardToken());
-            if (boardBean.getState().getFollow() == BoardFollowMode.FOLLOW) {
-                whiteboardFragment.disableCameraTransform(true);
-            }
+            runOnUiThread(() -> {
+                whiteboardFragment.initBoardWithRoomToken(boardBean.getInfo().getBoardId(),
+                        boardBean.getInfo().getBoardToken());
+                whiteboardFragment.disableCameraTransform(whiteBoardIsFollowMode());
+                whiteboardFragment.disableDeviceInputs(!whiteBoardIsGranted());
+                if (whiteBoardIsGranted()) {
+                    layout_whiteboard.setVisibility(View.VISIBLE);
+                    layout_share_video.setVisibility(View.GONE);
+                }
+            });
         } else {
             Log.e(TAG, "更新白板信息");
             /**更新白板信息*/
             boardBean = new Gson().fromJson(boardJson, BoardBean.class);
-            whiteboardFragment.disableCameraTransform(boardBean.getState().getFollow() ==
-                    BoardFollowMode.FOLLOW);
+            runOnUiThread(() -> {
+                whiteboardFragment.disableCameraTransform(!whiteBoardIsFollowMode());
+                whiteboardFragment.disableDeviceInputs(!whiteBoardIsGranted());
+                if (whiteBoardIsGranted()) {
+                    layout_whiteboard.setVisibility(View.VISIBLE);
+                    layout_share_video.setVisibility(View.GONE);
+                }
+            });
         }
     }
 

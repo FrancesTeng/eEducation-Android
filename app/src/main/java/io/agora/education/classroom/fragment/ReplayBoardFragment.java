@@ -53,6 +53,7 @@ public class ReplayBoardFragment extends BaseFragment implements ReplayEventList
     @Override
     protected void initView() {
         WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(DeviceType.touch, 10, 0.1);
+//        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(getString(R.string.whiteboard_app_id));
         whiteSdk = new WhiteSdk(white_board_view, context, configuration);
         replayManager = new ReplayManager();
         replayManager.setListener(this);

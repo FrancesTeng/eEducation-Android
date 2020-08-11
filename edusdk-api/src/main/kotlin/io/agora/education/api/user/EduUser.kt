@@ -39,9 +39,9 @@ interface EduUser {
 
     fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduChatMsg>)
 
-    fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup, config: VideoRenderConfig = VideoRenderConfig())
+    fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup, config: VideoRenderConfig = VideoRenderConfig())
 
-    fun setStreamView(stream: EduStreamInfo, viewGroup: ViewGroup)
+    fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup)
 
     fun updateRoomProperty(property: Property, callback: EduCallback<Unit>)
 

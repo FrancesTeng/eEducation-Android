@@ -1,5 +1,6 @@
 package io.agora.education.classroom.adapter;
 
+import android.app.Activity;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -82,14 +83,17 @@ public class ClassVideoAdapter extends BaseQuickAdapter<EduStreamInfo, ClassVide
     }
 
     public void setNewList(@Nullable List<EduStreamInfo> data) {
-        /**过滤掉非Camera的流*/
-        Iterator<EduStreamInfo> streamInfoIterator = data.iterator();
-        while (streamInfoIterator.hasNext()) {
-            if(!streamInfoIterator.next().getVideoSourceType().equals(VideoSourceType.CAMERA)) {
-                streamInfoIterator.remove();
+        ((Activity) getContext()).runOnUiThread(() -> {
+            /**过滤掉非Camera的流*/
+            Iterator<EduStreamInfo> streamInfoIterator = data.iterator();
+            while (streamInfoIterator.hasNext()) {
+                if (!streamInfoIterator.next().getVideoSourceType().equals(VideoSourceType.CAMERA)) {
+                    streamInfoIterator.remove();
+                }
             }
-        }
-        setDiffNewData(data);
+            setDiffNewData(data);
+            notifyDataSetChanged();
+        });
     }
 
     static class ViewHolder extends BaseViewHolder {

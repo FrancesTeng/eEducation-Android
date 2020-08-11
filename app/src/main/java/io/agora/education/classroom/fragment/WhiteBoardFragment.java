@@ -11,6 +11,7 @@ import com.herewhite.sdk.WhiteSdk;
 import com.herewhite.sdk.WhiteSdkConfiguration;
 import com.herewhite.sdk.WhiteboardView;
 import com.herewhite.sdk.domain.Appliance;
+import com.herewhite.sdk.domain.CameraBound;
 import com.herewhite.sdk.domain.DeviceType;
 import com.herewhite.sdk.domain.MemberState;
 import com.herewhite.sdk.domain.Promise;
@@ -45,6 +46,8 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     private WhiteSdk whiteSdk;
     private BoardManager boardManager = new BoardManager();
+    private final double miniScale = 0.1d;
+    private final double maxScale = 10d;
 
     @Override
     protected int getLayoutResId() {
@@ -54,6 +57,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     @Override
     protected void initData() {
         WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(DeviceType.touch, 10, 0.1);
+//        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(getString(R.string.whiteboard_app_id), true);
         whiteSdk = new WhiteSdk(white_board_view, context, configuration);
         boardManager.setListener(this);
     }
@@ -104,7 +108,8 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     }
 
     public void disableCameraTransform(boolean disabled) {
-        if (disabled != boardManager.isDisableCameraTransform()) {
+        boolean a = boardManager.isDisableCameraTransform();
+        if (disabled != a) {
             if (disabled) {
                 ToastManager.showShort(R.string.follow_tips);
                 boardManager.disableDeviceInputsTemporary(true);

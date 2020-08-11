@@ -19,6 +19,7 @@ import io.agora.education.api.room.data.EduRoomStatus
 import io.agora.education.api.room.data.RoomCreateOptions
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.statistics.AgoraError
+import io.agora.education.api.user.data.EduUserRole
 import io.agora.education.api.util.CryptoUtil
 import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.EduRoomInfoImpl
@@ -82,7 +83,6 @@ internal class EduManagerImpl(
         /**转换为抽象对象并回调出去*/
         eduRooms[eduRoomInfo.roomUuid] = eduRoomImpl
         callback.onSuccess(eduRooms[eduRoomInfo.roomUuid])
-        Convert
     }
 
     override fun releaseRoom(roomUuid: String) {

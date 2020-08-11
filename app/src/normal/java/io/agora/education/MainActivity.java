@@ -19,6 +19,7 @@ import butterknife.OnTouch;
 import io.agora.base.ToastManager;
 import io.agora.base.network.RetrofitManager;
 import io.agora.education.api.room.data.RoomType;
+import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.base.BaseActivity;
 import io.agora.education.base.BaseCallback;
 import io.agora.education.broadcast.DownloadReceiver;
@@ -115,7 +116,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @androidx.annotation.Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(data != null && requestCode == REQUEST_CODE_RTE && resultCode == RESULT_CODE) {
+        if (data != null && requestCode == REQUEST_CODE_RTE && resultCode == RESULT_CODE) {
             int code = data.getIntExtra(CODE, -1);
             String reason = data.getStringExtra(REASON);
             ToastManager.showShort(String.format(getString(R.string.function_error), code, reason));
@@ -216,10 +217,11 @@ public class MainActivity extends BaseActivity {
         }
 
         /**userUuid和roomUuid需用户自己指定，并保证唯一性*/
-        String userUuid = UUIDUtil.getUUID();
-        String roomUuid = roomNameStr;
-        startActivityForResult(createIntent(yourNameStr, userUuid, roomNameStr, roomUuid,
-                getClassType(roomTypeStr)), REQUEST_CODE_RTE);
+        int roomType = getClassType(roomTypeStr);
+        String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
+        String roomUuid = roomNameStr + roomType;
+        startActivityForResult(createIntent(yourNameStr, userUuid, roomNameStr, roomUuid, roomType),
+                REQUEST_CODE_RTE);
     }
 
     @Room.Type
@@ -240,8 +242,7 @@ public class MainActivity extends BaseActivity {
         Intent intent = new Intent();
         if (roomType == RoomType.ONE_ON_ONE.getValue()) {
             intent.setClass(this, OneToOneClassActivity.class);
-        }
-        else if (roomType == RoomType.SMALL_CLASS.getValue()) {
+        } else if (roomType == RoomType.SMALL_CLASS.getValue()) {
             intent.setClass(this, SmallClassActivity.class);
         } else {
             intent.setClass(this, LargeClassActivity.class);

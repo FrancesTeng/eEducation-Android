@@ -15,6 +15,11 @@ public class PeerMsg extends JsonBean {
     public int cmd;
     public Object data;
 
+    public PeerMsg(int cmd, Object data) {
+        this.cmd = cmd;
+        this.data = data;
+    }
+
     @IntDef({Cmd.CO_VIDEO})
     @Retention(RetentionPolicy.SOURCE)
     public @interface Cmd {
@@ -29,6 +34,12 @@ public class PeerMsg extends JsonBean {
         public int type;
         public String userId;
         public String userName;
+
+        public CoVideoMsg(int type, String userId, String userName) {
+            this.type = type;
+            this.userId = userId;
+            this.userName = userName;
+        }
 
         @IntDef({Type.APPLY, Type.REJECT, Type.CANCEL, Type.ACCEPT, Type.ABORT, Type.EXIT})
         @Retention(RetentionPolicy.SOURCE)
@@ -64,4 +75,8 @@ public class PeerMsg extends JsonBean {
         return new Gson().fromJson(new Gson().toJson(data), tClass);
     }
 
+    @Override
+    public String toJsonString() {
+        return super.toJsonString();
+    }
 }

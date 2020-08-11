@@ -1,6 +1,7 @@
 package io.agora.education.classroom;
 
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -37,6 +38,7 @@ import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.fragment.UserListFragment;
 
 public class SmallClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
+    private static final String TAG = "SmallClassActivity";
 
     @BindView(R.id.rcv_videos)
     protected RecyclerView rcv_videos;
@@ -203,8 +205,9 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
                     break;
             }
         }
-        /**有远端Camera流被移除，刷新视频列表*/
+        /**有远端Camera流添加，刷新视频列表*/
         if(notify) {
+            Log.e(TAG, "有远端Camera流添加，刷新视频列表");
             classVideoAdapter.setNewList(getCurFullStream());
         }
     }
@@ -228,6 +231,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
                     break;
                 case SCREEN:
                     /**有屏幕分享的流离开，说明是老师关闭了屏幕分享，移除屏幕分享的布局*/
+                    layout_whiteboard.setVisibility(View.VISIBLE);
                     layout_share_video.removeAllViews();
                     layout_share_video.setVisibility(View.GONE);
                     renderStream(streamInfo, null);
@@ -238,6 +242,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         }
         /**有远端Camera流被移除，刷新视频列表*/
         if(notify) {
+            Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
             classVideoAdapter.setNewList(getCurFullStream());
         }
     }

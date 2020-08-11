@@ -6,7 +6,7 @@ package io.agora.education.impl.room.data.request
 class EduJoinClassroomReq(
         val userName:   String,
         val role:       String,
-        val streamUuid: String
-        /**val autoPublish: Int*/
+        val streamUuid: String,
+        val autoPublish: Int
 ) {
 }
