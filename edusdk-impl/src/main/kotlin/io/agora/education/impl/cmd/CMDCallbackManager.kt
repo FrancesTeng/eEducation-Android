@@ -46,31 +46,31 @@ internal class CMDCallbackManager {
             val validModifiedLocalStreamsBySyncing = validLocal[2] as MutableList<EduStreamEvent>
             val validRemovedLocalStreamsBySyncing = validLocal[3] as MutableList<EduStreamEvent>
 
-            (validOnlineUsersBySyncing.size > 0)?.let {
+            if (validOnlineUsersBySyncing.size > 0) {
                 eduRoom.eventListener?.onRemoteUsersJoined(validOnlineUsersBySyncing, eduRoom)
             }
-            (validModifiedUsersBySyncing.size > 0)?.let {
+            if (validModifiedUsersBySyncing.size > 0) {
                 eduRoom.eventListener?.onRemoteUserUpdated(validModifiedUsersBySyncing, eduRoom)
             }
             validModifiedLocalUsersBySyncing?.forEach {
                 eduRoom.localUser.eventListener?.onLocalUserUpdated(it)
             }
-            (validOfflineUsersBySyncing.size > 0)?.let {
+            if (validOfflineUsersBySyncing.size > 0) {
                 eduRoom.eventListener?.onRemoteUsersLeft(validOfflineUsersBySyncing, eduRoom)
             }
-            (validAddedStreamsBySyncing.size > 0)?.let {
+            if (validAddedStreamsBySyncing.size > 0) {
                 eduRoom.eventListener?.onRemoteStreamsAdded(validAddedStreamsBySyncing, eduRoom)
             }
             validAddedLocalStreamsBySyncing?.forEach {
                 eduRoom.localUser.eventListener?.onLocalStreamAdded(it)
             }
-            (validModifiedStreamsBySyncing.size > 0)?.let {
+            if (validModifiedStreamsBySyncing.size > 0) {
                 eduRoom.eventListener?.onRemoteStreamsUpdated(validModifiedStreamsBySyncing, eduRoom)
             }
             validModifiedLocalStreamsBySyncing?.forEach {
                 eduRoom.localUser.eventListener?.onLocalStreamUpdated(it)
             }
-            (validRemovedStreamsBySyncing.size > 0)?.let {
+            if (validRemovedStreamsBySyncing.size > 0) {
                 eduRoom.eventListener?.onRemoteStreamsRemoved(validRemovedStreamsBySyncing, eduRoom)
             }
             validRemovedLocalStreamsBySyncing?.forEach {

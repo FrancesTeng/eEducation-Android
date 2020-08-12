@@ -69,6 +69,19 @@ public class PeerMsg extends JsonBean {
              */
             int EXIT = 6;
         }
+
+
+
+        @IntDef({Status.DisCoVideo, Status.Applying, Status.CoVideoing})
+        @Retention(RetentionPolicy.SOURCE)
+        public @interface Status {
+            /**初始状态*/
+            int DisCoVideo = 0;
+            /**申请中*/
+            int Applying = 1;
+            /**连麦中*/
+            int CoVideoing = 2;
+        }
     }
 
     public <T> T getMsg(Class<T> tClass) {

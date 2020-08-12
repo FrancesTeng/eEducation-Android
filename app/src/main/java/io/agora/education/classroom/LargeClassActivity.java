@@ -12,7 +12,6 @@ import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 
 import com.google.android.material.tabs.TabLayout;
-import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -36,6 +35,10 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.stream.data.LocalStreamInitOptions;
+import io.agora.education.api.stream.data.StreamSubscribeOptions;
+import io.agora.education.api.stream.data.VideoSourceType;
+import io.agora.education.api.stream.data.VideoStreamType;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
@@ -45,9 +48,11 @@ import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.bean.msg.PeerMsg;
 import io.agora.education.classroom.widget.RtcVideoView;
 
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Status.Applying;
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Status.CoVideoing;
+import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Status.DisCoVideo;
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.ABORT;
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.ACCEPT;
-import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.APPLY;
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.CANCEL;
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.EXIT;
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.REJECT;
@@ -72,7 +77,11 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
 
     private RtcVideoView video_teacher;
     private RtcVideoView video_student;
-    private EduUserInfo linkedUser;
+
+    /**
+     * 当前本地用户是否在连麦中
+     */
+    private int localCoVideoStatus = DisCoVideo;
 
     @Override
     protected int getLayoutResId() {
@@ -100,18 +109,19 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             video_student = new RtcVideoView(this);
             video_student.init(R.layout.layout_video_small_class, true);
             video_student.setOnClickAudioListener(v -> {
-                if (isMineLink()) {
+                if (localCoVideoStatus == CoVideoing) {
                     muteLocalAudio(!video_student.isAudioMuted());
                 }
             });
             video_student.setOnClickVideoListener(v -> {
-                if (isMineLink()) {
+                if (localCoVideoStatus == CoVideoing) {
                     muteLocalVideo(!video_student.isVideoMuted());
                 }
             });
         }
         removeFromParent(video_student);
         layout_video_student.addView(video_student, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        video_student.setViewVisibility(View.GONE);
 
         if (layout_tab != null) {
             layout_tab.addOnTabSelectedListener(this);
@@ -127,6 +137,12 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         }
 
         resetHandState();
+//        findViewById(R.id.layout_hand_up).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Log.e(TAG, "举手");
+//            }
+//        });
     }
 
     @Override
@@ -144,25 +160,31 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
 
     @OnClick(R.id.layout_hand_up)
     public void onClick(View view) {
-        boolean isSelected = view.isSelected();
-        if (isSelected) {
+        boolean status = localCoVideoStatus == DisCoVideo;
+        if (!status) {
             /**取消举手(包括在老师处理前主动取消和老师同意后主动退出)*/
-            cancleCoVideo(new EduCallback<EduMsg>() {
+            cancelCoVideo(new EduCallback<EduMsg>() {
                 @Override
-                public void onSuccess(@org.jetbrains.annotations.Nullable EduMsg res) {
+                public void onSuccess(@Nullable EduMsg res) {
+                    Log.e(TAG, "取消举手成功");
                 }
+
                 @Override
-                public void onFailure(int code, @org.jetbrains.annotations.Nullable String reason) {
+                public void onFailure(int code, @Nullable String reason) {
+                    Log.e(TAG, "取消举手失败");
                 }
             });
         } else {
             /**举手*/
             applyCoVideo(new EduCallback<EduMsg>() {
                 @Override
-                public void onSuccess(@org.jetbrains.annotations.Nullable EduMsg res) {
+                public void onSuccess(@Nullable EduMsg res) {
+                    Log.e(TAG, "举手成功");
                 }
+
                 @Override
-                public void onFailure(int code, @org.jetbrains.annotations.Nullable String reason) {
+                public void onFailure(int code, @Nullable String reason) {
+                    Log.e(TAG, "举手失败");
                 }
             });
         }
@@ -177,18 +199,74 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 getLocalUser().getUserInfo().getUserUuid(),
                 getLocalUser().getUserInfo().getUserName());
         PeerMsg peerMsg = new PeerMsg(PeerMsg.Cmd.CO_VIDEO, coVideoMsg);
-        getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
+        EduUserInfo teacher = getTeacher();
+        if (teacher != null) {
+            localCoVideoStatus = Applying;
+            resetHandState();
+            getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
+        } else {
+            ToastManager.showShort(R.string.there_is_no_teacher_disable_covideo);
+        }
     }
-    /**取消举手(包括在老师处理前主动取消和老师同意后主动退出)*/
-    private void cancleCoVideo(EduCallback<EduMsg> callback) {
+
+    /**
+     * 取消举手(包括在老师处理前主动取消和老师同意后主动退出)
+     */
+    private void cancelCoVideo(EduCallback<EduMsg> callback) {
         PeerMsg.CoVideoMsg coVideoMsg = new PeerMsg.CoVideoMsg(
-                isMineLink() ? EXIT : CANCEL,
+                (localCoVideoStatus == CoVideoing) ? EXIT : CANCEL,
                 getLocalUser().getUserInfo().getUserUuid(),
                 getLocalUser().getUserInfo().getUserName());
         PeerMsg peerMsg = new PeerMsg(PeerMsg.Cmd.CO_VIDEO, coVideoMsg);
-        getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
-    }
+        if (localCoVideoStatus == CoVideoing) {
+            /**连麦过程中取消
+             * 1：关闭本地流
+             * 2：更新流信息到服务器
+             * 3：发送取消的点对点消息给老师
+             * 4：更新本地记录的连麦状态*/
+            LocalStreamInitOptions options = new LocalStreamInitOptions(
+                    getLocalCameraStream().getStreamUuid(), false, false);
+            options.setStreamName(getLocalCameraStream().getStreamName());
+            getLocalUser().initOrUpdateLocalStream(options, new EduCallback<EduStreamInfo>() {
+                @Override
+                public void onSuccess(@Nullable EduStreamInfo res) {
+                    localCoVideoStatus = DisCoVideo;
+                    runOnUiThread(() -> {
+                        resetHandState();
+                        video_student.setName(getLocalUserInfo().getUserName());
+                        renderStream(getLocalCameraStream(), null);
+                        video_student.muteVideo(!getLocalCameraStream().getHasVideo());
+                        video_student.muteAudio(!getLocalCameraStream().getHasAudio());
+                        video_student.setViewVisibility(View.GONE);
+                    });
+                    getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
+                    getLocalUser().unPublishStream(res, new EduCallback<Boolean>() {
+                        @Override
+                        public void onSuccess(@Nullable Boolean res) {
+                        }
 
+                        @Override
+                        public void onFailure(int code, @Nullable String reason) {
+                            callback.onFailure(code, reason);
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+                    Log.e(TAG, "举手过程中取消失败");
+                    callback.onFailure(code, reason);
+                }
+            });
+        } else {
+            /**举手过程中取消(老师还未处理)；直接发送取消的点对点消息给老师即可*/
+            getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
+            localCoVideoStatus = DisCoVideo;
+            runOnUiThread(() -> {
+                resetHandState();
+            });
+        }
+    }
 
 //    @Override
 //    public void onTeacherMediaChanged(@Nullable User user) {
@@ -200,33 +278,68 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
 //    }
 
     /**
-     * 本地用户举手被老师同意
+     * 本地用户(举手、连麦)被老师同意/(拒绝、打断)
+     *
+     * @param coVideoing 是否正在连麦过程中
      */
-//    @Override
-//    public void onLinkMediaChanged(@Nullable User user) {
-//        linkUser = user;
-//        resetHandState();
-//        if (user == null) {
-//            video_student.setVisibility(View.GONE);
-//            video_student.setSurfaceView(null);
-//        } else {
-//            video_student.setName(user.userName);
-//            if (user.uid == getLocal().uid) {
-//                video_student.showLocal();
-//            } else {
-//                video_student.showRemote(user.uid);
-//            }
-//            // make sure the student video always on the top
-//            video_student.getSurfaceView().setZOrderMediaOverlay(true);
-//            video_student.muteVideo(!user.isVideoEnable());
-//            video_student.muteAudio(!user.isAudioEnable());
-//            video_student.setVisibility(View.VISIBLE);
-//        }
-//    }
+    public void onLinkMediaChanged(boolean coVideoing) {
+        if (!coVideoing) {
+            video_student.setViewVisibility(View.GONE);
+            /**正在连麦中时才会记录本地流；申请中取消或被拒绝本地不会记录流*/
+            if (localCoVideoStatus == CoVideoing) {
+                Log.e(TAG, "连麦过程中被打断");
+                /**连麦被打断，停止发流*/
+                LocalStreamInitOptions options = new LocalStreamInitOptions(
+                        getLocalCameraStream().getStreamUuid(), false, false);
+                options.setStreamName(getLocalCameraStream().getStreamName());
+                getLocalUser().initOrUpdateLocalStream(options, new EduCallback<EduStreamInfo>() {
+                    @Override
+                    public void onSuccess(@Nullable EduStreamInfo res) {
+                        video_student.setName(getLocalUserInfo().getUserName());
+                        renderStream(getLocalCameraStream(), null);
+                        video_student.muteVideo(!getLocalCameraStream().getHasVideo());
+                        video_student.muteAudio(!getLocalCameraStream().getHasAudio());
+                        video_student.setViewVisibility(View.GONE);
+                        getLocalUser().unPublishStream(res, new EduCallback<Boolean>() {
+                            @Override
+                            public void onSuccess(@Nullable Boolean res) {
+                                Log.e(TAG, "连麦过程中被打断，停止发流成功");
+                            }
 
-    /**当前连麦用户是否是本人*/
-    private boolean isMineLink() {
-        return linkedUser != null && linkedUser.equals(getLocalUser().getUserInfo());
+                            @Override
+                            public void onFailure(int code, @Nullable String reason) {
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(int code, @Nullable String reason) {
+                    }
+                });
+            }
+        } else {
+            /**连麦中，发流*/
+            EduStreamInfo streamInfo = new EduStreamInfo(getLocalUserInfo().getStreamUuid(), null,
+                    VideoSourceType.CAMERA, true, true, getLocalUserInfo());
+            getLocalUser().publishStream(streamInfo, new EduCallback<Boolean>() {
+                @Override
+                public void onSuccess(@Nullable Boolean res) {
+                    setLocalCameraStream(streamInfo);
+                    video_student.setViewVisibility(View.VISIBLE);
+                    video_student.setName(getLocalUserInfo().getUserName());
+                    renderStream(getLocalCameraStream(), video_student.getVideoLayout());
+                    video_student.muteVideo(!getLocalCameraStream().getHasVideo());
+                    video_student.muteAudio(!getLocalCameraStream().getHasAudio());
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+
+                }
+            });
+        }
+        localCoVideoStatus = coVideoing ? CoVideoing : DisCoVideo;
+        resetHandState();
     }
 
     /**
@@ -237,13 +350,16 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
 //        layout_hand_up.setSelected(false);
 //    }
     private void resetHandState() {
-        if (isMineLink()) {
-            layout_hand_up.setEnabled(true);
-            layout_hand_up.setSelected(true);
-        } else {
-            layout_hand_up.setEnabled(linkedUser == null);
-            layout_hand_up.setSelected(false);
-        }
+        runOnUiThread(() -> {
+            boolean hasTeacher = getTeacher() != null;
+            boolean disCoVideo = localCoVideoStatus == DisCoVideo;
+            /**有老师的情况下可点击*/
+            layout_hand_up.setVisibility(hasTeacher ? View.VISIBLE : View.GONE);
+            /***/
+            if (hasTeacher) {
+                layout_hand_up.setSelected(localCoVideoStatus != DisCoVideo);
+            }
+        });
     }
 
     @Override
@@ -271,6 +387,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
         super.onRemoteUsersInitialized(users, fromClassRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        /**老师不在的时候不能举手*/
+        resetHandState();
     }
 
     @Override
@@ -303,15 +421,15 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             PeerMsg.CoVideoMsg coVideoMsg = peerMsg.getMsg(PeerMsg.CoVideoMsg.class);
             switch (coVideoMsg.type) {
                 case REJECT:
-                    linkedUser = null;
+                    onLinkMediaChanged(false);
                     ToastManager.showShort(R.string.reject_interactive);
                     break;
                 case ACCEPT:
-                    linkedUser = getLocalUser().getUserInfo();
+                    onLinkMediaChanged(true);
                     ToastManager.showShort(R.string.accept_interactive);
                     break;
                 case ABORT:
-                    linkedUser = null;
+                    onLinkMediaChanged(false);
                     ToastManager.showShort(R.string.abort_interactive);
                     break;
             }
@@ -341,7 +459,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         if (streamInfo != null) {
             EduBaseUserInfo userInfo = streamInfo.getPublisher();
             video_teacher.setName(userInfo.getUserName());
-            getLocalUser().setStreamView(streamInfo, getRoomUuid(), video_teacher.getVideoLayout());
+            renderStream(streamInfo, video_teacher.getVideoLayout());
             video_teacher.muteVideo(!streamInfo.getHasVideo());
             video_teacher.muteAudio(!streamInfo.getHasAudio());
         }
@@ -352,23 +470,35 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         super.onRemoteStreamsAdded(streamEvents, fromClassRoom);
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            switch (streamInfo.getVideoSourceType()) {
-                case CAMERA:
-                    EduBaseUserInfo userInfo = streamInfo.getPublisher();
-                    video_teacher.setName(userInfo.getUserName());
-                    renderStream(streamInfo, video_teacher.getVideoLayout());
-                    video_teacher.muteVideo(!streamInfo.getHasVideo());
-                    video_teacher.muteAudio(!streamInfo.getHasAudio());
-                    break;
-                case SCREEN:
-                    /**有屏幕分享的流进入，说明是老师打开了屏幕分享，此时把这个流渲染出来*/
-                    layout_whiteboard.setVisibility(View.GONE);
-                    layout_share_video.setVisibility(View.VISIBLE);
-                    layout_share_video.removeAllViews();
-                    renderStream(streamInfo, layout_share_video);
-                    break;
-                default:
-                    break;
+            EduBaseUserInfo userInfo = streamInfo.getPublisher();
+            if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
+                switch (streamInfo.getVideoSourceType()) {
+                    case CAMERA:
+                        /**老师的远端流*/
+                        video_teacher.setName(userInfo.getUserName());
+                        renderStream(streamInfo, video_teacher.getVideoLayout());
+                        video_teacher.muteVideo(!streamInfo.getHasVideo());
+                        video_teacher.muteAudio(!streamInfo.getHasAudio());
+                        break;
+                    case SCREEN:
+                        /**有屏幕分享的流进入，说明打开了屏幕分享，此时把这个流渲染出来*/
+                        layout_whiteboard.setVisibility(View.GONE);
+                        layout_share_video.setVisibility(View.VISIBLE);
+                        layout_share_video.removeAllViews();
+                        renderStream(streamInfo, layout_share_video);
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                /**远端用户连麦时的流*/
+                video_student.setViewVisibility(View.VISIBLE);
+                video_student.setName(streamInfo.getPublisher().getUserName());
+                renderStream(streamInfo, video_student.getVideoLayout());
+                StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
+                getLocalUser().subscribeStream(streamInfo, options);
+                video_student.muteVideo(!streamInfo.getHasVideo());
+                video_student.muteAudio(!streamInfo.getHasAudio());
             }
         }
     }
@@ -380,10 +510,18 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
             EduBaseUserInfo userInfo = streamInfo.getPublisher();
-            video_teacher.setName(userInfo.getUserName());
-            renderStream(streamInfo, video_teacher.getVideoLayout());
-            video_teacher.muteVideo(!streamInfo.getHasVideo());
-            video_teacher.muteAudio(!streamInfo.getHasAudio());
+            if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
+                video_teacher.setName(userInfo.getUserName());
+                renderStream(streamInfo, video_teacher.getVideoLayout());
+                video_teacher.muteVideo(!streamInfo.getHasVideo());
+                video_teacher.muteAudio(!streamInfo.getHasAudio());
+            } else {
+                video_student.setViewVisibility(View.VISIBLE);
+                video_student.setName(streamInfo.getPublisher().getUserName());
+                renderStream(streamInfo, video_student.getVideoLayout());
+                video_student.muteVideo(!streamInfo.getHasVideo());
+                video_student.muteAudio(!streamInfo.getHasAudio());
+            }
         }
     }
 
@@ -392,7 +530,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         super.onRemoteStreamsRemoved(streamEvents, fromClassRoom);
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            if (streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
+            EduBaseUserInfo userInfo = streamInfo.getPublisher();
+            if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
                 switch (streamInfo.getVideoSourceType()) {
                     case CAMERA:
                         video_teacher.setName(streamInfo.getPublisher().getUserName());
@@ -410,6 +549,12 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     default:
                         break;
                 }
+            } else {
+                video_student.setName(streamInfo.getPublisher().getUserName());
+                renderStream(streamInfo, null);
+                video_student.muteVideo(!streamInfo.getHasVideo());
+                video_student.muteAudio(!streamInfo.getHasAudio());
+                video_student.setViewVisibility(View.GONE);
             }
         }
     }
@@ -467,11 +612,20 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
+        /**本地流被添加(是老师同意本地用户的举手连麦请求)*/
     }
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamUpdated(streamEvent);
+        if (localCoVideoStatus == CoVideoing) {
+            /**本地流(连麦的Camera流)被修改*/
+            video_student.setViewVisibility(View.VISIBLE);
+            video_student.setName(getLocalUserInfo().getUserName());
+            renderStream(getLocalCameraStream(), video_student.getVideoLayout());
+            video_student.muteVideo(!getLocalCameraStream().getHasVideo());
+            video_student.muteAudio(!getLocalCameraStream().getHasAudio());
+        }
     }
 
     @Override

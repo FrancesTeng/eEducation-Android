@@ -83,6 +83,9 @@ internal class EduRoomImpl(
     /**同步过程中修改的流信息*/
     var modifiedStreams: MutableList<EduStreamEvent> = mutableListOf()
 
+    /**同步过程中移除的流信息*/
+    var removedStreams: MutableList<EduStreamEvent> = mutableListOf()
+
     /**join过程中，标识同步RoomInfo是否完成*/
     var syncRoomInfoSuccess = false
 
@@ -239,7 +242,7 @@ internal class EduRoomImpl(
         localUser = EduStudentImpl(localUserInfo)
         (localUser as EduUserImpl).eduRoom = this
         /**大班课强制不自动发流*/
-        if(getCurRoomType() == RoomType.LARGE_CLASS) {
+        if (getCurRoomType() == RoomType.LARGE_CLASS) {
             options.closeAutoPublish()
         }
         mediaOptions = options.mediaOptions
@@ -395,20 +398,7 @@ internal class EduRoomImpl(
                 /**如果当前用户是观众则调用unPublishStream(刷新服务器上可能存在的旧流)*/
                 if (Convert.convertUserRole(localUser.userInfo.role, getCurRoomType())
                         == EduUserRoleStr.audience.value) {
-                    localUser.unPublishStream(streamInfo!!, object : EduCallback<Boolean> {
-                        override fun onSuccess(res: Boolean?) {
-                            callback.onSuccess(Unit)
-                        }
-
-                        override fun onFailure(code: Int, reason: String?) {
-                            /**join流程中的stream not found不处理*/
-                            if (code == HttpURLConnection.HTTP_NOT_FOUND) {
-                                callback.onSuccess(Unit)
-                            } else {
-                                callback.onFailure(code, reason)
-                            }
-                        }
-                    })
+                    callback.onSuccess(Unit)
                 } else {
                     /**大班课场景下为audience,小班课一对一都是broadcaster*/
                     RteEngineImpl.setClientRole(roomInfo.roomUuid, if (getCurRoomType() !=
@@ -453,7 +443,7 @@ internal class EduRoomImpl(
                         iterable.remove()
                     }
                 }
-                (addedStreams.size > 0)?.let {
+                if (addedStreams.size > 0) {
                     eventListener?.onRemoteStreamsAdded(addedStreams, this)
                 }
             }

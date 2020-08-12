@@ -207,8 +207,16 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return eduRoom.localUser;
     }
 
+    public final EduUserInfo getLocalUserInfo() {
+        return eduRoom.localUser.getUserInfo();
+    }
+
     public EduStreamInfo getLocalCameraStream() {
         return localCameraStream;
+    }
+
+    public void setLocalCameraStream(EduStreamInfo streamInfo) {
+        this.localCameraStream = streamInfo;
     }
 
     public final void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
@@ -216,11 +224,11 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     protected List<EduStreamInfo> getCurFullStream() {
-        return eduRoom.getFullStreamList();
+        return (eduRoom != null) ? eduRoom.getFullStreamList() : null;
     }
 
     protected List<EduUserInfo> getCurFullUser() {
-        return eduRoom.getFullUserList();
+        return (eduRoom != null) ? eduRoom.getFullUserList() : null;
     }
 
     protected EduStreamInfo getTeacherStream() {
@@ -233,9 +241,12 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     protected EduUserInfo getTeacher() {
-        for (EduUserInfo userInfo : getCurFullUser()) {
-            if(userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                return userInfo;
+        List<EduUserInfo> users = getCurFullUser();
+        if (users != null) {
+            for (EduUserInfo userInfo : users) {
+                if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
+                    return userInfo;
+                }
             }
         }
         return null;
@@ -247,8 +258,10 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     @Override
     protected void onDestroy() {
         /**退出activity之前释放eduRoom资源*/
-        EduApplication.getEduManager().releaseRoom(eduRoom.getRoomInfo().getRoomUuid());
-        whiteboardFragment.releaseBoard();
+        if (eduRoom != null) {
+            EduApplication.getEduManager().releaseRoom(eduRoom.getRoomInfo().getRoomUuid());
+            whiteboardFragment.releaseBoard();
+        }
         super.onDestroy();
     }
 
@@ -284,7 +297,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     /**
      * 为流(主要是视频流)设置一个渲染区域
      */
-    public final void renderStream(EduStreamInfo eduStreamInfo, ViewGroup viewGroup) {
+    public final void renderStream(EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
         runOnUiThread(() -> eduRoom.getLocalUser().setStreamView(eduStreamInfo, getRoomUuid(), viewGroup));
     }
 

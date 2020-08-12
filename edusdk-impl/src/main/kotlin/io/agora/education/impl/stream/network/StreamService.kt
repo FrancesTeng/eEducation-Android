@@ -8,7 +8,7 @@ import retrofit2.http.*
 interface StreamService {
 
     /**创建流*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
     fun createStream(
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -18,7 +18,7 @@ interface StreamService {
     ): Call<ResponseBody<String>>
 
     /**更新流状态*/
-    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
     fun updateStreamInfo(
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -28,7 +28,7 @@ interface StreamService {
     ): Call<ResponseBody<String>>
 
     /**删除流*/
-    @DELETE("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
+    @DELETE("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/streams/{streamUuid}")
     fun deleteStream(
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,

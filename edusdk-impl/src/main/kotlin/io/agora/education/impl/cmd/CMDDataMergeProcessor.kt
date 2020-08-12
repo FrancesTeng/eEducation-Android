@@ -19,7 +19,7 @@ import io.agora.education.impl.room.data.response.EduUserRes
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 
-internal class CMDDataMergeProcessor: CMDProcessor() {
+internal class CMDDataMergeProcessor : CMDProcessor() {
     companion object {
         val TAG = "CMDDataFuser"
 
@@ -193,6 +193,14 @@ internal class CMDDataMergeProcessor: CMDProcessor() {
                             val userEvent = EduStreamEvent(element, operator)
                             validStreamList.add(userEvent)
                         }
+                    } else {
+                        /**发现是修改流而且本地又没有那么直接添加到本地并作为有效数据；
+                         * 服务端保证顺序，不会出现remove先到，modify后到的情况（modify先发生，remove后发生）*/
+                        streamInfoList.add(element)
+                        /**构造userEvent并返回*/
+                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
+                        val userEvent = EduStreamEvent(element, operator)
+                        validStreamList.add(userEvent)
                     }
                 }
                 return validStreamList

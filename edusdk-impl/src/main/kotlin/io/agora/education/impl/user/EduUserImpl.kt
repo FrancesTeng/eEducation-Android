@@ -73,8 +73,12 @@ internal open class EduUserImpl(
     override fun subscribeStream(stream: EduStreamInfo, options: StreamSubscribeOptions) {
         /**订阅远端流*/
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-        RteEngineImpl.rtcEngine.muteRemoteAudioStream(uid, options.subscribeAudio)
-        RteEngineImpl.rtcEngine.muteRemoteVideoStream(uid, options.subscribeVideo)
+//        RteEngineImpl.rtcEngine.muteRemoteAudioStream(uid, options.subscribeAudio)
+//        RteEngineImpl.rtcEngine.muteRemoteVideoStream(uid, options.subscribeVideo)
+        (RteEngineImpl[eduRoom.roomInfo.roomUuid] as RteChannelImpl).rtcChannel.muteRemoteAudioStream(
+                uid, options.subscribeAudio)
+        (RteEngineImpl[eduRoom.roomInfo.roomUuid] as RteChannelImpl).rtcChannel.muteRemoteVideoStream(
+                uid, options.subscribeVideo)
     }
 
     override fun unSubscribeStream(stream: EduStreamInfo) {
@@ -107,7 +111,7 @@ internal open class EduUserImpl(
                             override fun onSuccess(res: ResponseBody<String>?) {
                                 /**更新流信息的更新时间*/
                                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
-                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
+//                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
                                 RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
                                 RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
                                 callback.onSuccess(true)
@@ -260,16 +264,19 @@ internal open class EduUserImpl(
 
     /**
      * @param viewGroup 视频画面的父布局(在UI布局上最好保持独立)*/
-    override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup, config: VideoRenderConfig) {
+    override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?, config: VideoRenderConfig) {
         val videoCanvas: VideoCanvas
         if (viewGroup == null) {
             /**remove掉当前流对应的surfaceView*/
-            val uid:Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
+            val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
             videoCanvas = VideoCanvas(null, config.renderMode.value, uid)
-            for (surfaceView in surfaceViewList) {
-                if (surfaceView.tag == stream.hashCode()) {
+            val iterable = surfaceViewList.iterator()
+            while (iterable.hasNext()) {
+                val surfaceView = iterable.next()
+                if (stream.hashCode() == surfaceView.tag && surfaceView.parent != null) {
                     (surfaceView.parent as ViewGroup).removeView(surfaceView)
                 }
+                iterable.remove()
             }
         } else {
             checkAndRemoveSurfaceView(stream.hashCode())?.let {
@@ -280,7 +287,7 @@ internal open class EduUserImpl(
             surfaceView.setZOrderMediaOverlay(true)
             val layoutParams = ViewGroup.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
             surfaceView.layoutParams = layoutParams
-            val uid:Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
+            val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
             videoCanvas = VideoCanvas(surfaceView, config.renderMode.value, channelId, uid)
             viewGroup.addView(surfaceView)
             surfaceViewList.add(surfaceView)
@@ -298,7 +305,7 @@ internal open class EduUserImpl(
         }
     }
 
-    override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup) {
+    override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?) {
         setStreamView(stream, channelId, viewGroup, VideoRenderConfig(RenderMode.HIDDEN))
     }
 

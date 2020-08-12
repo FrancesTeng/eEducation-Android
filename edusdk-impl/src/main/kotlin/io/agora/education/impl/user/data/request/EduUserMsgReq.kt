@@ -3,7 +3,7 @@ package io.agora.education.impl.user.data.request
 /**发送peerMsg
  * @param userId 接收方的userId*/
 internal open class EduUserMsgReq constructor(
-        var msg: String) {
+        var message: String) {
 }
 
 internal class EduUserChatMsgReq(

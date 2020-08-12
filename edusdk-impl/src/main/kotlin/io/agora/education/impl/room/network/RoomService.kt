@@ -16,7 +16,7 @@ internal interface RoomService {
 
     /**创建房间*/
     /**@return 房间id(roomId)*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/config")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/config")
     fun createClassroom(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -24,14 +24,14 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**查询房间信息*/
-    @GET("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/info")
+    @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/info")
     fun queryClassroomState(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String
     ): Call<ResponseBody<EduEntryRoomRes>>
 
     /**请求同步房间的信息（包括RoomInfo以及人流信息）*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/sync")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/sync")
     fun syncRoom(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -41,7 +41,7 @@ internal interface RoomService {
     /**为房间添加自定义属性
      * @param key 属性key
      * @param value 属性值（null为删除）*/
-    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/properties/{key}")
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/properties/{key}")
     fun setProperty(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -50,7 +50,7 @@ internal interface RoomService {
     )
 
     /**更新课堂状态*/
-    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
     fun updateClassroomState(
             @Path("appId")  appId: String,
             @Path("roomUUid") roomUUid: String,
@@ -59,7 +59,7 @@ internal interface RoomService {
 
     /**更新课堂中对应角色的禁用状态
      * 包括禁止聊天、禁止摄像头、禁用麦克风*/
-    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/roles/mute")
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/roles/mute")
     fun updateClassroomMuteState(
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -67,7 +67,7 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送自定义的频道消息*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/message/channel")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/message/channel")
     fun sendChannelCustomMessage(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -75,7 +75,7 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送自定义的点对点消息*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{toUserUuid}/messages/peer")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{toUserUuid}/messages/peer")
     fun sendPeerCustomMessage(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -84,7 +84,7 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送课堂内群聊消息*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/chat/channel")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/chat/channel")
     fun sendRoomChatMsg(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -92,7 +92,7 @@ internal interface RoomService {
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**发送用户间的私聊消息*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{toUserUuid}/chat/peer")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{toUserUuid}/chat/peer")
     fun sendPeerChatMsg(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -104,7 +104,7 @@ internal interface RoomService {
     /**为room添加自定义属性
      * @param key 属性key
      * @param value 属性值（null为删除）*/
-    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/properties/{key}")
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/properties/{key}")
     fun addRoomProperty(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,

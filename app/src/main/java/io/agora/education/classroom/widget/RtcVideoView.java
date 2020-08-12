@@ -52,6 +52,15 @@ public class RtcVideoView extends ConstraintLayout {
         }
     }
 
+    public void setViewVisibility(int visibility) {
+        ((Activity) getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                setVisibility(visibility);
+            }
+        });
+    }
+
     public void setName(String name) {
         ((Activity) getContext()).runOnUiThread(() -> tv_name.setText(name));
     }

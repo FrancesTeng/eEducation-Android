@@ -12,7 +12,7 @@ import retrofit2.http.*
 internal interface UserService {
 
     /**加入房间*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/entry")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/entry")
     fun joinClassroom(
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -23,7 +23,7 @@ internal interface UserService {
     /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
      * @param nextId 下一页起始ID；非必须参数
      * @param count 返回条数	*/
-    @GET("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users")
+    @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/users")
     fun getUserList(
             @Path("appId")       appId: String,
             @Path("roomUuid")      roomUuid: String,
@@ -37,7 +37,7 @@ internal interface UserService {
     /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
      * @param nextId 本次查询起始userId；非必须参数
      * @param count 返回条数	*/
-    @GET("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/streams")
+    @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/streams")
     fun getStreamList(
             @Path("appId")       appId: String,
             @Path("roomUuid")      roomUuid: String,
@@ -51,7 +51,7 @@ internal interface UserService {
 
     /**更新某一个用户的禁止聊天状态
      * @param mute 可否聊天 1可 0否*/
-    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}")
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}")
     fun updateUserMuteState(
             @Path("appId")  appId: String,
             @Path("roomUuid") roomUuid: String,
@@ -62,7 +62,7 @@ internal interface UserService {
 
     /**调用此接口需要添加header->userToken
      * 此处的返回值没有写错，确实只返回code 和 msg*/
-    @POST("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/exit")
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/exit")
     fun leaveClassroom(
             @Path("appId")       appId: String,
             @Path("roomUuid")      roomUuid: String,
@@ -73,7 +73,7 @@ internal interface UserService {
     /**为用户添加自定义属性
      * @param key 属性key
      * @param value 属性值（null为删除）*/
-    @PUT("/scenario/education/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/properties/{key}")
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/properties/{key}")
     fun addProperty(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,

@@ -9,7 +9,7 @@ import retrofit2.http.Path;
 
 public interface BoardService {
 
-    @GET("/scenario/board/apps/{appId}/v1/rooms/{roomUuid}")
+    @GET("/board/apps/{appId}/v1/rooms/{roomUuid}")
     Call<ResponseBody<BoardBean>> getBoardInfo(
             @Path("appId") String appId,
             @Path("roomUuid") String roomUuid

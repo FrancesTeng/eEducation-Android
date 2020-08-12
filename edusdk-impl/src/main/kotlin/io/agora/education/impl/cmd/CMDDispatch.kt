@@ -127,6 +127,7 @@ class CMDDispatch {
                     /**如果当前正在同步过程中，不回调数据;只保证更新的数据合并到集合中即可*/
                     synchronized(eduRoom.joinSuccess) {
                         if (eduRoom.joinSuccess) {
+                            /**人员进出会携带着各自可能存在的流信息*/
                             if (validOnlineUsers.size > 0) {
                                 eventListener?.onRemoteUsersJoined(validOnlineUsers, eduRoom)
                             }
@@ -194,12 +195,13 @@ class CMDDispatch {
                                             updateLocalStream(streamInfo)
                                             Log.e("CMDDispatch", "join成功，把新添加的本地流回调出去")
                                             eduRoom.localUser.eventListener?.onLocalStreamAdded(element)
-                                            validAddStreams.remove(element)
+                                            iterable.remove()
                                         }
                                     }
-                                    (validAddStreams.size > 0)?.let {
+                                    if (validAddStreams.size > 0) {
                                         Log.e("CMDDispatch", "join成功，把新添加远端流回调出去")
                                         eventListener?.onRemoteStreamsAdded(validAddStreams, eduRoom)
+                                    } else {
                                     }
                                 } else {
                                     eduRoom.addedStreams.addAll(validAddStreams)
@@ -221,7 +223,7 @@ class CMDDispatch {
                                         updateLocalStream(element.modifiedStream)
                                         Log.e("CMDDispatch", "join成功，把发生改变的本地流回调出去")
                                         eduRoom.localUser.eventListener?.onLocalStreamUpdated(element)
-                                        validModifyStreams.remove(element)
+                                        iterable.remove()
                                     }
                                 }
                                 if (validModifyStreams.size > 0) {
@@ -237,15 +239,24 @@ class CMDDispatch {
                             val validRemoveStreams = CMDDataMergeProcessor.removeStreamWithAction(cmdStreamActionMsg,
                                     (eduRoom as EduRoomImpl).getCurStreamList(), (eduRoom as EduRoomImpl).getCurRoomType())
                             /**如果当前正在加入房间的过程中，不回调数据;只保证更新的数据合并到集合中即可*/
-                            if ((eduRoom as EduRoomImpl).joinSuccess) {
-                                eventListener?.onRemoteStreamsRemoved(validRemoveStreams, eduRoom)
+                            if (eduRoom.joinSuccess) {
                                 /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
-                                for (element in validRemoveStreams) {
+                                val iterable = validRemoveStreams.iterator()
+                                while (iterable.hasNext()) {
+                                    val element = iterable.next()
                                     if (element.modifiedStream.publisher == eduRoom.localUser.userInfo) {
                                         updateLocalStream(element.modifiedStream)
                                         eduRoom.localUser.eventListener?.onLocalStreamRemoved(element)
+                                        iterable.remove()
                                     }
                                 }
+                                if(validRemoveStreams.size > 0) {
+                                    Log.e("CMDDispatch", "join成功，把被移除的远端流回调出去")
+                                    eventListener?.onRemoteStreamsRemoved(validRemoveStreams, eduRoom)
+                                }
+                            }
+                            else {
+                                eduRoom.removedStreams.addAll(validRemoveStreams)
                             }
                         }
                     }

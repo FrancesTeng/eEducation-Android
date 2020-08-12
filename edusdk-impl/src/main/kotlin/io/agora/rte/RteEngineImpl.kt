@@ -41,13 +41,13 @@ internal object RteEngineImpl : IRteEngine {
     }
 
     fun setClientRole(channelId: String, role: Int) {
-        channelMap.isNotEmpty()?.let {
+        if(channelMap.isNotEmpty()) {
             (channelMap[channelId] as RteChannelImpl).rtcChannel.setClientRole(role)
         }
     }
 
     fun publish(channelId: String) {
-        channelMap.isNotEmpty()?.let {
+        if(channelMap.isNotEmpty()) {
             (channelMap[channelId] as RteChannelImpl).rtcChannel.publish()
         }
     }
