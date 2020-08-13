@@ -25,6 +25,7 @@ import io.agora.education.R;
 import io.agora.education.RoomEntry;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
+import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
 import io.agora.education.api.room.data.EduRoomInfo;
@@ -48,6 +49,9 @@ import io.agora.education.base.BaseActivity;
 import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.board.BoardFollowMode;
 import io.agora.education.classroom.bean.channel.Room;
+import io.agora.education.classroom.bean.msg.ChannelMsg;
+import io.agora.education.classroom.bean.record.RecordBean;
+import io.agora.education.classroom.bean.record.RecordMsg;
 import io.agora.education.classroom.fragment.ChatRoomFragment;
 import io.agora.education.classroom.fragment.WhiteBoardFragment;
 import io.agora.education.classroom.widget.TitleView;
@@ -59,6 +63,9 @@ import static io.agora.education.BuildConfig.API_BASE_URL;
 import static io.agora.education.MainActivity.CODE;
 import static io.agora.education.MainActivity.REASON;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
+import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
+import static io.agora.education.classroom.bean.record.RecordState.END;
+import static io.agora.education.classroom.bean.record.RecordState.START;
 
 public abstract class BaseClassActivity extends BaseActivity implements EduRoomEventListener, EduUserEventListener {
     private static final String TAG = BaseClassActivity.class.getSimpleName();
@@ -410,8 +417,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRoomChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom fromClassRoom) {
-
+    public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom fromClassRoom) {
+        /**收到群聊消息，进行处理并展示*/
+        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
+                eduChatMsg.getTimeStamp(), eduChatMsg.getType());
+        chatMsg.isMe = chatMsg.getFromUser().equals(fromClassRoom.localUser.getUserInfo());
+        chatRoomFragment.addMessage(chatMsg);
+        Log.e(TAG, "成功添加一条聊天消息");
     }
 
     @Override
@@ -487,15 +499,26 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         } else {
             Log.e(TAG, "更新白板信息");
             /**更新白板信息*/
-            boardBean = new Gson().fromJson(boardJson, BoardBean.class);
-            runOnUiThread(() -> {
-                whiteboardFragment.disableCameraTransform(!whiteBoardIsFollowMode());
-                whiteboardFragment.disableDeviceInputs(!whiteBoardIsGranted());
-                if (whiteBoardIsGranted()) {
-                    layout_whiteboard.setVisibility(View.VISIBLE);
-                    layout_share_video.setVisibility(View.GONE);
-                }
-            });
+            BoardBean tmp = new Gson().fromJson(boardJson, BoardBean.class);
+            if (!tmp.equals(boardBean)) {
+                runOnUiThread(() -> {
+                    whiteboardFragment.disableCameraTransform(!whiteBoardIsFollowMode());
+                    whiteboardFragment.disableDeviceInputs(!whiteBoardIsGranted());
+                    if (whiteBoardIsGranted()) {
+                        layout_whiteboard.setVisibility(View.VISIBLE);
+                        layout_share_video.setVisibility(View.GONE);
+                    }
+                });
+            }
+        }
+        String recordJson = getProperty(roomProperties, RECORD);
+        if (!TextUtils.isEmpty(recordJson)) {
+            RecordBean recordBean = RecordBean.fromJson(recordJson, RecordBean.class);
+            if (recordBean.getState() == END) {
+                RecordMsg recordMsg = new RecordMsg(getRoomUuid(), getLocalUserInfo(), getString(R.string.replay_link),
+                        System.currentTimeMillis(), EduChatMsgType.Text.getValue());
+                chatRoomFragment.addMessage(recordMsg);
+            }
         }
     }
 

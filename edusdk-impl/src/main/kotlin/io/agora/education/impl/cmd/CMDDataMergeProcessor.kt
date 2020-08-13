@@ -6,15 +6,16 @@ import io.agora.Convert
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
+import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.stream.data.EduStreamInfo
+import io.agora.education.api.stream.data.EduVideoState
 import io.agora.education.api.user.data.EduBaseUserInfo
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.response.EduFromUserRes
 import io.agora.education.impl.room.data.response.EduUserRes
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
@@ -23,16 +24,18 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
     companion object {
         val TAG = "CMDDataFuser"
 
-        /**从 {@param userInfoList} 中过滤掉 离开课堂的用户 {@param offLineUserList}*/
-        fun filterUserWithOffline(offLineUserList: MutableList<OffLineUserInfo>,
+        /**从 {@param userInfoList} 中过移除 离开课堂的用户 {@param offLineUserList}*/
+        fun removeUserWithOffline(offlineUserList: MutableList<OfflineUserInfo>,
                                   userInfoList: MutableList<EduUserInfo>, roomType: RoomType):
                 MutableList<EduUserEvent> {
             val validUserInfoList = mutableListOf<EduUserEvent>()
             synchronized(userInfoList) {
-                for (element in offLineUserList) {
+                for (element in offlineUserList) {
                     val role = Convert.convertUserRole(element.role, roomType)
                     val userInfo1: EduUserInfo = EduUserInfoImpl(element.userUuid, element.userName, role,
                             element.muteChat == EduChatState.Allow.value, element.updateTime)
+                    userInfo1.streamUuid = element.streamUuid
+                    userInfo1.userProperties = element.userProperties
                     if (userInfoList.contains(userInfo1)) {
                         val index = userInfoList.indexOf(userInfo1)
 
@@ -53,7 +56,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             }
         }
 
-        fun addUserWithOnline(onlineUserList: MutableList<EduUserRes>,
+        fun addUserWithOnline(onlineUserList: MutableList<OnlineUserInfo>,
                               userInfoList: MutableList<EduUserInfo>, roomType: RoomType):
                 MutableList<EduUserInfo> {
             val validUserInfoList = mutableListOf<EduUserInfo>()
@@ -62,6 +65,8 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     val role = Convert.convertUserRole(element.role, roomType)
                     val userInfo1 = EduUserInfoImpl(element.userUuid, element.userName, role,
                             element.muteChat == EduChatState.Allow.value, element.updateTime)
+                    userInfo1.streamUuid = element.streamUuid
+                    userInfo1.userProperties = element.userProperties
                     if (userInfoList.contains(userInfo1)) {
                         val index = userInfoList.indexOf(userInfo1)
 
@@ -117,6 +122,57 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                 }
             }
             return null
+        }
+
+        fun addStreamWithUserOnline(onlineUserList: MutableList<OnlineUserInfo>,
+                                    streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType): MutableList<EduStreamEvent> {
+            val validStreamList = mutableListOf<EduStreamEvent>()
+            synchronized(streamInfoList) {
+                for (element in onlineUserList) {
+                    val role = Convert.convertUserRole(element.role, roomType)
+                    val publisher = EduBaseUserInfo(element.userUuid, element.userName, role)
+                    element.streams?.forEach {
+                        val videoSourceType = Convert.convertVideoSourceType(it.videoSourceType)
+                        val streamInfo = EduStreamInfoImpl(it.streamUuid, it.streamName, videoSourceType,
+                                it.audioState == EduAudioState.Open.value, it.videoState == EduVideoState.Open.value,
+                                publisher, it.updateTime)
+                        if (streamInfoList.contains(streamInfo)) {
+                            val index = streamInfoList.indexOf(streamInfo)
+                            /**更新本地缓存为最新数据;因为offlineUserList经过了有效判断，所以此处不再比较updateTime，直接remove*/
+                            streamInfoList[index] = streamInfo
+                            validStreamList.add(EduStreamEvent(streamInfo, null))
+                        } else {
+                            streamInfoList.add(streamInfo)
+                            validStreamList.add(EduStreamEvent(streamInfo, null))
+                        }
+                    }
+                }
+            }
+            return validStreamList
+        }
+
+        fun removeStreamWithUserOffline(offlineUserList: MutableList<OfflineUserInfo>,
+                                        streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType): MutableList<EduStreamEvent> {
+            val validStreamList = mutableListOf<EduStreamEvent>()
+            synchronized(streamInfoList) {
+                for (element in offlineUserList) {
+                    val role = Convert.convertUserRole(element.role, roomType)
+                    val publisher = EduBaseUserInfo(element.userUuid, element.userName, role)
+                    val operator = getOperator(element.operator, publisher, roomType)
+                    element.streams?.forEach {
+                        val videoSourceType = Convert.convertVideoSourceType(it.videoSourceType)
+                        val streamInfo = EduStreamInfoImpl(it.streamUuid, it.streamName, videoSourceType,
+                                it.audioState == EduAudioState.Open.value, it.videoState == EduVideoState.Open.value,
+                                publisher, it.updateTime)
+                        if (streamInfoList.contains(streamInfo)) {
+                            /**更新本地缓存为最新数据;因为offlineUserList经过了有效判断，所以此处不再比较updateTime，直接remove*/
+                            streamInfoList.remove(streamInfo)
+                            validStreamList.add(EduStreamEvent(streamInfo, operator))
+                        }
+                    }
+                }
+            }
+            return validStreamList
         }
 
 

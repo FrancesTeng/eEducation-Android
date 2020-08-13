@@ -7,6 +7,7 @@ import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomCreateOptions
+import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.util.CryptoUtil.getAuth
 
 abstract class EduManager(
@@ -24,7 +25,7 @@ abstract class EduManager(
 
     abstract fun releaseRoom(roomUuid: String)
 
-    abstract fun logMessage(message: String, level: LogLevel)
+    abstract fun logMessage(message: String, level: LogLevel): AgoraError
 
-    abstract fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>)
+    abstract fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError
 }

@@ -115,12 +115,6 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom fromClassRoom) {
         super.onRoomChatMessageReceived(eduChatMsg, fromClassRoom);
-        /**收到群聊消息，进行处理并展示*/
-        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
-                eduChatMsg.getTimeStamp(), eduChatMsg.getType());
-        chatMsg.isMe = chatMsg.getFromUser().equals(fromClassRoom.localUser.getUserInfo());
-        chatRoomFragment.addMessage(chatMsg);
-        Log.e(TAG, "成功添加一条聊天消息");
     }
 
     /**

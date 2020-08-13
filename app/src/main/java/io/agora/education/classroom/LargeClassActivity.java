@@ -82,6 +82,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
      * 当前本地用户是否在连麦中
      */
     private int localCoVideoStatus = DisCoVideo;
+    /**当前连麦用户*/
+    private EduBaseUserInfo curLinkedUser;
 
     @Override
     protected int getLayoutResId() {
@@ -339,6 +341,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             });
         }
         localCoVideoStatus = coVideoing ? CoVideoing : DisCoVideo;
+        curLinkedUser = getLocalUserInfo();
         resetHandState();
     }
 
@@ -352,9 +355,13 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     private void resetHandState() {
         runOnUiThread(() -> {
             boolean hasTeacher = getTeacher() != null;
-            boolean disCoVideo = localCoVideoStatus == DisCoVideo;
-            /**有老师的情况下可点击*/
+            /**有老师的情况下才显示*/
             layout_hand_up.setVisibility(hasTeacher ? View.VISIBLE : View.GONE);
+            /**当前连麦用户不是本地用户时，隐藏*/
+            if(curLinkedUser != null) {
+                layout_hand_up.setVisibility((curLinkedUser.equals(getLocalUserInfo())?
+                        View.VISIBLE : View.GONE));
+            }
             /***/
             if (hasTeacher) {
                 layout_hand_up.setSelected(localCoVideoStatus != DisCoVideo);
@@ -395,12 +402,17 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
         super.onRemoteUsersJoined(users, fromClassRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        /**老师不在的时候不能举手*/
+        resetHandState();
+
     }
 
     @Override
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom fromClassRoom) {
         super.onRemoteUsersLeft(userEvents, fromClassRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        /**老师不在的时候不能举手*/
+        resetHandState();
     }
 
     @Override
@@ -439,11 +451,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom fromClassRoom) {
         super.onRoomChatMessageReceived(eduChatMsg, fromClassRoom);
-        /**收到群聊消息，进行处理并展示*/
-        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
-                eduChatMsg.getTimeStamp(), eduChatMsg.getType());
-        chatMsg.isMe = chatMsg.getFromUser().equals(fromClassRoom.localUser.getUserInfo());
-        chatRoomFragment.addMessage(chatMsg);
     }
 
     @Override
@@ -454,14 +461,37 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom fromClassRoom) {
         super.onRemoteStreamsInitialized(streams, fromClassRoom);
-        /**大班课场景下，远端流就是老师的流;初始化成功后只可能有Camera的流*/
-        EduStreamInfo streamInfo = getTeacherStream();
-        if (streamInfo != null) {
-            EduBaseUserInfo userInfo = streamInfo.getPublisher();
-            video_teacher.setName(userInfo.getUserName());
-            renderStream(streamInfo, video_teacher.getVideoLayout());
-            video_teacher.muteVideo(!streamInfo.getHasVideo());
-            video_teacher.muteAudio(!streamInfo.getHasAudio());
+        /**大班课场景下，远端流可能包括老师和远端学生连麦的流*/
+        for (EduStreamInfo streamInfo : streams) {
+            EduBaseUserInfo publisher = streamInfo.getPublisher();
+            if (publisher.getRole().equals(EduUserRole.TEACHER)) {
+                switch (streamInfo.getVideoSourceType()) {
+                    case CAMERA:
+                        video_teacher.setName(publisher.getUserName());
+                        renderStream(streamInfo, video_teacher.getVideoLayout());
+                        video_teacher.muteVideo(!streamInfo.getHasVideo());
+                        video_teacher.muteAudio(!streamInfo.getHasAudio());
+                        break;
+                    case SCREEN:
+                        layout_whiteboard.setVisibility(View.GONE);
+                        layout_share_video.setVisibility(View.VISIBLE);
+                        layout_share_video.removeAllViews();
+                        renderStream(streamInfo, layout_share_video);
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                Log.e(TAG, "发现有远端连麦流,立即渲染");
+                video_student.setViewVisibility(View.VISIBLE);
+                video_student.setName(streamInfo.getPublisher().getUserName());
+                renderStream(streamInfo, video_student.getVideoLayout());
+                StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
+                getLocalUser().subscribeStream(streamInfo, options);
+                video_student.muteVideo(!streamInfo.getHasVideo());
+                video_student.muteAudio(!streamInfo.getHasAudio());
+                curLinkedUser = streamInfo.getPublisher();
+            }
         }
     }
 
@@ -499,6 +529,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 getLocalUser().subscribeStream(streamInfo, options);
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
+                curLinkedUser = streamInfo.getPublisher();
             }
         }
     }
@@ -521,6 +552,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 renderStream(streamInfo, video_student.getVideoLayout());
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
+                curLinkedUser = streamInfo.getPublisher();
             }
         }
     }
@@ -555,6 +587,10 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 video_student.setViewVisibility(View.GONE);
+                if(curLinkedUser.equals(streamInfo.getPublisher())) {
+                    curLinkedUser = null;
+                }
+                resetHandState();
             }
         }
     }

@@ -3,6 +3,8 @@ package io.agora.education.classroom.bean.board;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import androidx.annotation.Nullable;
+
 import java.util.List;
 
 public class BoardState implements Parcelable {
@@ -33,6 +35,17 @@ public class BoardState implements Parcelable {
         this.grantUsers = grantUsers;
     }
 
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if(!(obj instanceof BoardState)) {
+            return false;
+        }
+        if(this == obj) {
+            return true;
+        }
+        BoardState boardState = (BoardState) obj;
+        return boardState.getFollow() == this.follow && boardState.getGrantUsers().equals(this.grantUsers);
+    }
 
     @Override
     public int describeContents() {

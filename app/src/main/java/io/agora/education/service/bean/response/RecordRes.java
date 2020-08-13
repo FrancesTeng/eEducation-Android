@@ -10,13 +10,9 @@ import io.agora.education.classroom.bean.channel.User;
 
 public class RecordRes {
 
-    public String recordId;
-    public int uid;
-    public long startTime;
-    public long endTime;
-    public String roomId;
-    @Status
-    public int status;
+    public int count;
+    public int nextId;
+    public int total;
     public List<RecordDetail> recordDetails;
 
     @IntDef({Status.RECORDING, Status.FINISHED, Status.DOWNLOADING, Status.CONVERTING, Status.UPLOADING})
@@ -30,26 +26,21 @@ public class RecordRes {
     }
 
     public static class RecordDetail {
-        public String userId;
-        public String userName;
-        @User.Role
-        public int role;
+        public String roomUuid;
+        public String recordId;
+        /**录制用户id*/
+        public String recordUuid;
+        public String boardId;
+        public String boardToken;
+        @Status
+        public int status;
+        public long startTime;
+        public long endTime;
         public String url;
-    }
 
-    public boolean isFinished() {
-        return status == Status.FINISHED;
-    }
-
-    public String getTeacherRecordUrl() {
-        if (recordDetails != null) {
-            for (RecordDetail detail : recordDetails) {
-                if (detail.role == User.Role.TEACHER) {
-                    return detail.url;
-                }
-            }
+        public boolean isFinished() {
+            return status == Status.FINISHED;
         }
-        return null;
     }
 
 }

@@ -5,14 +5,15 @@ import io.agora.education.service.bean.response.RecordRes;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface RecordService {
 
-    @GET("/edu/v1/apps/{appId}/room/{roomId}/record/{recordId}")
+    @GET("/recording/apps/{appId}/v1/rooms/{roomId}/records")
     Call<ResponseBody<RecordRes>> record(
             @Path("appId") String appId,
             @Path("roomId") String roomId,
-            @Path("recordId") String recordId
+            @Query("nextId") int nextId
     );
 
 }

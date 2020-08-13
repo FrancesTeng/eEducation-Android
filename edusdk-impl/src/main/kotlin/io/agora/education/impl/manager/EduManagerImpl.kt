@@ -90,11 +90,11 @@ internal class EduManagerImpl(
         eduRooms.remove(roomUuid)
     }
 
-    override fun logMessage(message: String, level: LogLevel) {
+    override fun logMessage(message: String, level: LogLevel): AgoraError {
 
     }
 
-    override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>) {
+    override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError {
 
     }
 }

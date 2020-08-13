@@ -37,4 +37,5 @@
     <string name="follow_tips">老师正在控制白板，请勿书写</string>
     <string name="function_error">功能出错（code：%d；原因：%s）</string>
     <string name="there_is_no_teacher_disable_covideo">老师不在线，无法连麦</string>
+    <string name="replay_link">回放链接</string>
 </resources>

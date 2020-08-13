@@ -40,4 +40,5 @@
     <string name="follow_tips">The teacher is moving the whiteboard. Please do not draw on it</string>
     <string name="function_error">Function Error(code:%d;reason:%s)</string>
     <string name="there_is_no_teacher_disable_covideo">There is no teacher in this classroom, cannot apply coVideo.</string>
+    <string name="replay_link">Replay Link</string>
 </resources>

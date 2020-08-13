@@ -3,6 +3,8 @@ package io.agora.education.classroom.bean.board;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import androidx.annotation.Nullable;
+
 public class BoardBean implements Parcelable {
     public static String BOARD = "board";
 
@@ -31,6 +33,18 @@ public class BoardBean implements Parcelable {
 
     public void setState(BoardState state) {
         this.state = state;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (!(obj instanceof BoardState)) {
+            return false;
+        }
+        if (this == obj) {
+            return true;
+        }
+        BoardBean boardBean = (BoardBean) obj;
+        return boardBean.getInfo().equals(this.info) && boardBean.getState().equals(this.state);
     }
 
 

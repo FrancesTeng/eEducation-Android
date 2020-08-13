@@ -122,8 +122,14 @@ class CMDDispatch {
                     /**根据回调数据，维护本地存储的流列表，并返回有效数据*/
                     val validOnlineUsers = CMDDataMergeProcessor.addUserWithOnline(rtmInOutMsg.onlineUsers,
                             (eduRoom as EduRoomImpl).getCurUserList(), eduRoom.getCurRoomType())
-                    val validOfflineUsers = CMDDataMergeProcessor.filterUserWithOffline(rtmInOutMsg.offlineUsers,
+                    val validOfflineUsers = CMDDataMergeProcessor.removeUserWithOffline(rtmInOutMsg.offlineUsers,
                             eduRoom.getCurUserList(), eduRoom.getCurRoomType())
+
+                    /**判断是否携带了流信息*/
+                    val validAddedStreams = CMDDataMergeProcessor.addStreamWithUserOnline(rtmInOutMsg.onlineUsers,
+                            eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
+                    val validRemovedStreams = CMDDataMergeProcessor.removeStreamWithUserOffline(rtmInOutMsg.offlineUsers,
+                            eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
                     /**如果当前正在同步过程中，不回调数据;只保证更新的数据合并到集合中即可*/
                     synchronized(eduRoom.joinSuccess) {
                         if (eduRoom.joinSuccess) {
@@ -131,12 +137,14 @@ class CMDDispatch {
                             if (validOnlineUsers.size > 0) {
                                 eventListener?.onRemoteUsersJoined(validOnlineUsers, eduRoom)
                             }
+                            if (validAddedStreams.size > 0) {
+                                eventListener?.onRemoteStreamsAdded(validAddedStreams, eduRoom)
+                            }
                             if (validOfflineUsers.size > 0) {
-                                /**收到用户离开的通知，需要和本地缓存的流做匹配，移除掉对应用户的流*/
-                                val removedStreamEvent = CMDDataMergeProcessor.removeStreamWithUserLeave(
-                                        validOfflineUsers, eduRoom.getCurStreamList())
                                 eventListener?.onRemoteUsersLeft(validOfflineUsers, eduRoom)
-                                eventListener?.onRemoteStreamsRemoved(removedStreamEvent, eduRoom)
+                            }
+                            if (validRemovedStreams.size > 0) {
+                                eventListener?.onRemoteStreamsRemoved(validRemovedStreams, eduRoom)
                             }
                         }
                     }
@@ -250,12 +258,11 @@ class CMDDispatch {
                                         iterable.remove()
                                     }
                                 }
-                                if(validRemoveStreams.size > 0) {
+                                if (validRemoveStreams.size > 0) {
                                     Log.e("CMDDispatch", "join成功，把被移除的远端流回调出去")
                                     eventListener?.onRemoteStreamsRemoved(validRemoveStreams, eduRoom)
                                 }
-                            }
-                            else {
+                            } else {
                                 eduRoom.removedStreams.addAll(validRemoveStreams)
                             }
                         }

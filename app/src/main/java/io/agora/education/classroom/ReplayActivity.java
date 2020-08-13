@@ -25,6 +25,8 @@ public class ReplayActivity extends BaseActivity {
     public static final String WHITEBOARD_START_TIME = "whiteboardStartTime";
     public static final String WHITEBOARD_END_TIME = "whiteboardEndTime";
     public static final String WHITEBOARD_URL = "whiteboardUrl";
+    public static final String WHITEBOARD_ID = "whiteboardId";
+    public static final String WHITEBOARD_TOKEN = "whiteboardToken";
 
     @BindView(R.id.video_view)
     protected PlayerView video_view;

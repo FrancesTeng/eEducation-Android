@@ -19,6 +19,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.agora.education.R;
 import io.agora.education.classroom.bean.msg.ChannelMsg;
+import io.agora.education.classroom.bean.record.RecordMsg;
 
 /**
  * @author cjw
@@ -55,15 +56,13 @@ public class MessageListAdapter extends BaseProviderMultiAdapter<ChannelMsg.Chat
             Resources resources = getContext().getResources();
             tv_name.setText(msg.getFromUser().getUserName());
             tv_content.setText(msg.getMessage());
-//            if (msg instanceof ChannelMsg.ReplayMsg) {
-//                tv_content.setTextColor(resources.getColor(R.color.blue_1F3DE8));
-//                tv_content.getPaint().setFlags(Paint.UNDERLINE_TEXT_FLAG);
-//            } else {
-//                tv_content.setTextColor(resources.getColor(R.color.gray_666666));
-//                tv_content.getPaint().setFlags(0);
-//            }
-            tv_content.setTextColor(resources.getColor(R.color.gray_666666));
-            tv_content.getPaint().setFlags(0);
+            if (msg instanceof RecordMsg) {
+                tv_content.setTextColor(resources.getColor(R.color.blue_1F3DE8));
+                tv_content.getPaint().setFlags(Paint.UNDERLINE_TEXT_FLAG);
+            } else {
+                tv_content.setTextColor(resources.getColor(R.color.gray_666666));
+                tv_content.getPaint().setFlags(0);
+            }
         }
     }
 

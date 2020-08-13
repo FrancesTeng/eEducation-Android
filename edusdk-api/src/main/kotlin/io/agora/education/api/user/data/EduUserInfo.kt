@@ -40,6 +40,7 @@ open class EduUserInfo(
         role: EduUserRole,
         var isChatAllowed: Boolean?
 ) : EduBaseUserInfo(userUuid, userName, role) {
+    /**用户主流的uuid(无主流则为null)*/
     lateinit var streamUuid: String
     var userProperties: Map<String, String> = mapOf()
 }
