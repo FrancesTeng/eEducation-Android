@@ -263,9 +263,13 @@ internal class EduRoomImpl(
                         localUserInfo.isChatAllowed = roomEntryRes.user.muteChat == EduChatState.Allow.value
                         localUserInfo.userProperties = roomEntryRes.user.userProperties
                         localUserInfo.streamUuid = roomEntryRes.user.streamUuid
-                        /**获取可能存在的流信息*/
+                        /**把本地用户信息合并到本地缓存中*/
+                        eduUserInfoList.add(localUserInfo)
+                        /**获取用户可能存在的流信息待join成功后进行处理;*/
                         roomEntryRes.user.streams?.let {
-                            addedStreams.addAll(Convert.convertStreamInfo(it, this@EduRoomImpl))
+                            /**转换并合并流信息到本地缓存*/
+                            val streamEvents = Convert.convertStreamInfo(it, this@EduRoomImpl);
+                            addedStreams.addAll(streamEvents)
                         }
                         /**解析返回的room相关数据并同步保存至本地*/
                         roomStatus.startTime = roomEntryRes.room.roomState.startTime

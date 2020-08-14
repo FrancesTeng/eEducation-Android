@@ -91,10 +91,10 @@ internal class EduManagerImpl(
     }
 
     override fun logMessage(message: String, level: LogLevel): AgoraError {
-
+        return AgoraError.NONE
     }
 
     override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError {
-
+        return AgoraError.NONE
     }
 }

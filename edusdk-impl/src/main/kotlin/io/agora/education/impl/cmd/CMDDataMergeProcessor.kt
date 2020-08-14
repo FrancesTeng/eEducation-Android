@@ -75,7 +75,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                         if (compareUserInfoTime(userInfo1, userInfo2) > 0) {
                             /**更新用户的数据为最新数据*/
                             userInfoList[index] = userInfo1
-                            validUserInfoList.add(userInfo1)
+//                            validUserInfoList.add(userInfo1)
                         }
                     } else {
                         userInfoList.add(userInfo1)
@@ -140,7 +140,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                             val index = streamInfoList.indexOf(streamInfo)
                             /**更新本地缓存为最新数据;因为offlineUserList经过了有效判断，所以此处不再比较updateTime，直接remove*/
                             streamInfoList[index] = streamInfo
-                            validStreamList.add(EduStreamEvent(streamInfo, null))
+//                            validStreamList.add(EduStreamEvent(streamInfo, null))
                         } else {
                             streamInfoList.add(streamInfo)
                             validStreamList.add(EduStreamEvent(streamInfo, null))

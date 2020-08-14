@@ -15,7 +15,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.agora.education.classroom.mediator.VideoMediator;
 import io.agora.education.R;
 
 public class RtcVideoView extends ConstraintLayout {

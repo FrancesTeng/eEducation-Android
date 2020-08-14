@@ -71,8 +71,11 @@ public class OneToOneClassActivity extends BaseClassActivity {
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
         super.onRemoteUsersInitialized(users, fromClassRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
-        /**小班课，默认学生可以针对白板进行输入*/
-        whiteboardFragment.disableDeviceInputs(false);
+        runOnUiThread(() -> {
+            /**小班课，默认学生可以针对白板进行输入*/
+            whiteboardFragment.disableCameraTransform(false);
+            whiteboardFragment.disableDeviceInputs(false);
+        });
     }
 
     @Override
@@ -130,7 +133,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
         super.onRemoteStreamsInitialized(streams, fromClassRoom);
         Log.e(TAG, "onRemoteStreamsInitialized");
         EduStreamInfo streamInfo = getTeacherStream();
-        if(streamInfo != null) {
+        if (streamInfo != null) {
             video_teacher.setName(streamInfo.getPublisher().getUserName());
             renderStream(streamInfo, video_teacher.getVideoLayout());
             video_teacher.muteVideo(!streamInfo.getHasVideo());
@@ -224,8 +227,11 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRoomPropertyChanged(@NotNull EduRoom fromClassRoom) {
         super.onRoomPropertyChanged(fromClassRoom);
-        /**小班课，默认学生可以针对白板进行输入*/
-        whiteboardFragment.disableDeviceInputs(false);
+        runOnUiThread(() -> {
+            /**小班课，默认学生可以针对白板进行输入*/
+            whiteboardFragment.disableCameraTransform(false);
+            whiteboardFragment.disableDeviceInputs(false);
+        });
     }
 
     @Override

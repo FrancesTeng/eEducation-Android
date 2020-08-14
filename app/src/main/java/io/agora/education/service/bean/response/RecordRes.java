@@ -13,7 +13,7 @@ public class RecordRes {
     public int count;
     public int nextId;
     public int total;
-    public List<RecordDetail> recordDetails;
+    public List<RecordDetail> list;
 
     @IntDef({Status.RECORDING, Status.FINISHED, Status.DOWNLOADING, Status.CONVERTING, Status.UPLOADING})
     @Retention(RetentionPolicy.SOURCE)

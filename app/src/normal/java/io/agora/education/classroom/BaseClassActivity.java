@@ -65,7 +65,6 @@ import static io.agora.education.MainActivity.REASON;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
 import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
 import static io.agora.education.classroom.bean.record.RecordState.END;
-import static io.agora.education.classroom.bean.record.RecordState.START;
 
 public abstract class BaseClassActivity extends BaseActivity implements EduRoomEventListener, EduUserEventListener {
     private static final String TAG = BaseClassActivity.class.getSimpleName();
@@ -89,6 +88,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     private EduRoom eduRoom;
     private EduStreamInfo localCameraStream, localScreenStream;
     protected BoardBean boardBean;
+    private RecordBean recordBean;
 
     @Override
     protected void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
@@ -499,8 +499,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         } else {
             Log.e(TAG, "更新白板信息");
             /**更新白板信息*/
-            BoardBean tmp = new Gson().fromJson(boardJson, BoardBean.class);
+            BoardBean tmp = BoardBean.fromJson(boardJson, BoardBean.class);
             if (!tmp.equals(boardBean)) {
+                boardBean = tmp;
                 runOnUiThread(() -> {
                     whiteboardFragment.disableCameraTransform(!whiteBoardIsFollowMode());
                     whiteboardFragment.disableDeviceInputs(!whiteBoardIsGranted());
@@ -513,11 +514,15 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         }
         String recordJson = getProperty(roomProperties, RECORD);
         if (!TextUtils.isEmpty(recordJson)) {
-            RecordBean recordBean = RecordBean.fromJson(recordJson, RecordBean.class);
-            if (recordBean.getState() == END) {
-                RecordMsg recordMsg = new RecordMsg(getRoomUuid(), getLocalUserInfo(), getString(R.string.replay_link),
-                        System.currentTimeMillis(), EduChatMsgType.Text.getValue());
-                chatRoomFragment.addMessage(recordMsg);
+            RecordBean tmp = RecordBean.fromJson(recordJson, RecordBean.class);
+            if (recordBean == null || tmp.getState() != recordBean.getState()) {
+                recordBean = tmp;
+                if (recordBean.getState() == END) {
+                    RecordMsg recordMsg = new RecordMsg(getRoomUuid(), getLocalUserInfo(), getString(R.string.replay_link),
+                            System.currentTimeMillis(), EduChatMsgType.Text.getValue());
+                    recordMsg.isMe = true;
+                    chatRoomFragment.addMessage(recordMsg);
+                }
             }
         }
     }

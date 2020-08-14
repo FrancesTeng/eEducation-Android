@@ -46,10 +46,11 @@ internal object RteEngineImpl : IRteEngine {
         }
     }
 
-    fun publish(channelId: String) {
+    fun publish(channelId: String): Int {
         if(channelMap.isNotEmpty()) {
-            (channelMap[channelId] as RteChannelImpl).rtcChannel.publish()
+            return (channelMap[channelId] as RteChannelImpl).rtcChannel.publish()
         }
+        return -1
     }
 
     private val rtmClientListener = object : RtmClientListener {

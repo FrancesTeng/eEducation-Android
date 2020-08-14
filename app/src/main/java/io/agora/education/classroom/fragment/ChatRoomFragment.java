@@ -16,6 +16,7 @@ import com.chad.library.adapter.base.listener.OnItemChildClickListener;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -109,17 +110,9 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
             if (object instanceof RecordMsg) {
                 RecordMsg msg = (RecordMsg) object;
                 if (context instanceof BaseClassActivity) {
-                    fetchRecordList(EduApplication.getAppId(), msg.getRoomUuid(), nextId, new EduCallback<List<RecordRes.RecordDetail>>() {
+                    fetchRecordList(EduApplication.getAppId(), msg.getRoomUuid(), nextId, new EduCallback<RecordRes.RecordDetail>() {
                         @Override
-                        public void onSuccess(@Nullable List<RecordRes.RecordDetail> res) {
-                            long max = 0;
-                            RecordRes.RecordDetail recordDetail = null;
-                            for (RecordRes.RecordDetail detail : res) {
-                                if (detail.startTime > max) {
-                                    max = detail.startTime;
-                                    recordDetail = detail;
-                                }
-                            }
+                        public void onSuccess(@Nullable RecordRes.RecordDetail recordDetail) {
                             if (recordDetail.isFinished()) {
                                 String url = recordDetail.url;
                                 if (!TextUtils.isEmpty(url)) {
@@ -149,21 +142,27 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
     private int nextId = 0, total = 0;
     private List<RecordRes.RecordDetail> recordDetails = new ArrayList<>();
 
-    private void fetchRecordList(String appId, String roomId, int next, EduCallback<List<RecordRes.RecordDetail>> callback) {
+    private void fetchRecordList(String appId, String roomId, int next, EduCallback<RecordRes.RecordDetail> callback) {
         RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, RecordService.class)
                 .record(EduApplication.getAppId(), ((BaseClassActivity) context).getRoomUuid(), next)
                 .enqueue(new BaseCallback<>(data -> {
                     total = data.total;
                     nextId = data.nextId;
-                    recordDetails.addAll(data.recordDetails);
-                    if (recordDetails.size() <= total) {
+                    recordDetails.addAll(data.list);
+                    if (recordDetails.size() < total) {
                         fetchRecordList(appId, roomId, nextId, callback);
                     } else {
                         nextId = total = 0;
-                        List<RecordRes.RecordDetail> list = new ArrayList<>(recordDetails.size());
-                        Collections.copy(list, recordDetails);
+                        long max = 0;
+                        RecordRes.RecordDetail recordDetail = null;
+                        for (RecordRes.RecordDetail detail : recordDetails) {
+                            if (detail.startTime > max) {
+                                max = detail.startTime;
+                                recordDetail = detail;
+                            }
+                        }
                         recordDetails.clear();
-                        callback.onSuccess(list);
+                        callback.onSuccess(recordDetail);
                     }
                 }));
     }

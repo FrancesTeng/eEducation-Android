@@ -2,10 +2,14 @@ package io.agora.education.classroom;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.FileUtils;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 
 import com.google.android.exoplayer2.ui.PlayerView;
+
+import java.io.FileDescriptor;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -20,6 +24,7 @@ import io.agora.education.service.RoomService;
 import io.agora.education.service.bean.response.RoomBoardRes;
 
 public class ReplayActivity extends BaseActivity {
+    private static final String TAG = "ReplayActivity";
 
     public static final String WHITEBOARD_ROOM_ID = "whiteboardRoomId";
     public static final String WHITEBOARD_START_TIME = "whiteboardStartTime";
@@ -34,6 +39,7 @@ public class ReplayActivity extends BaseActivity {
     private ReplayBoardFragment replayBoardFragment;
     private String url, roomId;
     private long startTime, endTime;
+    private String boardId, boardToken;
     private boolean isInit;
 
     @Override
@@ -45,9 +51,15 @@ public class ReplayActivity extends BaseActivity {
     protected void initData() {
         Intent intent = getIntent();
         url = intent.getStringExtra(WHITEBOARD_URL);
+        if(!url.startsWith("http")) {
+            url = BuildConfig.REPLAY_BASE_URL.concat("/").concat(url);
+        }
+        Log.e(TAG, url);
         roomId = intent.getStringExtra(WHITEBOARD_ROOM_ID);
         startTime = intent.getLongExtra(WHITEBOARD_START_TIME, 0);
         endTime = intent.getLongExtra(WHITEBOARD_END_TIME, 0);
+        boardId = intent.getStringExtra(WHITEBOARD_ID);
+        boardToken = intent.getStringExtra(WHITEBOARD_TOKEN);
     }
 
     @Override
@@ -70,13 +82,9 @@ public class ReplayActivity extends BaseActivity {
     protected void onResumeFragments() {
         super.onResumeFragments();
         if (!isInit) {
-            RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, RoomService.class)
-                    .roomBoard(EduApplication.getAppId(), roomId)
-                    .enqueue(new BaseCallback<>(data -> {
-                        replayBoardFragment.initReplayWithRoomToken(data.boardId, data.boardToken);
-                        replayBoardFragment.setPlayer(video_view, url);
-                        isInit = true;
-                    }));
+            replayBoardFragment.initReplayWithRoomToken(boardId, boardToken);
+            replayBoardFragment.setPlayer(video_view, url);
+            isInit = true;
         }
     }
 

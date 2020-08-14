@@ -28,6 +28,7 @@ android {
 //        buildConfigField 'String', 'API_BASE_URL', '"https://api.agora.io"'
         buildConfigField 'String', 'API_BASE_URL', '"https://api-solutions-dev.sh.agoralab.co"'
         buildConfigField 'String', 'POLICY_URL', '"https://www.agora.io/privacy-policy"'
+        buildConfigField 'String', 'REPLAY_BASE_URL', '"https://agora-adc-artifacts.oss-accelerate.aliyuncs.com"'
     }
 
     buildTypes {

@@ -186,10 +186,11 @@ class CMDDispatch {
                             TypeToken<CMDResponseBody<CMDStreamActionMsg>>() {}.type).data
                     /**根据回调数据，维护本地存储的流列表*/
                     when (cmdStreamActionMsg.action) {
+                        /**流的Add和Remove跟随人员进出,所以此处的Add和Remove*/
                         CMDStreamAction.Add.value -> {
                             Log.e("CMDDispatch", "收到新添加流的通知：${text}")
                             val validAddStreams = CMDDataMergeProcessor.addStreamWithAction(cmdStreamActionMsg,
-                                    (eduRoom as EduRoomImpl).getCurStreamList(), (eduRoom as EduRoomImpl).getCurRoomType())
+                                    (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
                             Log.e("CMDDispatch", "有效新添加流大小：" + validAddStreams.size)
                             /**如果当前正在加入房间的过程中，不回调数据;只保证更新的数据合并到集合中即可*/
                             synchronized(eduRoom.joinSuccess) {
@@ -222,7 +223,7 @@ class CMDDispatch {
                                     (eduRoom as EduRoomImpl).getCurStreamList(), (eduRoom as EduRoomImpl).getCurRoomType())
                             Log.e("CMDDispatch", "有效修改流大小：" + validModifyStreams.size)
                             /**如果当前正在加入房间的过程中，不回调数据;只保证更新的数据合并到集合中即可*/
-                            if ((eduRoom as EduRoomImpl).joinSuccess) {
+                            if (eduRoom.joinSuccess) {
                                 /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
                                 val iterable = validModifyStreams.iterator()
                                 while (iterable.hasNext()) {

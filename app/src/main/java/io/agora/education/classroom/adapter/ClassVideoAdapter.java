@@ -14,15 +14,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import io.agora.education.R;
-import io.agora.education.api.room.EduRoom;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.VideoSourceType;
-import io.agora.education.api.user.EduUser;
-import io.agora.education.api.user.data.EduUserInfo;
-import io.agora.education.base.BaseActivity;
 import io.agora.education.classroom.BaseClassActivity;
-import io.agora.education.classroom.bean.channel.User;
-import io.agora.education.classroom.mediator.VideoMediator;
 import io.agora.education.classroom.widget.RtcVideoView;
 
 public class ClassVideoAdapter extends BaseQuickAdapter<EduStreamInfo, ClassVideoAdapter.ViewHolder> {
