@@ -116,7 +116,6 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
                             if (recordDetail.isFinished()) {
                                 String url = recordDetail.url;
                                 if (!TextUtils.isEmpty(url)) {
-                                    /**跳转播放*/
                                     Intent intent = new Intent(context, ReplayActivity.class);
                                     intent.putExtra(ReplayActivity.WHITEBOARD_ROOM_ID, recordDetail.roomUuid);
                                     intent.putExtra(ReplayActivity.WHITEBOARD_START_TIME, recordDetail.startTime);
