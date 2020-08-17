@@ -189,13 +189,6 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
                 case CAMERA:
                     notify = true;
                     break;
-                case SCREEN:
-                    /**有屏幕分享的流进入，说明是老师打开了屏幕分享，此时把这个流渲染出来*/
-                    layout_whiteboard.setVisibility(View.GONE);
-                    layout_share_video.setVisibility(View.VISIBLE);
-                    layout_share_video.removeAllViews();
-                    renderStream(streamInfo, layout_share_video);
-                    break;
                 default:
                     break;
             }
@@ -210,8 +203,22 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
         super.onRemoteStreamsUpdated(streamEvents, fromClassRoom);
-        /**屏幕分享流只有新建和移除，不会有修改行为，所以此处的流都是Camera类型的*/
-        classVideoAdapter.setNewList(getCurFullStream());
+        boolean notify = false;
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    notify = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+        /**有远端Camera流添加，刷新视频列表*/
+        if(notify) {
+            Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
+            classVideoAdapter.setNewList(getCurFullStream());
+        }
     }
 
     @Override
@@ -223,13 +230,6 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             switch (streamInfo.getVideoSourceType()) {
                 case CAMERA:
                     notify = true;
-                    break;
-                case SCREEN:
-                    /**有屏幕分享的流离开，说明是老师关闭了屏幕分享，移除屏幕分享的布局*/
-                    layout_whiteboard.setVisibility(View.VISIBLE);
-                    layout_share_video.removeAllViews();
-                    layout_share_video.setVisibility(View.GONE);
-                    renderStream(streamInfo, null);
                     break;
                 default:
                     break;

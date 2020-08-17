@@ -510,13 +510,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
-                    case SCREEN:
-                        /**有屏幕分享的流进入，说明打开了屏幕分享，此时把这个流渲染出来*/
-                        layout_whiteboard.setVisibility(View.GONE);
-                        layout_share_video.setVisibility(View.VISIBLE);
-                        layout_share_video.removeAllViews();
-                        renderStream(streamInfo, layout_share_video);
-                        break;
                     default:
                         break;
                 }
@@ -542,10 +535,16 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
             EduBaseUserInfo userInfo = streamInfo.getPublisher();
             if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                video_teacher.setName(userInfo.getUserName());
-                renderStream(streamInfo, video_teacher.getVideoLayout());
-                video_teacher.muteVideo(!streamInfo.getHasVideo());
-                video_teacher.muteAudio(!streamInfo.getHasAudio());
+                switch (streamInfo.getVideoSourceType()) {
+                    case CAMERA:
+                        video_teacher.setName(userInfo.getUserName());
+                        renderStream(streamInfo, video_teacher.getVideoLayout());
+                        video_teacher.muteVideo(!streamInfo.getHasVideo());
+                        video_teacher.muteAudio(!streamInfo.getHasAudio());
+                        break;
+                    default:
+                        break;
+                }
             } else {
                 video_student.setViewVisibility(View.VISIBLE);
                 video_student.setName(streamInfo.getPublisher().getUserName());
@@ -570,13 +569,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                         renderStream(streamInfo, null);
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
-                        break;
-                    case SCREEN:
-                        /**有屏幕分享的流离开，说明是老师关闭了屏幕分享，移除屏幕分享的布局*/
-                        layout_whiteboard.setVisibility(View.VISIBLE);
-                        layout_share_video.removeAllViews();
-                        layout_share_video.setVisibility(View.GONE);
-                        renderStream(streamInfo, null);
                         break;
                     default:
                         break;

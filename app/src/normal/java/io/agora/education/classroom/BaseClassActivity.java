@@ -39,6 +39,7 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
+import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduUserEvent;
@@ -461,16 +462,57 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     @Override
     public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
         Log.e(TAG, "收到添加远端流的回调");
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            if (streamInfo.getPublisher().getRole() == EduUserRole.TEACHER
+                    && streamInfo.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
+                /**老师打开了屏幕分享，此时把这个流渲染出来*/
+                runOnUiThread(() -> {
+                    layout_whiteboard.setVisibility(View.GONE);
+                    layout_share_video.setVisibility(View.VISIBLE);
+                    layout_share_video.removeAllViews();
+                    renderStream(streamInfo, layout_share_video);
+                });
+                break;
+            }
+        }
     }
 
     @Override
     public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
         Log.e(TAG, "收到修改远端流的回调");
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            if (streamInfo.getPublisher().getRole() == EduUserRole.TEACHER
+                    && streamInfo.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
+                runOnUiThread(() -> {
+                    layout_whiteboard.setVisibility(View.GONE);
+                    layout_share_video.setVisibility(View.VISIBLE);
+                    layout_share_video.removeAllViews();
+                    renderStream(streamInfo, layout_share_video);
+                });
+                break;
+            }
+        }
     }
 
     @Override
     public void onRemoteStreamsRemoved(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
         Log.e(TAG, "收到移除远端流的回调");
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            if (streamInfo.getPublisher().getRole() == EduUserRole.TEACHER
+                    && streamInfo.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
+                /**老师关闭了屏幕分享，移除屏幕分享的布局*/
+                runOnUiThread(() -> {
+                    layout_whiteboard.setVisibility(View.VISIBLE);
+                    layout_share_video.setVisibility(View.GONE);
+                    layout_share_video.removeAllViews();
+                    renderStream(streamInfo, null);
+                });
+                break;
+            }
+        }
     }
 
     @Override

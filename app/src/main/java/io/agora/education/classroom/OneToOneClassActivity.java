@@ -154,13 +154,15 @@ public class OneToOneClassActivity extends BaseClassActivity {
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
                     video_teacher.muteAudio(!streamInfo.getHasAudio());
                     break;
-                case SCREEN:
-                    /**有屏幕分享的流进入，说明是老师打开了屏幕分享，此时把这个流渲染出来*/
-                    layout_whiteboard.setVisibility(View.GONE);
-                    layout_share_video.setVisibility(View.VISIBLE);
-                    layout_share_video.removeAllViews();
-                    renderStream(streamInfo, layout_share_video);
-                    break;
+//                case SCREEN:
+//                    /**有屏幕分享的流进入，说明是老师打开了屏幕分享，此时把这个流渲染出来*/
+//                    runOnUiThread(() -> {
+//                        layout_whiteboard.setVisibility(View.GONE);
+//                        layout_share_video.setVisibility(View.VISIBLE);
+//                        layout_share_video.removeAllViews();
+//                        renderStream(streamInfo, layout_share_video);
+//                    });
+//                    break;
                 default:
                     break;
             }
@@ -172,12 +174,25 @@ public class OneToOneClassActivity extends BaseClassActivity {
         super.onRemoteStreamsUpdated(streamEvents, fromClassRoom);
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            /**一对一场景下，远端流就是老师的流*/
-            /**屏幕分享流只有新建和移除，不会有修改行为，所以此处的流都是Camera类型的*/
-            video_teacher.setName(streamInfo.getPublisher().getUserName());
-            renderStream(streamInfo, video_teacher.getVideoLayout());
-            video_teacher.muteVideo(!streamInfo.getHasVideo());
-            video_teacher.muteAudio(!streamInfo.getHasAudio());
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    /**一对一场景下，远端流就是老师的流*/
+                    video_teacher.setName(streamInfo.getPublisher().getUserName());
+                    renderStream(streamInfo, video_teacher.getVideoLayout());
+                    video_teacher.muteVideo(!streamInfo.getHasVideo());
+                    video_teacher.muteAudio(!streamInfo.getHasAudio());
+                    break;
+//                case SCREEN:
+//                    runOnUiThread(() -> {
+//                        layout_whiteboard.setVisibility(View.GONE);
+//                        layout_share_video.setVisibility(View.VISIBLE);
+//                        layout_share_video.removeAllViews();
+//                        renderStream(streamInfo, layout_share_video);
+//                    });
+//                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -194,13 +209,15 @@ public class OneToOneClassActivity extends BaseClassActivity {
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
                     video_teacher.muteAudio(!streamInfo.getHasAudio());
                     break;
-                case SCREEN:
-                    /**有屏幕分享的流离开，说明是老师关闭了屏幕分享，移除屏幕分享的布局*/
-                    layout_whiteboard.setVisibility(View.VISIBLE);
-                    layout_share_video.removeAllViews();
-                    layout_share_video.setVisibility(View.GONE);
-                    renderStream(streamInfo, null);
-                    break;
+//                case SCREEN:
+//                    /**老师关闭了屏幕分享，移除屏幕分享的布局*/
+//                    runOnUiThread(() -> {
+//                        layout_whiteboard.setVisibility(View.VISIBLE);
+//                        layout_share_video.setVisibility(View.GONE);
+//                        layout_share_video.removeAllViews();
+//                        renderStream(streamInfo, null);
+//                    });
+//                    break;
                 default:
                     break;
             }

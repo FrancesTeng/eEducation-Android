@@ -273,17 +273,12 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                 for (element in streamInfos) {
                     if (streamInfoList.contains(element)) {
                         val index = streamInfoList.indexOf(element)
-
-                        /**获取已存在于集合中的用户*/
-                        val userInfo2 = streamInfoList[index]
-                        if (compareStreamInfoTime(element, userInfo2) > 0) {
-                            /**更新用户的数据为最新数据*/
-                            streamInfoList.removeAt(index)
-                            /**构造userEvent并返回*/
-                            val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                            val userEvent = EduStreamEvent(element, operator)
-                            validStreamList.add(userEvent)
-                        }
+                        /**更新用户的数据为最新数据*/
+                        streamInfoList.removeAt(index)
+                        /**构造userEvent并返回*/
+                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
+                        val userEvent = EduStreamEvent(element, operator)
+                        validStreamList.add(userEvent)
                     }
                 }
                 return validStreamList

@@ -246,7 +246,7 @@ class CMDDispatch {
                         CMDStreamAction.Remove.value -> {
                             Log.e("CMDDispatch", "收到移除流的通知：${text}")
                             val validRemoveStreams = CMDDataMergeProcessor.removeStreamWithAction(cmdStreamActionMsg,
-                                    (eduRoom as EduRoomImpl).getCurStreamList(), (eduRoom as EduRoomImpl).getCurRoomType())
+                                    (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
                             /**如果当前正在加入房间的过程中，不回调数据;只保证更新的数据合并到集合中即可*/
                             if (eduRoom.joinSuccess) {
                                 /**判断有效的数据中是否有本地流的数据,有则处理并回调*/

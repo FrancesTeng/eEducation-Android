@@ -32,6 +32,7 @@ import io.agora.education.impl.user.data.request.EduRoomMsgReq
 import io.agora.education.impl.user.data.request.EduUserMsgReq
 import io.agora.education.impl.user.network.UserService
 import io.agora.rtc.Constants
+import io.agora.rtc.Constants.CLIENT_ROLE_AUDIENCE
 import io.agora.rtc.Constants.CLIENT_ROLE_BROADCASTER
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas
@@ -94,6 +95,8 @@ internal open class EduUserImpl(
      * 目前流程和设计不符，需要确认！！！
      * */
     override fun publishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
+        /**设置角色*/
+        RteEngineImpl.setClientRole(eduRoom.roomInfo.roomUuid, CLIENT_ROLE_BROADCASTER)
         /**改变流状态的参数*/
         val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
@@ -177,6 +180,8 @@ internal open class EduUserImpl(
                     override fun onSuccess(res: ResponseBody<String>?) {
                         RteEngineImpl.rtcEngine.muteLocalAudioStream(true)
                         RteEngineImpl.rtcEngine.muteLocalVideoStream(true)
+                        /**设置角色*/
+                        RteEngineImpl.setClientRole(eduRoom.roomInfo.roomUuid, CLIENT_ROLE_AUDIENCE)
                         callback.onSuccess(true)
                     }
 
