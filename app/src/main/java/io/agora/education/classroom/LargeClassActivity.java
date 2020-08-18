@@ -40,6 +40,7 @@ import io.agora.education.api.stream.data.StreamSubscribeOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.stream.data.VideoStreamType;
 import io.agora.education.api.user.data.EduBaseUserInfo;
+import io.agora.education.api.user.data.EduChatState;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
@@ -82,7 +83,9 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
      * 当前本地用户是否在连麦中
      */
     private int localCoVideoStatus = DisCoVideo;
-    /**当前连麦用户*/
+    /**
+     * 当前连麦用户
+     */
     private EduBaseUserInfo curLinkedUser;
 
     @Override
@@ -358,8 +361,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             /**有老师的情况下才显示*/
             layout_hand_up.setVisibility(hasTeacher ? View.VISIBLE : View.GONE);
             /**当前连麦用户不是本地用户时，隐藏*/
-            if(curLinkedUser != null) {
-                layout_hand_up.setVisibility((curLinkedUser.equals(getLocalUserInfo())?
+            if (curLinkedUser != null) {
+                layout_hand_up.setVisibility((curLinkedUser.equals(getLocalUserInfo()) ?
                         View.VISIBLE : View.GONE));
             }
             /***/
@@ -491,6 +494,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 curLinkedUser = streamInfo.getPublisher();
+                resetHandState();
             }
         }
     }
@@ -523,6 +527,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 curLinkedUser = streamInfo.getPublisher();
+                resetHandState();
             }
         }
     }
@@ -552,6 +557,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 curLinkedUser = streamInfo.getPublisher();
+                resetHandState();
             }
         }
     }
@@ -579,7 +585,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 video_student.setViewVisibility(View.GONE);
-                if(curLinkedUser.equals(streamInfo.getPublisher())) {
+                if (curLinkedUser.equals(streamInfo.getPublisher())) {
                     curLinkedUser = null;
                 }
                 resetHandState();
@@ -659,6 +665,19 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamRemoved(streamEvent);
-        Log.e(TAG, "本地流被移除:" + streamEvent.getModifiedStream().getStreamUuid());
+        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+        Log.e(TAG, "本地流被移除:" + streamInfo.getStreamUuid());
+//        if (localCoVideoStatus == CoVideoing) {
+//            video_student.setName(streamInfo.getPublisher().getUserName());
+//            renderStream(streamInfo, null);
+//            video_student.muteVideo(!streamInfo.getHasVideo());
+//            video_student.muteAudio(!streamInfo.getHasAudio());
+//            video_student.setViewVisibility(View.GONE);
+//            if (curLinkedUser.equals(streamInfo.getPublisher())) {
+//                curLinkedUser = null;
+//            }
+//            localCoVideoStatus = DisCoVideo;
+//            resetHandState();
+//        }
     }
 }

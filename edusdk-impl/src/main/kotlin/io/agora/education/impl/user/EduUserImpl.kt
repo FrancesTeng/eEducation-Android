@@ -53,7 +53,6 @@ internal open class EduUserImpl(
 
     override fun initOrUpdateLocalStream(options: LocalStreamInitOptions, callback: EduCallback<EduStreamInfo>) {
         Log.e("EduUserImpl", "开始初始化和更新本地流")
-//        RteEngineImpl.rtcEngine.setClientRole(CLIENT_ROLE_BROADCASTER)
         RteEngineImpl.rtcEngine.setVideoEncoderConfiguration(
                 Convert.convertVideoEncoderConfig(videoEncoderConfig))
         RteEngineImpl.rtcEngine.enableVideo()
@@ -77,9 +76,9 @@ internal open class EduUserImpl(
 //        RteEngineImpl.rtcEngine.muteRemoteAudioStream(uid, options.subscribeAudio)
 //        RteEngineImpl.rtcEngine.muteRemoteVideoStream(uid, options.subscribeVideo)
         (RteEngineImpl[eduRoom.roomInfo.roomUuid] as RteChannelImpl).rtcChannel.muteRemoteAudioStream(
-                uid, options.subscribeAudio)
+                uid, !options.subscribeAudio)
         (RteEngineImpl[eduRoom.roomInfo.roomUuid] as RteChannelImpl).rtcChannel.muteRemoteVideoStream(
-                uid, options.subscribeVideo)
+                uid, !options.subscribeVideo)
     }
 
     override fun unSubscribeStream(stream: EduStreamInfo) {
@@ -92,7 +91,6 @@ internal open class EduUserImpl(
      * 修改本地流状态流程（新建流的情况下先走接口再走SDK本地mute）
      * 如果mute自己的时候，对应是先mute本地，再网络请求， 如果请求失败，提示客户。  客户自己手动重试。
      * 如果unmute自己的时候，对应先网络请求， 如果请求失败，提示客户。  否则开启推流。
-     * 目前流程和设计不符，需要确认！！！
      * */
     override fun publishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
         /**设置角色*/
@@ -117,6 +115,7 @@ internal open class EduUserImpl(
 //                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
                                 RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
                                 RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
+                                RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
                                 callback.onSuccess(true)
                             }
 
@@ -132,12 +131,13 @@ internal open class EduUserImpl(
                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
                 RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
                 RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
+                RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
                 RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
                         .updateStreamInfo(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
                                 streamInfo.streamUuid, eduStreamStatusReq)
                         .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                             override fun onSuccess(res: ResponseBody<String>?) {
-                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
+//                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
                                 callback.onSuccess(true)
                             }
 
@@ -159,6 +159,7 @@ internal open class EduUserImpl(
                             Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
                             RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
                             RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
+                            RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
                             callback.onSuccess(true)
                         }
 
@@ -180,6 +181,7 @@ internal open class EduUserImpl(
                     override fun onSuccess(res: ResponseBody<String>?) {
                         RteEngineImpl.rtcEngine.muteLocalAudioStream(true)
                         RteEngineImpl.rtcEngine.muteLocalVideoStream(true)
+                        RteEngineImpl.unpublish(eduRoom.roomInfo.roomUuid)
                         /**设置角色*/
                         RteEngineImpl.setClientRole(eduRoom.roomInfo.roomUuid, CLIENT_ROLE_AUDIENCE)
                         callback.onSuccess(true)

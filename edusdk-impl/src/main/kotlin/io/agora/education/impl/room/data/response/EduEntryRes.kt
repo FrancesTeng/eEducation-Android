@@ -24,7 +24,7 @@ class EduEntryRoomStateRes(val state: Int, val startTime: Long,
 class EduEntryUserRes(val userUuid: String, val userName: String, val role: String,
                       val streamUuid: String, val userToken: String, val rtmToken: String,
                       val rtcToken: String, val muteChat: Int, val userProperties: Map<String, String>,
-                      val streams: MutableList<EduEntryStreamRes>?) {
+                      val streams: MutableList<EduEntryStreamRes>?, updateTime: Long, state: Int) {
 }
 
 class EduEntryStreamRes(

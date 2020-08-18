@@ -42,13 +42,23 @@ internal object RteEngineImpl : IRteEngine {
 
     fun setClientRole(channelId: String, role: Int) {
         if(channelMap.isNotEmpty()) {
-            (channelMap[channelId] as RteChannelImpl).rtcChannel.setClientRole(role)
+            val code = (channelMap[channelId] as RteChannelImpl).rtcChannel.setClientRole(role)
+            if(code == 0) {
+                Log.e("RteEngineImpl", "成功设置角色为:$role")
+            }
         }
     }
 
     fun publish(channelId: String): Int {
         if(channelMap.isNotEmpty()) {
             return (channelMap[channelId] as RteChannelImpl).rtcChannel.publish()
+        }
+        return -1
+    }
+
+    fun unpublish(channelId: String): Int {
+        if(channelMap.isNotEmpty()) {
+            return (channelMap[channelId] as RteChannelImpl).rtcChannel.unpublish()
         }
         return -1
     }

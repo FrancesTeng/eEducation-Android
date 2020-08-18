@@ -58,11 +58,16 @@ internal class RteChannelImpl(
             super.onRemoteVideoStateChanged(rtcChannel, uid, state, reason, elapsed)
             Log.e("RteChannelImpl", "onRemoteVideoStateChanged->$uid, state->$state, reason->$reason")
         }
+
+        override fun onPublishAudioStateChanged(rtcChannel: RtcChannel?, oldstate: Int, newstate: Int, elapsed: Int) {
+            super.onPublishAudioStateChanged(rtcChannel, oldstate, newstate, elapsed)
+            Log.e("RteChannelImpl", "onPublishAudioStateChanged->${rtcChannel?.callId}, oldstate->$oldstate, newstate->$newstate")
+        }
     }
 
     private val rtmChannel = RteEngineImpl.rtmClient.createChannel(channelId, rtmChannelListener)
     val rtcChannel = RteEngineImpl.rtcEngine.createRtcChannel(channelId)
-    
+
     init {
         rtcChannel.setRtcChannelEventHandler(rtcChannelEventHandler)
     }
