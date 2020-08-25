@@ -10,6 +10,7 @@ import com.google.android.exoplayer2.ui.PlayerView;
 import com.herewhite.sdk.WhiteSdk;
 import com.herewhite.sdk.WhiteSdkConfiguration;
 import com.herewhite.sdk.WhiteboardView;
+import com.herewhite.sdk.domain.CameraBound;
 import com.herewhite.sdk.domain.DeviceType;
 import com.herewhite.sdk.domain.PlayerConfiguration;
 import com.herewhite.sdk.domain.PlayerPhase;
@@ -36,6 +37,9 @@ public class ReplayBoardFragment extends BaseFragment implements ReplayEventList
     private ReplayManager replayManager;
     private long startTime, endTime;
 
+    private final double miniScale = 0.1d;
+    private final double maxScale = 10d;
+
     @Override
     protected int getLayoutResId() {
         return R.layout.fragment_replay_board;
@@ -52,8 +56,8 @@ public class ReplayBoardFragment extends BaseFragment implements ReplayEventList
 
     @Override
     protected void initView() {
-        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(DeviceType.touch, 10, 0.1);
-//        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(getString(R.string.whiteboard_app_id));
+//        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(DeviceType.touch, 10, 0.1);
+        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(getString(R.string.whiteboard_app_id));
         whiteSdk = new WhiteSdk(white_board_view, context, configuration);
         replayManager = new ReplayManager();
         replayManager.setListener(this);
@@ -73,6 +77,7 @@ public class ReplayBoardFragment extends BaseFragment implements ReplayEventList
         PlayerConfiguration configuration = new PlayerConfiguration(uuid, roomToken);
         configuration.setBeginTimestamp(startTime);
         configuration.setDuration(endTime - startTime);
+        configuration.setCameraBound(new CameraBound(miniScale, maxScale));
         replayManager.init(whiteSdk, configuration);
     }
 

@@ -7,6 +7,7 @@ import com.herewhite.sdk.Room;
 import com.herewhite.sdk.RoomCallbacks;
 import com.herewhite.sdk.RoomParams;
 import com.herewhite.sdk.WhiteSdk;
+import com.herewhite.sdk.domain.CameraBound;
 import com.herewhite.sdk.domain.MemberState;
 import com.herewhite.sdk.domain.Promise;
 import com.herewhite.sdk.domain.RoomPhase;

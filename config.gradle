@@ -27,7 +27,7 @@ ext {
 //            'io.agora.rtc:full-sdk'                   : '2.9.0.105',
             'io.agora.rtc:full-sdk'                   : '3.0.1.1',
             'io.agora.rtm:rtm-sdk'                    : '1.2.2',
-            'com.github.duty-os:white-sdk-android'    : '2.6.4',
-//            'com.github.duty-os:white-sdk-android'    : '2.9.14',
+//            'com.github.duty-os:white-sdk-android'    : '2.6.4',
+            'com.github.duty-os:white-sdk-android'    : '2.9.14',
     ]
 }

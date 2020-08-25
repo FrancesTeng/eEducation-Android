@@ -85,7 +85,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     protected ChatRoomFragment chatRoomFragment = new ChatRoomFragment();
 
     private RoomEntry roomEntry;
-    private boolean isJoining;
+    private boolean isJoining = false, joinSuccess = false;
     private EduRoom eduRoom;
     private EduStreamInfo localCameraStream, localScreenStream;
     protected BoardBean boardBean;
@@ -108,7 +108,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     protected void initView() {
     }
 
-    protected void onJoinRoomSuccess() {
+    protected void showFragmentWithJoinSuccess() {
         title_view.setTitle(getRoomName());
         getSupportFragmentManager().beginTransaction()
                 .remove(whiteboardFragment)
@@ -151,9 +151,10 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         eduRoom.joinClassroomAsStudent(options, new EduCallback<EduStudent>() {
             @Override
             public void onSuccess(@Nullable EduStudent res) {
+                joinSuccess = true;
                 isJoining = false;
                 eduRoom.getLocalUser().setEventListener(BaseClassActivity.this);
-                runOnUiThread(() -> onJoinRoomSuccess());
+                runOnUiThread(() -> showFragmentWithJoinSuccess());
             }
 
             @Override
@@ -173,6 +174,11 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         finish();
     }
 
+    protected void recoveryFragmentWithConfigChanged() {
+        if (joinSuccess) {
+            showFragmentWithJoinSuccess();
+        }
+    }
 
     /**
      * 禁止本地音频
@@ -345,30 +351,15 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return false;
     }
 
-    /**
-     * @Override public void onTeacherInit(User teacher) {
-     * if (teacher == null) {
-     * ToastManager.showShort(R.string.there_is_no_teacher_in_this_classroom);
-     * }
-     * }
-     * @Override public void onWhiteboardChanged(String uuid, String roomToken) {
-     * whiteboardFragment.initBoardWithRoomToken(uuid, roomToken);
-     * }
-     * @Override public void onLockWhiteboard(boolean locked) {
-     * whiteboardFragment.disableCameraTransform(locked);
-     * }
-     */
 
-
-//
     @Override
-    public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
-        Map<String, Object> roomProperties = fromClassRoom.getRoomProperties();
+    public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
+        Map<String, Object> roomProperties = classRoom.getRoomProperties();
         /**判断roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
         String boardJson = getProperty(roomProperties, BOARD);
         if (TextUtils.isEmpty(boardJson)) {
             RetrofitManager.instance().getService(API_BASE_URL, BoardService.class)
-                    .getBoardInfo(getString(R.string.agora_app_id), fromClassRoom.getRoomInfo().getRoomUuid())
+                    .getBoardInfo(getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid())
                     .enqueue(new RetrofitManager.Callback(0, new ThrowableCallback<ResponseBody<BoardBean>>() {
                         @Override
                         public void onFailure(@androidx.annotation.Nullable Throwable throwable) {
@@ -394,46 +385,46 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到远端用户加入的回调");
     }
 
     @Override
-    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到远端用户离开的回调");
     }
 
     @Override
-    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到远端用户修改的回调");
     }
 
     @Override
-    public void onRoomMessageReceived(@NotNull EduMsg message, @NotNull EduRoom fromClassRoom) {
+    public void onRoomMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
 
     }
 
     @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom fromClassRoom) {
+    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
     }
 
     @Override
-    public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom fromClassRoom) {
+    public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
         /**收到群聊消息，进行处理并展示*/
         ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
                 eduChatMsg.getTimeStamp(), eduChatMsg.getType());
-        chatMsg.isMe = chatMsg.getFromUser().equals(fromClassRoom.localUser.getUserInfo());
+        chatMsg.isMe = chatMsg.getFromUser().equals(classRoom.localUser.getUserInfo());
         chatRoomFragment.addMessage(chatMsg);
         Log.e(TAG, "成功添加一条聊天消息");
     }
 
     @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom fromClassRoom) {
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
 
     }
 
     @Override
-    public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
     }
 
     /**
@@ -460,7 +451,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 //        }
 //    }
     @Override
-    public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到添加远端流的回调");
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
@@ -479,7 +470,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到修改远端流的回调");
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
@@ -497,7 +488,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteStreamsRemoved(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteStreamsRemoved(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到移除远端流的回调");
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
@@ -516,13 +507,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom fromClassRoom) {
+    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom fromClassRoom) {
+    public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
         Log.e(TAG, "收到roomProperty改变的数据");
-        Map<String, Object> roomProperties = fromClassRoom.getRoomProperties();
+        Map<String, Object> roomProperties = classRoom.getRoomProperties();
         String boardJson = getProperty(roomProperties, BOARD);
         if (boardBean == null) {
             Log.e(TAG, "首次获取到白板信息");
@@ -570,16 +561,16 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom) {
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom fromClassRoom) {
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
 
     }
 
     @Override
-    public void onNetworkQualityChanged(@NotNull io.agora.education.api.statistics.NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom fromClassRoom) {
+    public void onNetworkQualityChanged(@NotNull io.agora.education.api.statistics.NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
 
     }
 

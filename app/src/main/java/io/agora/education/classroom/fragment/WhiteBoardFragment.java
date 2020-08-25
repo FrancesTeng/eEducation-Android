@@ -56,8 +56,8 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     @Override
     protected void initData() {
-        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(DeviceType.touch, 10, 0.1);
-//        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(getString(R.string.whiteboard_app_id), true);
+//        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(DeviceType.touch, 10, 0.1);
+        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(getString(R.string.whiteboard_app_id), true);
         whiteSdk = new WhiteSdk(white_board_view, context, configuration);
         boardManager.setListener(this);
     }
@@ -86,6 +86,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
                 if (phase != RoomPhase.connected) {
                     runOnUiThread(() -> pb_loading.setVisibility(View.VISIBLE));
                     RoomParams params = new RoomParams(uuid, roomToken);
+                    params.setCameraBound(new CameraBound(miniScale, maxScale));
                     boardManager.init(whiteSdk, params);
                 }
             }

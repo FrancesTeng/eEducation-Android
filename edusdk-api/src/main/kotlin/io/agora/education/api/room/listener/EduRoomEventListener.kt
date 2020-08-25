@@ -15,37 +15,37 @@ import io.agora.education.api.user.data.EduUserInfo
 
 interface EduRoomEventListener {
 
-    fun onRemoteUsersInitialized(users: List<EduUserInfo>, fromClassRoom: EduRoom)
+    fun onRemoteUsersInitialized(users: List<EduUserInfo>, classRoom: EduRoom)
 
-    fun onRemoteUsersJoined(users: List<EduUserInfo>, fromClassRoom: EduRoom)
+    fun onRemoteUsersJoined(users: List<EduUserInfo>, classRoom: EduRoom)
 
-    fun onRemoteUsersLeft(userEvents: MutableList<EduUserEvent>, fromClassRoom: EduRoom)
+    fun onRemoteUsersLeft(userEvents: MutableList<EduUserEvent>, classRoom: EduRoom)
 
-    fun onRemoteUserUpdated(userEvents: MutableList<EduUserEvent>, fromClassRoom: EduRoom)
+    fun onRemoteUserUpdated(userEvents: MutableList<EduUserEvent>, classRoom: EduRoom)
 
-    fun onRoomMessageReceived(message: EduMsg, fromClassRoom: EduRoom)
+    fun onRoomMessageReceived(message: EduMsg, classRoom: EduRoom)
 
-    fun onUserMessageReceived(message: EduMsg, fromClassRoom: EduRoom)
+    fun onUserMessageReceived(message: EduMsg, classRoom: EduRoom)
 
-    fun onRoomChatMessageReceived(chatMsg: EduChatMsg, fromClassRoom: EduRoom)
+    fun onRoomChatMessageReceived(chatMsg: EduChatMsg, classRoom: EduRoom)
 
-    fun onUserChatMessageReceived(chatMsg: EduChatMsg, fromClassRoom: EduRoom)
+    fun onUserChatMessageReceived(chatMsg: EduChatMsg, classRoom: EduRoom)
 
-    fun onRemoteStreamsInitialized(streams: List<EduStreamInfo>, fromClassRoom: EduRoom)
+    fun onRemoteStreamsInitialized(streams: List<EduStreamInfo>, classRoom: EduRoom)
 
-    fun onRemoteStreamsAdded(streamEvents: MutableList<EduStreamEvent>, fromClassRoom: EduRoom)
+    fun onRemoteStreamsAdded(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom)
 
-    fun onRemoteStreamsUpdated(streamEvents: MutableList<EduStreamEvent>, fromClassRoom: EduRoom)
+    fun onRemoteStreamsUpdated(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom)
 
-    fun onRemoteStreamsRemoved(streamEvents: MutableList<EduStreamEvent>, fromClassRoom: EduRoom)
+    fun onRemoteStreamsRemoved(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom)
 
-    fun onRoomStatusChanged(event: RoomStatusEvent, operatorUser: EduUserInfo?, fromClassRoom: EduRoom)
+    fun onRoomStatusChanged(event: RoomStatusEvent, operatorUser: EduUserInfo?, classRoom: EduRoom)
 
-    fun onRoomPropertyChanged(fromClassRoom: EduRoom)
+    fun onRoomPropertyChanged(classRoom: EduRoom)
 
-    fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, fromClassRoom: EduRoom)
+    fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, classRoom: EduRoom)
 
-    fun onConnectionStateChanged(state: ConnectionState, reason: ConnectionStateChangeReason, fromClassRoom: EduRoom)
+    fun onConnectionStateChanged(state: ConnectionState, reason: ConnectionStateChangeReason, classRoom: EduRoom)
 
-    fun onNetworkQualityChanged(quality: NetworkQuality, user: EduUserInfo, fromClassRoom: EduRoom)
+    fun onNetworkQualityChanged(quality: NetworkQuality, user: EduUserInfo, classRoom: EduRoom)
 }

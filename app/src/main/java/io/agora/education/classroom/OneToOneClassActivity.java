@@ -68,8 +68,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
-        super.onRemoteUsersInitialized(users, fromClassRoom);
+    public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
+        super.onRemoteUsersInitialized(users, classRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
         runOnUiThread(() -> {
             /**小班课，默认学生可以针对白板进行输入*/
@@ -79,20 +79,20 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom fromClassRoom) {
-        super.onRemoteUsersJoined(users, fromClassRoom);
+    public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
+        super.onRemoteUsersJoined(users, classRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
     }
 
     @Override
-    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom fromClassRoom) {
-        super.onRemoteUsersLeft(userEvents, fromClassRoom);
+    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
+        super.onRemoteUsersLeft(userEvents, classRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
     }
 
     @Override
-    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom fromClassRoom) {
-        super.onRemoteUserUpdated(userEvents, fromClassRoom);
+    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
+        super.onRemoteUserUpdated(userEvents, classRoom);
 
     }
 
@@ -100,37 +100,37 @@ public class OneToOneClassActivity extends BaseClassActivity {
      * 群聊自定义消息回调
      */
     @Override
-    public void onRoomMessageReceived(@NotNull EduMsg message, @NotNull EduRoom fromClassRoom) {
-        super.onRoomMessageReceived(message, fromClassRoom);
+    public void onRoomMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
+        super.onRoomMessageReceived(message, classRoom);
     }
 
     /**
      * 私聊自定义消息回调
      */
     @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom fromClassRoom) {
-        super.onUserMessageReceived(message, fromClassRoom);
+    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
+        super.onUserMessageReceived(message, classRoom);
     }
 
     /**
      * 群聊消息回调
      */
     @Override
-    public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom fromClassRoom) {
-        super.onRoomChatMessageReceived(eduChatMsg, fromClassRoom);
+    public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
+        super.onRoomChatMessageReceived(eduChatMsg, classRoom);
     }
 
     /**
      * 私聊消息回调
      */
     @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom fromClassRoom) {
-        super.onUserChatMessageReceived(chatMsg, fromClassRoom);
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
+        super.onUserChatMessageReceived(chatMsg, classRoom);
     }
 
     @Override
-    public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom fromClassRoom) {
-        super.onRemoteStreamsInitialized(streams, fromClassRoom);
+    public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
+        super.onRemoteStreamsInitialized(streams, classRoom);
         Log.e(TAG, "onRemoteStreamsInitialized");
         EduStreamInfo streamInfo = getTeacherStream();
         if (streamInfo != null) {
@@ -142,8 +142,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
-        super.onRemoteStreamsAdded(streamEvents, fromClassRoom);
+    public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        super.onRemoteStreamsAdded(streamEvents, classRoom);
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
             /**一对一场景下，远端流就是老师的流*/
@@ -170,8 +170,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
-        super.onRemoteStreamsUpdated(streamEvents, fromClassRoom);
+    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        super.onRemoteStreamsUpdated(streamEvents, classRoom);
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
             switch (streamInfo.getVideoSourceType()) {
@@ -197,8 +197,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteStreamsRemoved(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom fromClassRoom) {
-        super.onRemoteStreamsRemoved(streamEvents, fromClassRoom);
+    public void onRemoteStreamsRemoved(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        super.onRemoteStreamsRemoved(streamEvents, classRoom);
         /**一对一场景下，远端流就是老师的流*/
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
@@ -225,9 +225,9 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom fromClassRoom) {
-        super.onRoomStatusChanged(event, operatorUser, fromClassRoom);
-        EduRoomStatus roomStatus = fromClassRoom.getRoomStatus();
+    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
+        super.onRoomStatusChanged(event, operatorUser, classRoom);
+        EduRoomStatus roomStatus = classRoom.getRoomStatus();
         switch (event) {
             case COURSE_STATE:
                 title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
@@ -242,8 +242,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom fromClassRoom) {
-        super.onRoomPropertyChanged(fromClassRoom);
+    public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
+        super.onRoomPropertyChanged(classRoom);
         runOnUiThread(() -> {
             /**小班课，默认学生可以针对白板进行输入*/
             whiteboardFragment.disableCameraTransform(false);
@@ -252,17 +252,17 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom fromClassRoom) {
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom) {
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom fromClassRoom) {
-        super.onConnectionStateChanged(state, reason, fromClassRoom);
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
+        super.onConnectionStateChanged(state, reason, classRoom);
     }
 
     @Override
-    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom fromClassRoom) {
-        super.onNetworkQualityChanged(quality, user, fromClassRoom);
+    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
+        super.onNetworkQualityChanged(quality, user, classRoom);
         title_view.setNetworkQuality(quality.getValue());
     }
 
