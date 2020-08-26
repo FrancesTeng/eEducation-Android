@@ -15,8 +15,10 @@ class RoleConfig constructor() {
     lateinit var host: LimitConfig
     lateinit var broadcaster: LimitConfig
     lateinit var audience: LimitConfig
+    lateinit var assistant: LimitConfig
 
-    constructor(host: LimitConfig, broadcaster: LimitConfig, audience: LimitConfig) : this() {
+    constructor(host: LimitConfig, broadcaster: LimitConfig, audience: LimitConfig, assistant: LimitConfig)
+            : this() {
     }
 }
 

@@ -9,6 +9,6 @@ data class EduManagerOptions(
 ) {
     var customerId: String? = null
     var customerCertificate: String? = null
-    var logLevel: LogLevel = LogLevel.ALL
+    var logLevel: LogLevel = LogLevel.NONE
     var logFileDir: String? = null
 }

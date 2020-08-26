@@ -2,6 +2,7 @@ package io.agora.rte
 
 import android.content.Context
 import android.util.Log
+import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.rtc.Constants
 import io.agora.rtc.Constants.CHANNEL_PROFILE_LIVE_BROADCASTING
 import io.agora.rtc.IRtcEngineEventHandler
@@ -20,9 +21,6 @@ internal object RteEngineImpl : IRteEngine {
 
     var eventListener: RteEngineEventListener? = null
 
-    /**rtm登录成功的标志*/
-    var rtmLoginSuccess = false
-
     override fun init(context: Context, appId: String) {
         rtmClient = RtmClient.createInstance(context, appId, rtmClientListener)
         rtcEngine = RtcEngine.create(context, appId, rtcEngineEventHandler)
@@ -40,27 +38,34 @@ internal object RteEngineImpl : IRteEngine {
         return channelMap[channelId]
     }
 
-    fun setClientRole(channelId: String, role: Int) {
-        if(channelMap.isNotEmpty()) {
+    override fun setClientRole(channelId: String, role: Int) {
+        if (channelMap.isNotEmpty()) {
             val code = (channelMap[channelId] as RteChannelImpl).rtcChannel.setClientRole(role)
-            if(code == 0) {
+            if (code == 0) {
                 Log.e("RteEngineImpl", "成功设置角色为:$role")
             }
         }
     }
 
-    fun publish(channelId: String): Int {
-        if(channelMap.isNotEmpty()) {
+    override fun publish(channelId: String): Int {
+        if (channelMap.isNotEmpty()) {
             return (channelMap[channelId] as RteChannelImpl).rtcChannel.publish()
         }
         return -1
     }
 
-    fun unpublish(channelId: String): Int {
-        if(channelMap.isNotEmpty()) {
+    override fun unpublish(channelId: String): Int {
+        if (channelMap.isNotEmpty()) {
             return (channelMap[channelId] as RteChannelImpl).rtcChannel.unpublish()
         }
         return -1
+    }
+
+    override fun updateLocalStream(hasAudio: Boolean, hasVideo: Boolean) {
+        rtcEngine.enableLocalAudio(hasAudio)
+        rtcEngine.enableLocalVideo(hasVideo)
+        rtcEngine.muteLocalAudioStream(!hasAudio)
+        rtcEngine.muteLocalVideoStream(!hasVideo)
     }
 
     private val rtmClientListener = object : RtmClientListener {

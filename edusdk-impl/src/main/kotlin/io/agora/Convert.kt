@@ -1,12 +1,10 @@
 package io.agora
 
 import io.agora.education.api.room.EduRoom
-import io.agora.education.api.room.data.EduMuteState
-import io.agora.education.api.room.data.EduRoomState
+import io.agora.education.api.room.data.*
+import io.agora.education.api.room.data.Property.Companion.KEY_ASSISTANT_LIMIT
 import io.agora.education.api.room.data.Property.Companion.KEY_STUDENT_LIMIT
 import io.agora.education.api.room.data.Property.Companion.KEY_TEACHER_LIMIT
-import io.agora.education.api.room.data.RoomCreateOptions
-import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.statistics.ConnectionState
 import io.agora.education.api.statistics.ConnectionStateChangeReason
 import io.agora.education.api.stream.data.*
@@ -45,6 +43,7 @@ internal class Convert {
             val roleConfig = RoleConfig()
             var teacherLimit = 0
             var studentLimit = 0
+            var assistantLimit = 0
             for (element in roomCreateOptions.roomProperties) {
                 when (element.key) {
                     KEY_TEACHER_LIMIT -> {
@@ -53,12 +52,21 @@ internal class Convert {
                     KEY_STUDENT_LIMIT -> {
                         studentLimit = element.value.toInt() ?: 0
                     }
+                    KEY_ASSISTANT_LIMIT -> {
+                        assistantLimit = element.value.toInt() ?: 0
+                    }
                 }
             }
             roleConfig.host = LimitConfig(teacherLimit)
             if (roomCreateOptions.roomType == RoomType.LARGE_CLASS.value) {
                 roleConfig.audience = LimitConfig(studentLimit)
-            } else {
+            }
+            else if(roomCreateOptions.roomType == RoomType.BREAKOUT_CLASS.value) {
+                /** TODO 此处需要有字段来判断当前class是Main还是Sub并以此依据来设置audience或broadcaster，
+                 * 此字段可能会放在roomCreateOptions；记得处理()*/
+                roleConfig.assistant = LimitConfig(assistantLimit)
+            }
+            else {
                 roleConfig.broadcaster = LimitConfig(studentLimit)
             }
             return roleConfig
@@ -104,6 +112,9 @@ internal class Convert {
                 RoomType.SMALL_CLASS.value -> {
                     RoomType.SMALL_CLASS
                 }
+                RoomType.BREAKOUT_CLASS.value -> {
+                    RoomType.BREAKOUT_CLASS
+                }
                 else -> {
                     RoomType.LARGE_CLASS
                 }
@@ -111,7 +122,7 @@ internal class Convert {
         }
 
         /**根据EduUserRole枚举返回角色字符串*/
-        fun convertUserRole(role: EduUserRole, roomType: RoomType): String {
+        fun convertUserRole(role: EduUserRole, roomType: RoomType, classType: ClassType): String {
             return if (role == EduUserRole.TEACHER) {
                 EduUserRoleStr.host.name
             } else {
@@ -125,6 +136,16 @@ internal class Convert {
                     RoomType.LARGE_CLASS -> {
                         EduUserRoleStr.audience.name
                     }
+                    RoomType.BREAKOUT_CLASS -> {
+                        when (classType) {
+                            ClassType.Main -> {
+                                EduUserRoleStr.audience.name
+                            }
+                            ClassType.Sub -> {
+                                EduUserRoleStr.broadcaster.name
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -136,12 +157,16 @@ internal class Convert {
                     return EduUserRole.TEACHER
                 }
                 EduUserRoleStr.broadcaster.name -> {
-                    if (roomType == RoomType.ONE_ON_ONE || roomType == RoomType.SMALL_CLASS) {
+                    if (roomType == RoomType.ONE_ON_ONE || roomType == RoomType.SMALL_CLASS ||
+                            roomType == RoomType.BREAKOUT_CLASS) {
                         return EduUserRole.STUDENT
                     }
                 }
                 EduUserRoleStr.audience.name -> {
                     if (roomType == RoomType.LARGE_CLASS) {
+                        return EduUserRole.STUDENT
+                    }
+                    else if(roomType == RoomType.BREAKOUT_CLASS) {
                         return EduUserRole.STUDENT
                     }
                 }

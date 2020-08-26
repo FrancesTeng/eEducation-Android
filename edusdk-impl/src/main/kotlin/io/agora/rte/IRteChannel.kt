@@ -5,7 +5,7 @@ import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rtm.ResultCallback
 
 interface IRteChannel {
-    fun join(token: String, rtmToken: String, rtcUid: Long, rtmUid: String,
+    fun join(rtcOptionalInfo: String, rtcToken: String, rtmToken: String, rtcUid: Long, rtmUid: String,
              mediaOptions: ChannelMediaOptions, @NonNull callback: ResultCallback<Void>)
 
     fun leave()

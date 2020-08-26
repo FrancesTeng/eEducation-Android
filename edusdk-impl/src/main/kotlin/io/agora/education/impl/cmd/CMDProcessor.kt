@@ -10,6 +10,7 @@ import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.room.data.response.EduFromUserRes
 import io.agora.education.impl.room.data.response.EduUserRes
 import io.agora.education.impl.user.data.EduUserInfoImpl
+import io.agora.rte.RteEngineImpl
 
 internal open class CMDProcessor {
     companion object {
@@ -86,7 +87,7 @@ internal open class CMDProcessor {
                     val streamInfo = element.modifiedStream
                     if (streamInfo.publisher == eduRoom.localUser.userInfo) {
                         iterable.remove()
-                        CMDDispatch.updateLocalStream(streamInfo)
+                        RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
                         validAddedLocalStreamsBySyncing.add(element)
                     }
                 }

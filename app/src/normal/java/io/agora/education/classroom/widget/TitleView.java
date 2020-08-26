@@ -81,16 +81,18 @@ public class TitleView extends ConstraintLayout {
     }
 
     public void setTimeState(boolean start, long time) {
-        if (time_view != null) {
-            if (start) {
-                if (!time_view.isStarted()) {
-                    time_view.start();
+        ((Activity) getContext()).runOnUiThread(() -> {
+            if (time_view != null) {
+                if (start) {
+                    if (!time_view.isStarted()) {
+                        time_view.start();
+                    }
+                    time_view.setTime(time);
+                } else {
+                    time_view.stop();
                 }
-                time_view.setTime(time);
-            } else {
-                time_view.stop();
             }
-        }
+        });
     }
 
     @OnClick(R.id.iv_close)

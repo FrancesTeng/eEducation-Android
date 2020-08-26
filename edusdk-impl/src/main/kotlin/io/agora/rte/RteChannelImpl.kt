@@ -6,7 +6,6 @@ import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcChannelEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
-import io.agora.rte.RteEngineImpl.rtmLoginSuccess
 import io.agora.rtm.*
 import io.agora.rtm.RtmStatusCode.LeaveChannelError.LEAVE_CHANNEL_ERR_USER_NOT_LOGGED_IN
 
@@ -14,6 +13,9 @@ internal class RteChannelImpl(
         channelId: String,
         private var eventListener: RteChannelEventListener?
 ) : IRteChannel {
+
+    /**rtm登录成功的标志*/
+    private var rtmLoginSuccess = false
 
     private val rtmChannelListener = object : RtmChannelListener {
         override fun onAttributesUpdated(p0: MutableList<RtmChannelAttribute>?) {
@@ -72,10 +74,10 @@ internal class RteChannelImpl(
         rtcChannel.setRtcChannelEventHandler(rtcChannelEventHandler)
     }
 
-    override fun join(rtcToken: String, rtmToken: String, rtcUid: Long, rtmUid: String,
+    override fun join(rtcOptionalInfo: String, rtcToken: String, rtmToken: String, rtcUid: Long, rtmUid: String,
                       mediaOptions: ChannelMediaOptions, @NonNull callback: ResultCallback<Void>) {
         val uid = (rtcUid and 0xffffffffL)
-        val rtcCode = rtcChannel.joinChannel(rtcToken, null, uid.toInt(), mediaOptions)
+        val rtcCode = rtcChannel.joinChannel(rtcToken, rtcOptionalInfo, uid.toInt(), mediaOptions)
         /**rtm不能重复登录*/
         if (!rtmLoginSuccess) {
             RteEngineImpl.rtmClient.login(rtmToken, rtmUid, object : ResultCallback<Void> {

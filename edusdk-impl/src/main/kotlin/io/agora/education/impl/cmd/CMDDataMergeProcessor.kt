@@ -22,7 +22,7 @@ import io.agora.education.impl.user.data.EduUserInfoImpl
 
 internal class CMDDataMergeProcessor : CMDProcessor() {
     companion object {
-        val TAG = "CMDDataFuser"
+        const val TAG = "CMDDataMergeProcessor"
 
         /**从 {@param userInfoList} 中过移除 离开课堂的用户 {@param offLineUserList}*/
         fun removeUserWithOffline(offlineUserList: MutableList<OfflineUserInfo>,
