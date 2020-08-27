@@ -6,6 +6,7 @@ import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcChannelEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
+import io.agora.rte.RteEngineImpl.rtmLoginSuccess
 import io.agora.rtm.*
 import io.agora.rtm.RtmStatusCode.LeaveChannelError.LEAVE_CHANNEL_ERR_USER_NOT_LOGGED_IN
 
@@ -13,9 +14,6 @@ internal class RteChannelImpl(
         channelId: String,
         private var eventListener: RteChannelEventListener?
 ) : IRteChannel {
-
-    /**rtm登录成功的标志*/
-    private var rtmLoginSuccess = false
 
     private val rtmChannelListener = object : RtmChannelListener {
         override fun onAttributesUpdated(p0: MutableList<RtmChannelAttribute>?) {
@@ -68,32 +66,17 @@ internal class RteChannelImpl(
     }
 
     private val rtmChannel = RteEngineImpl.rtmClient.createChannel(channelId, rtmChannelListener)
-    val rtcChannel = RteEngineImpl.rtcEngine.createRtcChannel(channelId)
+    val rtcChannel: RtcChannel = RteEngineImpl.rtcEngine.createRtcChannel(channelId)
 
     init {
         rtcChannel.setRtcChannelEventHandler(rtcChannelEventHandler)
     }
 
-    override fun join(rtcOptionalInfo: String, rtcToken: String, rtmToken: String, rtcUid: Long, rtmUid: String,
-                      mediaOptions: ChannelMediaOptions, @NonNull callback: ResultCallback<Void>) {
+    override fun join(rtcOptionalInfo: String, rtcToken: String, rtcUid: Long, mediaOptions: ChannelMediaOptions,
+                      @NonNull callback: ResultCallback<Void>) {
         val uid = (rtcUid and 0xffffffffL)
         val rtcCode = rtcChannel.joinChannel(rtcToken, rtcOptionalInfo, uid.toInt(), mediaOptions)
-        /**rtm不能重复登录*/
-        if (!rtmLoginSuccess) {
-            RteEngineImpl.rtmClient.login(rtmToken, rtmUid, object : ResultCallback<Void> {
-                override fun onSuccess(p0: Void?) {
-                    rtmLoginSuccess = true
-                    joinRtmChannel(rtcCode, callback)
-                }
-
-                override fun onFailure(p0: ErrorInfo?) {
-                    rtmLoginSuccess = false
-                    callback.onFailure(p0)
-                }
-            })
-        } else {
-            joinRtmChannel(rtcCode, callback)
-        }
+        joinRtmChannel(rtcCode, callback)
     }
 
     private fun joinRtmChannel(rtcCode: Int, @NonNull callback: ResultCallback<Void>) {
@@ -126,19 +109,6 @@ internal class RteChannelImpl(
     }
 
     override fun release() {
-        RteEngineImpl.rtmClient.logout(object : ResultCallback<Void> {
-            override fun onSuccess(p0: Void?) {
-                rtmLoginSuccess = false
-                Log.e("RteEngineImpl", "成功退出RTM")
-            }
-
-            override fun onFailure(p0: ErrorInfo?) {
-                Log.e("RteEngineImpl", "退出RTM失败:${p0?.errorDescription}")
-                if (p0?.errorCode == LEAVE_CHANNEL_ERR_USER_NOT_LOGGED_IN) {
-                    rtmLoginSuccess = false
-                }
-            }
-        })
         rtmChannel.release()
         rtcChannel.destroy()
     }

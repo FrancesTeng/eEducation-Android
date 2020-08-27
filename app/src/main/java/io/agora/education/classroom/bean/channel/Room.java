@@ -30,12 +30,13 @@ public class Room extends JsonBean {
     public int onlineUsers;
     public List<User> coVideoUsers;
 
-    @IntDef({Type.ONE2ONE, Type.SMALL, Type.LARGE})
+    @IntDef({Type.ONE2ONE, Type.SMALL, Type.LARGE, Type.BREAKOUT})
     @Retention(RetentionPolicy.SOURCE)
     public @interface Type {
         int ONE2ONE = 0;
         int SMALL = 1;
         int LARGE = 2;
+        int BREAKOUT = 3;
     }
 
     @IntDef({State.END, State.BEGIN})

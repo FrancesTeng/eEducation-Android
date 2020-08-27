@@ -59,13 +59,14 @@ internal class EduRoomImpl(
 
     init {
         RteEngineImpl.createChannel(roomInfo.roomUuid, this)
+        /**为RteEngine设置eventListener*/
+        RteEngineImpl.eventListener = this
         roomSyncHelper = RoomSyncHelper(this)
         record = EduRecordImpl()
         board = EduBoardImpl()
         cmdDispatch = CMDDispatch(this)
     }
 
-    lateinit var rtmToken: String
     lateinit var rtcToken: String
 
     /**用户监听学生join是否成功的回调*/
@@ -212,7 +213,6 @@ internal class EduRoomImpl(
                         roomEntryRes = res?.data!!
                         /**解析返回的user相关数据*/
                         (localUser as EduUserImpl).USERTOKEN = roomEntryRes.user.userToken
-                        rtmToken = roomEntryRes.user.rtmToken
                         rtcToken = roomEntryRes.user.rtcToken
                         RetrofitManager.instance().addHeader("token", roomEntryRes.user.userToken)
                         localUserInfo.isChatAllowed = roomEntryRes.user.muteChat == EduChatState.Allow.value
@@ -233,7 +233,7 @@ internal class EduRoomImpl(
                                 roomEntryRes.room.roomState, getCurRoomType())
                         roomProperties = roomEntryRes.room.roomProperties
                         /**加入rte(包括rtm和rtc)*/
-                        joinRte(rtcToken, rtmToken, roomEntryRes.user.streamUuid.toLong(), options.userUuid,
+                        joinRte(rtcToken, roomEntryRes.user.streamUuid.toLong(),
                                 RteChannelMediaOptions.build(mediaOptions), object : ResultCallback<Void> {
                             override fun onSuccess(p0: Void?) {
                                 /**发起同步数据(房间信息和全量人流数据)的请求，数据从RTM通知到本地*/
@@ -262,11 +262,11 @@ internal class EduRoomImpl(
                 }))
     }
 
-    private fun joinRte(rtcToken: String, rtmToken: String, rtcUid: Long, rtmUid: String,
-                        channelMediaOptions: ChannelMediaOptions, @NonNull callback: ResultCallback<Void>) {
-        RteEngineImpl.rtcEngine.setChannelProfile(CHANNEL_PROFILE_LIVE_BROADCASTING)
+    private fun joinRte(rtcToken: String, rtcUid: Long, channelMediaOptions: ChannelMediaOptions,
+                        @NonNull callback: ResultCallback<Void>) {
+        RteEngineImpl.setClientRole(roomInfo.roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
         val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(this)
-        RteEngineImpl[roomInfo.roomUuid]?.join(rtcOptionalInfo, rtcToken, rtmToken, rtcUid, rtmUid, channelMediaOptions, callback)
+        RteEngineImpl[roomInfo.roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
     }
 
     /**

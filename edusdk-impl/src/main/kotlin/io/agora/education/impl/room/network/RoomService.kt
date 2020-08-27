@@ -4,6 +4,7 @@ import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.data.request.EduSyncRoomReq
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.data.response.EduEntryRoomRes
+import io.agora.education.impl.room.data.response.EduLoginRes
 import io.agora.education.impl.user.data.request.*
 import io.agora.education.impl.user.data.request.EduRoomChatMsgReq
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
@@ -22,6 +23,13 @@ internal interface RoomService {
             @Path("roomUuid") roomUuid: String,
             @Body roomCreateOptionsReq: RoomCreateOptionsReq
     ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**登录*/
+    @POST("/scene/apps/{appId}/v1/users/{userUuid}/login")
+    fun login(
+            @Path("appId") appId: String,
+            @Path("userUuid") userUuid: String
+    ): Call<ResponseBody<EduLoginRes>>
 
     /**查询房间信息*/
     @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/info")

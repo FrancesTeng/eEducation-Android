@@ -8,4 +8,5 @@
     <string name="one2one_class">One to One Classroom</string>
     <string name="small_class">Small Classroom</string>
     <string name="large_class">Lecture Hall</string>
+    <string name="breakout">Breakout Classroom</string>
 </resources>

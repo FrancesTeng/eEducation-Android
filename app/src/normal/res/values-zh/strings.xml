@@ -8,4 +8,5 @@
     <string name="one2one_class">一对一</string>
     <string name="small_class">小班课</string>
     <string name="large_class">大班课</string>
+    <string name="breakout">超级小班课</string>
 </resources>

@@ -6,6 +6,7 @@ import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
+import io.agora.education.api.room.data.EduLoginOptions
 import io.agora.education.api.room.data.RoomCreateOptions
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.util.CryptoUtil.getAuth
@@ -21,9 +22,15 @@ abstract class EduManager(
         }
     }
 
-    abstract fun createClassroom(config: RoomCreateOptions, callback: EduCallback<EduRoom>)
+//    abstract fun createClassroom(config: RoomCreateOptions, callback: EduCallback<EduRoom>)
 
-    abstract fun releaseRoom(roomUuid: String)
+    /**排课*/
+    abstract fun scheduleClass(roomCreateOptions: RoomCreateOptions, callback: EduCallback<Unit>)
+
+    /**登录rtm*/
+    abstract fun login(loginOptions: EduLoginOptions, callback: EduCallback<Unit>)
+
+    abstract fun release()
 
     abstract fun logMessage(message: String, level: LogLevel): AgoraError
 

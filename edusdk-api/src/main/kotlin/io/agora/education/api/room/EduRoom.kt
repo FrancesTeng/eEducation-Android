@@ -14,10 +14,17 @@ import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserInfo
 
-abstract class EduRoom(
-        val roomInfo: EduRoomInfo,
-        var roomStatus: EduRoomStatus
-) {
+abstract class EduRoom(val roomInfo: EduRoomInfo, val roomStatus: EduRoomStatus) {
+
+    companion object {
+        fun create(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus): EduRoom {
+            val cla = Class.forName("io.agora.education.impl.room.EduRoomImpl")
+            val eduRoom = cla.getConstructor(EduRoomInfo::class.java, EduRoomStatus::class.java)
+                    .newInstance(roomInfo, roomStatus) as EduRoom
+            return eduRoom
+        }
+    }
+
     var roomProperties: Map<String, Any>? = mapOf()
 
     lateinit var localUser: EduUser

@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +29,10 @@ import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
+import io.agora.education.api.room.data.EduLoginOptions;
 import io.agora.education.api.room.data.EduRoomInfo;
+import io.agora.education.api.room.data.EduRoomState;
+import io.agora.education.api.room.data.EduRoomStatus;
 import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.room.data.RoomJoinOptions;
 import io.agora.education.api.room.data.RoomMediaOptions;
@@ -41,6 +45,7 @@ import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
+import io.agora.education.api.user.EduTeacher;
 import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
@@ -59,6 +64,7 @@ import io.agora.education.classroom.widget.TitleView;
 import io.agora.education.service.BoardService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.widget.ConfirmDialog;
+import kotlin.Unit;
 
 import static io.agora.education.BuildConfig.API_BASE_URL;
 import static io.agora.education.MainActivity.CODE;
@@ -100,8 +106,10 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     @Override
     protected void initData() {
         roomEntry = getIntent().getParcelableExtra(ROOMENTRY);
-        createRoom(roomEntry.getUserName(), roomEntry.getUserUuid(), roomEntry.getRoomName(),
-                roomEntry.getRoomUuid(), roomEntry.getRoomType());
+        RoomCreateOptions createOptions = new RoomCreateOptions(roomEntry.getRoomUuid(),
+                roomEntry.getRoomName(), roomEntry.getRoomType(), true);
+        eduRoom = buildEduRoom(createOptions);
+        joinRoom(eduRoom, roomEntry.getUserName(), roomEntry.getUserUuid());
     }
 
     @Override
@@ -122,31 +130,20 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                 .commitNow();
     }
 
-    private void createRoom(String yourNameStr, String yourUuid, String roomNameStr, String roomUuid, int roomType) {
+    private EduRoom buildEduRoom(RoomCreateOptions options) {
+        EduRoomInfo eduRoomInfo = EduRoomInfo.Companion.create(options.getRoomType(), options.getRoomUuid(),
+                options.getRoomName());
+        EduRoomStatus status = new EduRoomStatus(EduRoomState.INIT, 0, true, 0);
+        EduRoom room = EduRoom.Companion.create(eduRoomInfo, status);
+        room.setEventListener(BaseClassActivity.this);
+        return room;
+    }
+
+    private void joinRoom(EduRoom eduRoom, String yourNameStr, String yourUuid) {
         if (isJoining) {
             return;
         }
         isJoining = true;
-        /**createClassroom时，room不存在则新建，存在则返回room信息(此接口非必须调用)，
-         * 只要保证在调用joinClassroom之前，classroom在服务端存在即可*/
-        RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType, true);
-        EduApplication.getEduManager().createClassroom(options, new EduCallback<EduRoom>() {
-            @Override
-            public void onSuccess(@Nullable EduRoom res) {
-                eduRoom = res;
-                eduRoom.setEventListener(BaseClassActivity.this);
-                joinRoom(eduRoom, yourNameStr, yourUuid);
-            }
-
-            @Override
-            public void onFailure(int code, @Nullable String reason) {
-                isJoining = false;
-                joinFailed(code, reason);
-            }
-        });
-    }
-
-    private void joinRoom(EduRoom eduRoom, String yourNameStr, String yourUuid) {
         RoomJoinOptions options = new RoomJoinOptions(yourUuid, yourNameStr, new RoomMediaOptions());
         eduRoom.joinClassroomAsStudent(options, new EduCallback<EduStudent>() {
             @Override
@@ -273,7 +270,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     protected void onDestroy() {
         /**退出activity之前释放eduRoom资源*/
         if (eduRoom != null) {
-            EduApplication.getEduManager().releaseRoom(eduRoom.getRoomInfo().getRoomUuid());
+            eduRoom.release();
+            eduRoom = null;
             whiteboardFragment.releaseBoard();
         }
         super.onDestroy();

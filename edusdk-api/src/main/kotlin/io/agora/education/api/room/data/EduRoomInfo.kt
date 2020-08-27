@@ -5,4 +5,12 @@ open class EduRoomInfo(
         val roomUuid: String,
         val roomName: String
 ) {
+        companion object {
+                fun create(roomType: Int, roomUuid: String, roomName: String): EduRoomInfo {
+                        val cla = Class.forName("io.agora.education.impl.room.data.EduRoomInfoImpl")
+                        val eduRoomInfo = cla.getConstructor(Int::class.java, String::class.java, String::class.java)
+                                .newInstance(roomType, roomUuid, roomName) as EduRoomInfo
+                        return eduRoomInfo
+                }
+        }
 }

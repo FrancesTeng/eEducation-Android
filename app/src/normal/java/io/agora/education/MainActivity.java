@@ -13,11 +13,16 @@ import android.widget.EditText;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 
+import org.jetbrains.annotations.Nullable;
+
 import butterknife.BindView;
 import butterknife.OnClick;
 import butterknife.OnTouch;
 import io.agora.base.ToastManager;
 import io.agora.base.network.RetrofitManager;
+import io.agora.education.api.EduCallback;
+import io.agora.education.api.room.data.EduLoginOptions;
+import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.room.data.RoomType;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.base.BaseActivity;
@@ -34,6 +39,7 @@ import io.agora.education.util.UUIDUtil;
 import io.agora.education.widget.ConfirmDialog;
 import io.agora.education.widget.PolicyDialog;
 import io.agora.sdk.manager.RtmManager;
+import kotlin.Unit;
 
 import static io.agora.education.classroom.BaseClassActivity.RESULT_CODE;
 
@@ -123,7 +129,8 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    @OnClick({R.id.iv_setting, R.id.et_room_type, R.id.btn_join, R.id.tv_one2one, R.id.tv_small_class, R.id.tv_large_class})
+    @OnClick({R.id.iv_setting, R.id.et_room_type, R.id.btn_join, R.id.tv_one2one, R.id.tv_small_class,
+            R.id.tv_large_class, R.id.tv_breakout_class})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.iv_setting:
@@ -148,6 +155,10 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.tv_large_class:
                 et_room_type.setText(R.string.large_class);
+                card_room_type.setVisibility(View.GONE);
+                break;
+            case R.id.tv_breakout_class:
+                et_room_type.setText(R.string.breakout);
                 card_room_type.setVisibility(View.GONE);
                 break;
             default:
@@ -220,8 +231,7 @@ public class MainActivity extends BaseActivity {
         int roomType = getClassType(roomTypeStr);
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
         String roomUuid = roomNameStr + roomType;
-        startActivityForResult(createIntent(yourNameStr, userUuid, roomNameStr, roomUuid, roomType),
-                REQUEST_CODE_RTE);
+        createRoom(yourNameStr, userUuid, roomNameStr, roomUuid, roomType);
     }
 
     @Room.Type
@@ -230,9 +240,43 @@ public class MainActivity extends BaseActivity {
             return RoomType.ONE_ON_ONE.getValue();
         } else if (roomTypeStr.equals(getString(R.string.small_class))) {
             return RoomType.SMALL_CLASS.getValue();
-        } else {
+        } else if(roomTypeStr.equals(getString(R.string.large_class))) {
             return RoomType.LARGE_CLASS.getValue();
+        } else {
+            return RoomType.BREAKOUT_CLASS.getValue();
         }
+    }
+
+    private void createRoom(String yourNameStr, String yourUuid, String roomNameStr, String roomUuid, int roomType) {
+        /**createClassroom时，room不存在则新建，存在则返回room信息(此接口非必须调用)，
+         * 只要保证在调用joinClassroom之前，classroom在服务端存在即可*/
+        RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType, true);
+        EduApplication.getEduManager().scheduleClass(options, new EduCallback<Unit>() {
+            @Override
+            public void onSuccess(@Nullable Unit res) {
+                Intent intent = createIntent(yourNameStr, yourUuid, roomNameStr, roomUuid, roomType);
+                login(yourUuid, intent);
+            }
+
+            @Override
+            public void onFailure(int code, @Nullable String reason) {
+            }
+        });
+    }
+
+    private void login(String yourUuid, Intent intent) {
+        EduLoginOptions loginOptions = new EduLoginOptions(yourUuid);
+        EduApplication.getEduManager().login(loginOptions, new EduCallback<Unit>() {
+            @Override
+            public void onSuccess(@Nullable Unit res) {
+                startActivityForResult(intent, REQUEST_CODE_RTE);
+            }
+
+            @Override
+            public void onFailure(int code, @Nullable String reason) {
+
+            }
+        });
     }
 
     private Intent createIntent(String yourNameStr, String yourUuid, String roomNameStr,

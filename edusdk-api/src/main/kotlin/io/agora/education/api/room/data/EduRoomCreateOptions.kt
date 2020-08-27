@@ -57,3 +57,8 @@ class RoomCreateOptions(
         }))
     }
 }
+
+
+class EduLoginOptions(
+        val userUuid: String
+)

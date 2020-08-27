@@ -2,15 +2,15 @@ package io.agora.rte
 
 import android.content.Context
 import android.util.Log
+import io.agora.education.api.EduCallback
 import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.rtc.Constants
 import io.agora.rtc.Constants.CHANNEL_PROFILE_LIVE_BROADCASTING
+import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.RtcEngine
-import io.agora.rtm.RtmClient
-import io.agora.rtm.RtmClientListener
-import io.agora.rtm.RtmMessage
+import io.agora.rtm.*
 
 internal object RteEngineImpl : IRteEngine {
     lateinit var rtmClient: RtmClient
@@ -21,6 +21,9 @@ internal object RteEngineImpl : IRteEngine {
 
     var eventListener: RteEngineEventListener? = null
 
+    /**rtm登录成功的标志*/
+    var rtmLoginSuccess = false
+
     override fun init(context: Context, appId: String) {
         rtmClient = RtmClient.createInstance(context, appId, rtmClientListener)
         rtcEngine = RtcEngine.create(context, appId, rtcEngineEventHandler)
@@ -28,10 +31,52 @@ internal object RteEngineImpl : IRteEngine {
 //        rtcEngine.setParameters("{\"rtc.log_filter\": 65535}")
     }
 
+    override fun loginRtm(rtmUid: String, rtmToken: String, callback: EduCallback<Unit>) {
+        /**rtm不能重复登录*/
+        if (!rtmLoginSuccess) {
+            rtmClient.login(rtmToken, rtmUid, object : ResultCallback<Void> {
+                override fun onSuccess(p0: Void?) {
+                    rtmLoginSuccess = true
+                    callback.onSuccess(if (p0 != null) p0 as Unit else Unit)
+                }
+
+                override fun onFailure(p0: ErrorInfo?) {
+                    rtmLoginSuccess = false
+                    p0?.let {
+                        callback.onFailure(p0.errorCode, p0.errorDescription)
+                    }
+                }
+            })
+        } else {
+            callback.onSuccess(Unit)
+        }
+    }
+
+    override fun logoutRtm() {
+        rtmClient.logout(object : ResultCallback<Void> {
+            override fun onSuccess(p0: Void?) {
+                rtmLoginSuccess = false
+                Log.e("RteEngineImpl", "成功退出RTM")
+            }
+
+            override fun onFailure(p0: ErrorInfo?) {
+                Log.e("RteEngineImpl", "退出RTM失败:${p0?.errorDescription}")
+                if (p0?.errorCode == RtmStatusCode.LeaveChannelError.LEAVE_CHANNEL_ERR_USER_NOT_LOGGED_IN) {
+                    rtmLoginSuccess = false
+                }
+            }
+        })
+    }
+
     override fun createChannel(channelId: String, eventListener: RteChannelEventListener): IRteChannel {
         val rteChannel = RteChannelImpl(channelId, eventListener)
         channelMap[channelId] = rteChannel
         return rteChannel
+    }
+
+    override fun enableLocalMedia(audio: Boolean, video: Boolean) {
+        rtcEngine.enableLocalVideo(audio)
+        rtcEngine.enableLocalAudio(video)
     }
 
     operator fun get(channelId: String): IRteChannel? {
@@ -66,6 +111,22 @@ internal object RteEngineImpl : IRteEngine {
         rtcEngine.enableLocalVideo(hasVideo)
         rtcEngine.muteLocalAudioStream(!hasAudio)
         rtcEngine.muteLocalVideoStream(!hasVideo)
+    }
+
+    override fun muteRemoteStream(channelId: String, uid: Int, muteAudio: Boolean, muteVideo: Boolean): Int {
+        if (channelMap.isNotEmpty()) {
+            val channel = (channelMap[channelId] as RteChannelImpl).rtcChannel
+            val code0 = channel.muteRemoteAudioStream(uid, muteAudio)
+            val code1 = channel.muteRemoteVideoStream(uid, muteVideo)
+            return if (code0 == ERR_OK && code1 == ERR_OK) ERR_OK else -1
+        }
+        return -1
+    }
+
+    override fun muteLocalStream(muteAudio: Boolean, muteVideo: Boolean): Int {
+        val code0 = rtcEngine.muteLocalVideoStream(muteAudio)
+        val code1 = rtcEngine.muteLocalAudioStream(muteVideo)
+        return if (code0 == ERR_OK && code1 == ERR_OK) ERR_OK else -1
     }
 
     private val rtmClientListener = object : RtmClientListener {

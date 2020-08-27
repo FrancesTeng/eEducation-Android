@@ -57,8 +57,7 @@ internal open class EduUserImpl(
                 Convert.convertVideoEncoderConfig(videoEncoderConfig))
         RteEngineImpl.rtcEngine.enableVideo()
         /**enableCamera和enableMicrophone控制是否打开摄像头和麦克风*/
-        RteEngineImpl.rtcEngine.enableLocalVideo(options.enableCamera)
-        RteEngineImpl.rtcEngine.enableLocalAudio(options.enableMicrophone)
+        RteEngineImpl.enableLocalMedia(options.enableMicrophone, options.enableCamera)
 
         /**根据当前配置生成一个流信息*/
         val streamInfo = EduStreamInfoImpl(options.streamUuid, options.streamName, VideoSourceType.CAMERA,
@@ -83,8 +82,7 @@ internal open class EduUserImpl(
 
     override fun unSubscribeStream(stream: EduStreamInfo) {
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-        RteEngineImpl.rtcEngine.muteRemoteAudioStream(uid, true)
-        RteEngineImpl.rtcEngine.muteRemoteVideoStream(uid, true)
+        RteEngineImpl.muteRemoteStream(eduRoom.roomInfo.roomUuid, uid, muteAudio = true, muteVideo = true)
     }
 
     /**
@@ -113,8 +111,7 @@ internal open class EduUserImpl(
                                 /**更新流信息的更新时间*/
                                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
 //                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
-                                RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
-                                RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
+                                RteEngineImpl.muteLocalStream(!streamInfo.hasVideo, !streamInfo.hasAudio)
                                 RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
                                 callback.onSuccess(true)
                             }
@@ -129,8 +126,7 @@ internal open class EduUserImpl(
                 /**mute*/
                 Log.e("EduUserImpl", "开始初始化和更新本地流-mute")
                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
-                RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
-                RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
+                RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
                 RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
                 RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
                         .updateStreamInfo(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
@@ -157,8 +153,7 @@ internal open class EduUserImpl(
                     .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                         override fun onSuccess(res: ResponseBody<String>?) {
                             Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
-                            RteEngineImpl.rtcEngine.muteLocalVideoStream(!streamInfo.hasVideo)
-                            RteEngineImpl.rtcEngine.muteLocalAudioStream(!streamInfo.hasAudio)
+                            RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
                             RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
                             callback.onSuccess(true)
                         }
@@ -179,8 +174,7 @@ internal open class EduUserImpl(
                         streamInfo.streamUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        RteEngineImpl.rtcEngine.muteLocalAudioStream(true)
-                        RteEngineImpl.rtcEngine.muteLocalVideoStream(true)
+                        RteEngineImpl.muteLocalStream(muteAudio = true, muteVideo = true)
                         RteEngineImpl.unpublish(eduRoom.roomInfo.roomUuid)
                         /**设置角色*/
                         RteEngineImpl.setClientRole(eduRoom.roomInfo.roomUuid, CLIENT_ROLE_AUDIENCE)

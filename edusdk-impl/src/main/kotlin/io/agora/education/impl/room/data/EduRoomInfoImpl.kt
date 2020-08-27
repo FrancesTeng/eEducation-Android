@@ -1,11 +1,20 @@
 package io.agora.education.impl.room.data
 
+import io.agora.Convert
 import io.agora.education.api.room.data.EduRoomInfo
 import io.agora.education.api.room.data.RoomType
 
-internal class EduRoomInfoImpl(val roomType: RoomType, roomUuid: String, roomName: String)
+internal class EduRoomInfoImpl(roomUuid: String, roomName: String)
     : EduRoomInfo(roomUuid, roomName) {
+    lateinit var roomType: RoomType
 
+    constructor(roomType: RoomType, roomUuid: String, roomName: String) : this(roomUuid, roomName) {
+        this.roomType = roomType
+    }
+
+    constructor(roomType: Int, roomUuid: String, roomName: String) : this(roomUuid, roomName) {
+        this.roomType = Convert.convertRoomType(roomType)
+    }
 }
 
 /**请求增量数据时，是否包含下线用户*/
