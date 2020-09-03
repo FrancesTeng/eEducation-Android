@@ -71,7 +71,7 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
 
     public void setMuteAll(boolean isMuteAll) {
         this.isMuteAll = isMuteAll;
-        setEditTextEnable(!(this.isMuteAll || isMuteLocal));
+        setEditTextEnable(!(this.isMuteAll));
     }
 
     public void setMuteLocal(boolean isMuteLocal) {

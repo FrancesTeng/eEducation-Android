@@ -5,10 +5,12 @@ import android.os.Parcelable;
 
 import androidx.annotation.Nullable;
 
+import com.herewhite.sdk.domain.GlobalState;
+
 import java.util.List;
 
-public class BoardState implements Parcelable {
-    private int follow;
+public class BoardState extends GlobalState implements Parcelable {
+    private int follow = 0;
     private List<String> grantUsers;
 
     public BoardState() {
@@ -37,10 +39,10 @@ public class BoardState implements Parcelable {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if(!(obj instanceof BoardState)) {
+        if (!(obj instanceof BoardState)) {
             return false;
         }
-        if(this == obj) {
+        if (this == obj) {
             return true;
         }
         BoardState boardState = (BoardState) obj;

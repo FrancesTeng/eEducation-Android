@@ -19,8 +19,8 @@ public class LogManager {
     private static String sTag;
     private Logger logger;
 
-    public static void init(@NonNull Context context, @NonNull String tag) {
-        sPath = new File(context.getExternalCacheDir(), "logs");
+    public static void init(@NonNull String logPath, @NonNull String tag) {
+        sPath = new File(logPath);
         sTag = tag;
         XLog.init(new LogConfiguration.Builder()
                         .logLevel(LogLevel.ALL)
@@ -32,7 +32,7 @@ public class LogManager {
     }
 
     public LogManager(String sTag) {
-        logger = XLog.tag(getTag() + " " + sTag).build();
+        logger = XLog.tag(getTag() + "-" + sTag).build();
     }
 
     public void d(String msg, Object... args) {

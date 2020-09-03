@@ -1,39 +1,46 @@
 package io.agora.education.impl.manager
 
+import android.os.Build
+import android.system.Os
 import android.util.Base64
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
+import io.agora.Constants.Companion.AgoraLog
+import io.agora.Constants.Companion.LOGS_DIR_NAME
 import io.agora.Convert
-import io.agora.base.callback.Callback
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.RetrofitManager
-import io.agora.education.R
+import io.agora.education.BuildConfig
 import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.manager.EduManager
 import io.agora.education.api.manager.EduManagerOptions
-import io.agora.education.api.room.EduRoom
-import io.agora.education.api.room.data.*
+import io.agora.education.api.room.data.EduLoginOptions
+import io.agora.education.api.room.data.RoomCreateOptions
 import io.agora.education.api.statistics.AgoraError
-import io.agora.education.api.user.data.EduUserRole
 import io.agora.education.api.util.CryptoUtil
 import io.agora.education.impl.ResponseBody
-import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.EduRoomInfoImpl
-import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.data.response.EduLoginRes
 import io.agora.education.impl.room.network.RoomService
+import io.agora.log.LogManager
+import io.agora.log.UploadManager
+import io.agora.log.UploadManager.ZIP
 import io.agora.rte.RteEngineImpl
-import io.agora.rtm.ErrorInfo
-import io.agora.rtm.ResultCallback
+import java.io.File
 
 internal class EduManagerImpl(
         options: EduManagerOptions
 ) : EduManager(options) {
+
     init {
-        RteEngineImpl.init(options.context, options.appId)
+        options.logFileDir?.let {
+            options.logFileDir = options.context.cacheDir.toString().plus(File.separatorChar).plus(LOGS_DIR_NAME)
+        }
+        LogManager.init(options.logFileDir!!, "AgoraEducation")
+        AgoraLog = LogManager("SDK")
+        RteEngineImpl.init(options.context, options.appId, options.logFileDir!!)
         APPID = options.appId
         val auth = Base64.encodeToString("${options.customerId}:${options.customerCertificate}"
                 .toByteArray(Charsets.UTF_8), Base64.DEFAULT).replace("\n", "").trim()
@@ -137,10 +144,40 @@ internal class EduManagerImpl(
     }
 
     override fun logMessage(message: String, level: LogLevel): AgoraError {
+        when (level) {
+            LogLevel.NONE -> {
+                AgoraLog.d(message)
+            }
+            LogLevel.INFO -> {
+                AgoraLog.i(message)
+            }
+            LogLevel.WARN -> {
+                AgoraLog.w(message)
+            }
+            LogLevel.ERROR -> {
+                AgoraLog.e(message)
+            }
+        }
         return AgoraError.NONE
     }
 
     override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError {
+        val uploadParam = UploadManager.UploadParam(API_BASE_URL, APPID, null, ZIP,
+                null, "Android", Build.BRAND, BuildConfig.VERSION_NAME, options.logFileDir!!)
+        UploadManager.upload(options.context, uploadParam, object : ThrowableCallback<String> {
+            override fun onSuccess(res: String?) {
+                res?.let {
+                    callback.onSuccess(res)
+                }
+            }
+
+            override fun onFailure(throwable: Throwable?) {
+                var error = throwable as? BusinessException
+                error?.code?.let {
+                    callback.onFailure(error?.code, error?.message ?: throwable?.message)
+                }
+            }
+        })
         return AgoraError.NONE
     }
 }

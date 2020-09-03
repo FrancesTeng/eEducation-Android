@@ -74,7 +74,8 @@ public class ZipUtils {
                     zos.write(buffer, 0, len);
                 }
                 zos.closeEntry();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
         }

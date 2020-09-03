@@ -20,8 +20,8 @@ import io.agora.education.R;
 import io.agora.education.base.BaseActivity;
 import io.agora.education.base.BaseCallback;
 import io.agora.education.classroom.fragment.ReplayBoardFragment;
-import io.agora.education.service.RoomService;
 import io.agora.education.service.bean.response.RoomBoardRes;
+
 
 public class ReplayActivity extends BaseActivity {
     private static final String TAG = "ReplayActivity";
@@ -51,10 +51,10 @@ public class ReplayActivity extends BaseActivity {
     protected void initData() {
         Intent intent = getIntent();
         url = intent.getStringExtra(WHITEBOARD_URL);
-        if(!url.startsWith("http")) {
+        if (!url.startsWith("http")) {
             url = BuildConfig.REPLAY_BASE_URL.concat("/").concat(url);
         }
-        Log.e(TAG, url);
+        Log.e(TAG, "回放链接:" + url);
         roomId = intent.getStringExtra(WHITEBOARD_ROOM_ID);
         startTime = intent.getLongExtra(WHITEBOARD_START_TIME, 0);
         endTime = intent.getLongExtra(WHITEBOARD_END_TIME, 0);

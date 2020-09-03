@@ -11,6 +11,7 @@ import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
+import io.agora.education.impl.cmd.bean.CMDResponseBody
 import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.stream.EduStreamInfoImpl
@@ -22,6 +23,7 @@ import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.request.LimitConfig
 import io.agora.education.impl.room.data.request.RoleConfig
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
+import io.agora.education.impl.user.data.request.RoleMuteConfig
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.RtmStatusCode.ConnectionChangeReason.*
 import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
@@ -60,13 +62,11 @@ internal class Convert {
             roleConfig.host = LimitConfig(teacherLimit)
             if (roomCreateOptions.roomType == RoomType.LARGE_CLASS.value) {
                 roleConfig.audience = LimitConfig(studentLimit)
-            }
-            else if(roomCreateOptions.roomType == RoomType.BREAKOUT_CLASS.value) {
+            } else if (roomCreateOptions.roomType == RoomType.BREAKOUT_CLASS.value) {
                 /** TODO 此处需要有字段来判断当前class是Main还是Sub并以此依据来设置audience或broadcaster，
                  * 此字段可能会放在roomCreateOptions；记得处理()*/
                 roleConfig.assistant = LimitConfig(assistantLimit)
-            }
-            else {
+            } else {
                 roleConfig.broadcaster = LimitConfig(studentLimit)
             }
             return roleConfig
@@ -165,8 +165,7 @@ internal class Convert {
                 EduUserRoleStr.audience.name -> {
                     if (roomType == RoomType.LARGE_CLASS) {
                         return EduUserRole.STUDENT
-                    }
-                    else if(roomType == RoomType.BREAKOUT_CLASS) {
+                    } else if (roomType == RoomType.BREAKOUT_CLASS) {
                         return EduUserRole.STUDENT
                     }
                 }
@@ -302,18 +301,18 @@ internal class Convert {
                     cmdUserStateMsg.updateTime)
         }
 
-        /**根据roomType从RTM返回的教室信息(EduEntryRoomStateRes)中提取muteChat(针对student而言)的状态*/
-        fun extractStudentChatAllowState(eduEntryRoomStateRes: EduEntryRoomStateRes, roomType: RoomType): Boolean {
+        /**根据roomType提取muteChat(针对student而言)的状态*/
+        fun extractStudentChatAllowState(muteChatConfig: RoleMuteConfig?, roomType: RoomType): Boolean {
             /**任何场景下，默认都允许学生聊天*/
             var allow = true
             when (roomType) {
-                RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
-                    eduEntryRoomStateRes.muteChat?.broadcaster?.let {
-                        allow = eduEntryRoomStateRes.muteChat?.broadcaster?.toInt() == EduMuteState.Enable.value
+                RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS, RoomType.BREAKOUT_CLASS -> {
+                    muteChatConfig?.broadcaster?.let {
+                        allow = muteChatConfig?.broadcaster?.toInt() == EduMuteState.Enable.value
                     }
                 }
                 RoomType.LARGE_CLASS -> {
-                    allow = eduEntryRoomStateRes.muteChat?.audience?.toInt() == EduMuteState.Enable.value
+                    allow = muteChatConfig?.audience?.toInt() == EduMuteState.Enable.value
                 }
             }
             return allow
@@ -372,6 +371,16 @@ internal class Convert {
                     ConnectionStateChangeReason.LOGIN
                 }
             }
+        }
+
+        fun convertCMDResponseBody(cmdResponseBody: CMDResponseBody<Any>): EduSequenceRes<Any> {
+            return EduSequenceRes(cmdResponseBody.sequence, cmdResponseBody.cmd,
+                    cmdResponseBody.version, cmdResponseBody.data)
+        }
+
+        fun convertEduSequenceRes(sequence: EduSequenceRes<Any>): CMDResponseBody<Any> {
+            return CMDResponseBody(sequence.cmd, sequence.version, 0, null, sequence.sequence,
+                    sequence.data)
         }
     }
 }

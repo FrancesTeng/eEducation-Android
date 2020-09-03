@@ -12,6 +12,7 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.OnClick;
 import io.agora.education.R;
+import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
@@ -24,12 +25,14 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.widget.RtcVideoView;
+
 
 public class OneToOneClassActivity extends BaseClassActivity {
     private static final String TAG = OneToOneClassActivity.class.getSimpleName();
@@ -44,6 +47,23 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     protected int getLayoutResId() {
         return R.layout.activity_one2one_class;
+    }
+
+    @Override
+    protected void initData() {
+        super.initData();
+        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, true, true,
+                new EduCallback<EduStudent>() {
+                    @Override
+                    public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
+                        runOnUiThread(() -> showFragmentWithJoinSuccess());
+                    }
+
+                    @Override
+                    public void onFailure(int code, @org.jetbrains.annotations.Nullable String reason) {
+                        joinFailed(code, reason);
+                    }
+                });
     }
 
     @Override
@@ -227,18 +247,6 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
         super.onRoomStatusChanged(event, operatorUser, classRoom);
-        EduRoomStatus roomStatus = classRoom.getRoomStatus();
-        switch (event) {
-            case COURSE_STATE:
-                title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
-                        System.currentTimeMillis() - roomStatus.getStartTime());
-                break;
-            case STUDENT_CHAT:
-                chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
-                break;
-            default:
-                break;
-        }
     }
 
     @Override
@@ -272,7 +280,6 @@ public class OneToOneClassActivity extends BaseClassActivity {
         super.onLocalUserUpdated(userEvent);
         /**更新用户信息*/
         EduUserInfo userInfo = userEvent.getModifiedUser();
-        chatRoomFragment.setMuteLocal(!userInfo.isChatAllowed());
         video_student.setName(userInfo.getUserName());
     }
 

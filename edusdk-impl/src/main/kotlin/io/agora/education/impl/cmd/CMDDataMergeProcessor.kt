@@ -16,6 +16,9 @@ import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
+import io.agora.education.impl.room.data.EduRoomInfoImpl
+import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
+import io.agora.education.impl.room.data.response.EduSnapshotRes
 import io.agora.education.impl.room.data.response.EduUserRes
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
@@ -331,7 +334,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                 eduRoom.roomStatus.startTime = roomState.startTime
                 event = RoomStatusEvent.COURSE_STATE
             }
-            val isStudentChatAllowed = Convert.extractStudentChatAllowState(roomState,
+            val isStudentChatAllowed = Convert.extractStudentChatAllowState(roomState.muteChat,
                     (eduRoom as EduRoomImpl).getCurRoomType())
             if (eduRoom.roomStatus.isStudentChatAllowed != isStudentChatAllowed) {
                 eduRoom.roomStatus.isStudentChatAllowed = isStudentChatAllowed
@@ -352,7 +355,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                             element.muteChat == EduChatState.Allow.value, element.updateTime)
                     /**更新用户自定义数据*/
                     eduUserInfo.userProperties = element.userProperties
-                    (eduRoom as EduRoomImpl).getCurUserList().add(eduUserInfo)
+                    eduRoom.getCurUserList().add(eduUserInfo)
                     element.streams?.let {
                         for (syncStreamRes in element.streams) {
                             val eduStreamInfo: EduStreamInfo = Convert.convertStreamInfo(syncStreamRes, eduUserInfo)
@@ -448,6 +451,23 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             }
             return arrayOf(validOnlineUserList, validModifiedUserList, validOfflineUserList,
                     validAddedStreamList, validModifiedStreamList, validRemovedStreamList)
+        }
+
+
+        /**同步房间的快照信息*/
+        fun syncSnapshotToRoom(eduRoom: EduRoom, snapshotRes: EduSnapshotRes) {
+            val snapshotRoomRes = snapshotRes.room
+            eduRoom.roomInfo.roomName = snapshotRoomRes.roomInfo.roomName
+            eduRoom.roomInfo.roomUuid = snapshotRoomRes.roomInfo.roomUuid
+            eduRoom.roomStatus.isStudentChatAllowed = Convert.extractStudentChatAllowState(
+                    snapshotRoomRes.roomState.muteChat, (eduRoom as EduRoomImpl).getCurRoomType())
+            eduRoom.roomProperties = snapshotRoomRes.roomProperties
+            /**TODO 此处缺少另外三个参数的信息，后台没返回*/
+            val snapshotUserRes = snapshotRes.users
+            val validAddedUserList = addUserWithOnline(snapshotUserRes, (eduRoom as EduRoomImpl)
+                    .getCurUserList(), eduRoom.getCurRoomType())
+            val validAddedStreamList = addStreamWithUserOnline(snapshotUserRes, (eduRoom as EduRoomImpl)
+                    .getCurStreamList(), eduRoom.getCurRoomType())
         }
     }
 }

@@ -33,6 +33,8 @@ abstract class EduRoom(val roomInfo: EduRoomInfo, val roomStatus: EduRoomStatus)
 
     var eventListener: EduRoomEventListener? = null
 
+    abstract fun allocateGroup(roomUuid: String, userUuid: String, callback: EduCallback<EduRoomInfo>)
+
     abstract fun joinClassroomAsTeacher(options: RoomJoinOptions, callback: EduCallback<EduTeacher>)
 
     abstract fun joinClassroomAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
@@ -49,7 +51,17 @@ abstract class EduRoom(val roomInfo: EduRoomInfo, val roomStatus: EduRoomStatus)
 
     abstract fun getFullUserList(): MutableList<EduUserInfo>
 
+    abstract fun clearData()
+
     abstract fun leave()
 
-    abstract fun release()
+    override fun equals(other: Any?): Boolean {
+        if (other == null) {
+            return false
+        }
+        if (other !is EduRoom) {
+            return false
+        }
+        return other.roomInfo.roomUuid.equals(this.roomInfo.roomUuid)
+    }
 }

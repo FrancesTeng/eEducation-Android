@@ -3,6 +3,7 @@ package io.agora.education.impl.room
 import android.util.Log
 import androidx.annotation.NonNull
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.base.callback.ThrowableCallback
@@ -23,16 +24,18 @@ import io.agora.education.api.user.data.EduChatState
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
 import io.agora.education.impl.cmd.*
+import io.agora.education.impl.cmd.bean.CMDId
+import io.agora.education.impl.cmd.bean.CMDResponseBody
 import io.agora.education.impl.record.EduRecordImpl
 import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.RtmConnectState
 import io.agora.education.impl.room.data.request.EduJoinClassroomReq
-import io.agora.education.impl.room.data.request.EduSyncStep
-import io.agora.education.impl.room.data.request.EduSyncRoomReq
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.stream.EduStreamInfoImpl
+import io.agora.education.impl.sync.RoomSyncHelper
+import io.agora.education.impl.sync.RoomSyncSession
 import io.agora.education.impl.user.EduStudentImpl
 import io.agora.education.impl.user.EduUserImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
@@ -45,23 +48,21 @@ import io.agora.rte.RteEngineEventListener
 import io.agora.rte.RteEngineImpl
 import io.agora.rte.data.RteChannelMediaOptions
 import io.agora.rtm.*
-import java.util.*
 
 internal class EduRoomImpl(
         roomInfo: EduRoomInfo,
         roomStatus: EduRoomStatus
 ) : EduRoom(roomInfo, roomStatus), RteChannelEventListener, RteEngineEventListener {
 
-    internal var roomSyncHelper: RoomSyncHelper
+    internal var roomSyncSession: RoomSyncSession
     internal var cmdDispatch: CMDDispatch
-    internal var dataCache: DataCache = DataCache()
     internal val rtmConnectState = RtmConnectState()
 
     init {
         RteEngineImpl.createChannel(roomInfo.roomUuid, this)
         /**为RteEngine设置eventListener*/
         RteEngineImpl.eventListener = this
-        roomSyncHelper = RoomSyncHelper(this)
+        roomSyncSession = RoomSyncHelper(this, 3)
         record = EduRecordImpl()
         board = EduBoardImpl()
         cmdDispatch = CMDDispatch(this)
@@ -77,44 +78,48 @@ internal class EduRoomImpl(
     /**是否退出房间的标志*/
     private var leaveRoom: Boolean = false
 
-    /**本地缓存的人流数据*/
-    private var eduUserInfoList = Collections.synchronizedList(mutableListOf<EduUserInfo>())
-    private var eduStreamInfoList = Collections.synchronizedList(mutableListOf<EduStreamInfo>())
-
-    /**join过程中，标识同步RoomInfo是否完成*/
-    var syncRoomInfoSuccess = false
-
-    /**标识join过程中同步全量人流数据是否完成*/
-    var syncAllUserStreamSuccess = false
-
-    /**标识join过程中同步增量人流数据是否完成*/
-    var syncIncrementUserStreamSuccess = false
-
-    /**join过程中，标识本地流的初始化过程是否完成*/
-    var initUpdateSuccess = false
-
     /**标识join过程是否完全成功*/
     var joinSuccess: Boolean = false
 
     /**标识join过程是否正在进行中*/
     var joining = false
 
-    /**截止目前，接收到的RTM的消息的序号*/
-    var rtmMsgSeq: Long = 0
-
     /**当前classRoom的classType(Main or Sub)*/
     var curClassType = ClassType.Sub
+
+    /**entry接口返回的流信息(可能是上次遗留的也可能是本次autoPublish流也可能是在同步(或join)过程中添加的远端流)*/
+    var defaultStreams: MutableList<EduStreamEvent> = mutableListOf()
 
     internal fun getCurRoomType(): RoomType {
         return (roomInfo as EduRoomInfoImpl).roomType
     }
 
     internal fun getCurUserList(): MutableList<EduUserInfo> {
-        return eduUserInfoList
+        return roomSyncSession.eduUserInfoList
     }
 
     internal fun getCurStreamList(): MutableList<EduStreamInfo> {
-        return eduStreamInfoList
+        return roomSyncSession.eduStreamInfoList
+    }
+
+    override fun allocateGroup(roomUuid: String, userUuid: String, callback: EduCallback<EduRoomInfo>) {
+        RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
+                .allocateGroup(APPID, roomUuid, userUuid)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduRoomInfoRes>> {
+                    override fun onSuccess(res: ResponseBody<EduRoomInfoRes>?) {
+                        val roomInfoRes = res?.data
+                        roomInfoRes?.let {
+                            callback.onSuccess(EduRoomInfo(roomInfoRes.roomUuid, roomInfoRes.roomName))
+                        }
+                    }
+
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        joinFailed(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message
+                                        ?: throwable?.message, callback as EduCallback<EduUser>)
+                    }
+                }))
     }
 
     /**此处先注释暂不实现*/
@@ -219,26 +224,37 @@ internal class EduRoomImpl(
                         localUserInfo.userProperties = roomEntryRes.user.userProperties
                         localUserInfo.streamUuid = roomEntryRes.user.streamUuid
                         /**把本地用户信息合并到本地缓存中*/
-                        eduUserInfoList.add(localUserInfo)
+                        roomSyncSession.eduUserInfoList.add(localUserInfo)
                         /**获取用户可能存在的流信息待join成功后进行处理;*/
                         roomEntryRes.user.streams?.let {
                             /**转换并合并流信息到本地缓存*/
                             val streamEvents = Convert.convertStreamInfo(it, this@EduRoomImpl);
-                            dataCache.addAddedStreams(streamEvents)
+                            defaultStreams.addAll(streamEvents)
                         }
                         /**解析返回的room相关数据并同步保存至本地*/
                         roomStatus.startTime = roomEntryRes.room.roomState.startTime
                         roomStatus.courseState = Convert.convertRoomState(roomEntryRes.room.roomState.state)
                         roomStatus.isStudentChatAllowed = Convert.extractStudentChatAllowState(
-                                roomEntryRes.room.roomState, getCurRoomType())
+                                roomEntryRes.room.roomState.muteChat, getCurRoomType())
                         roomProperties = roomEntryRes.room.roomProperties
                         /**加入rte(包括rtm和rtc)*/
                         joinRte(rtcToken, roomEntryRes.user.streamUuid.toLong(),
                                 RteChannelMediaOptions.build(mediaOptions), object : ResultCallback<Void> {
                             override fun onSuccess(p0: Void?) {
-                                /**发起同步数据(房间信息和全量人流数据)的请求，数据从RTM通知到本地*/
-                                roomSyncHelper.launchSyncRoomReq(object : EduCallback<Unit> {
+                                /**拉去全量数据*/
+                                roomSyncSession.fetchSnapshot(object : EduCallback<Unit> {
                                     override fun onSuccess(res: Unit?) {
+                                        /**全量数据拉取并合并成功*/
+                                        /**初始化本地流*/
+                                        initOrUpdateLocalStream(roomEntryRes, mediaOptions, object : EduCallback<Unit> {
+                                            override fun onSuccess(res: Unit?) {
+                                                joinSuccess(localUser, studentJoinCallback as EduCallback<EduUser>)
+                                            }
+
+                                            override fun onFailure(code: Int, reason: String?) {
+                                                joinFailed(code, reason, studentJoinCallback as EduCallback<EduUser>)
+                                            }
+                                        })
                                     }
 
                                     override fun onFailure(code: Int, reason: String?) {
@@ -267,57 +283,6 @@ internal class EduRoomImpl(
         RteEngineImpl.setClientRole(roomInfo.roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
         val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(this)
         RteEngineImpl[roomInfo.roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
-    }
-
-    /**
-     * @param syncRoomInfoSuc 同步roomInfo是否成功 true or null
-     * @param syncAllUserStreamSuc 同步syncUserStream是否成功 true or null*/
-    fun syncRoomOrAllUserStreamSuccess(syncRoomInfoSuc: Boolean?, syncAllUserStreamSuc:
-    Boolean?, syncIncrementUserStreamSuc: Boolean?) {
-        syncRoomInfoSuc?.let { this.syncRoomInfoSuccess = true }
-        syncAllUserStreamSuc?.let { this.syncAllUserStreamSuccess = true }
-        syncIncrementUserStreamSuc?.let { this.syncIncrementUserStreamSuccess = true }
-        val sync = this.syncRoomInfoSuccess && this.syncAllUserStreamSuccess &&
-                this.syncIncrementUserStreamSuccess
-        /**在同步roomInfo和allUserStream的过程中，每接收到一次数据就刷新一次超时任务；*/
-        roomSyncHelper.interruptRtmTimeout(!sync)
-        if (sync && this.initUpdateSuccess) {
-            /**join流程成功完成*/
-            joinSuccess(localUser, studentJoinCallback as EduCallback<EduUser>)
-        } else if (sync && !this.initUpdateSuccess) {
-            Log.e("EduRoomImpl", "人流数据同步完成，人：" + Gson().toJson(eduUserInfoList))
-            Log.e("EduRoomImpl", "人流数据同步完成，流：" + Gson().toJson(eduStreamInfoList))
-            /**人流数据同步完成
-             * 检查是否自动订阅远端流*/
-//            checkAutoSubscribe(mediaOptions)
-            /**初始化本地流*/
-            initOrUpdateLocalStream(roomEntryRes, mediaOptions, object : EduCallback<Unit> {
-                override fun onSuccess(res: Unit?) {
-                    initUpdateSuccess = true
-                    if (syncRoomInfoSuccess && syncAllUserStreamSuccess &&
-                            syncIncrementUserStreamSuccess && initUpdateSuccess) {
-                        joinSuccess(localUser, studentJoinCallback as EduCallback<EduUser>)
-                    }
-                }
-
-                override fun onFailure(code: Int, reason: String?) {
-                    initUpdateSuccess = false
-                    joinFailed(code, reason, studentJoinCallback as EduCallback<EduUser>)
-                }
-            })
-        }
-    }
-
-    private fun checkAutoSubscribe(roomMediaOptions: RoomMediaOptions) {
-        /**检查是否需要自动订阅远端流*/
-        if (roomMediaOptions.autoSubscribeVideo || roomMediaOptions.autoSubscribeAudio) {
-            val subscribeOptions = StreamSubscribeOptions(roomMediaOptions.autoSubscribeAudio,
-                    roomMediaOptions.autoSubscribeVideo,
-                    VideoStreamType.LOW)
-            for (element in getCurStreamList()) {
-                localUser.subscribeStream(element, subscribeOptions)
-            }
-        }
     }
 
     private fun initOrUpdateLocalStream(classRoomEntryRes: EduEntryRes, roomMediaOptions: RoomMediaOptions,
@@ -366,10 +331,10 @@ internal class EduRoomImpl(
                 eventListener?.onRemoteUsersInitialized(getCurUserList(), this@EduRoomImpl)
                 eventListener?.onRemoteStreamsInitialized(getCurStreamList(), this@EduRoomImpl)
                 joinSuccess = true
-                /**判断是否有缓存数据，如果有，通过对应的接口回调出去*/
-                val iterable = dataCache.addedStreams.iterator()
-                while (iterable.hasNext()) {
-                    val element = iterable.next()
+                /**检查是否有默认流信息(直接处理数据)*/
+                val addedStreamsIterable = defaultStreams.iterator()
+                while (addedStreamsIterable.hasNext()) {
+                    val element = addedStreamsIterable.next()
                     val streamInfo = element.modifiedStream
                     /**判断是否推本地流*/
                     if (streamInfo.publisher == localUser.userInfo) {
@@ -377,12 +342,20 @@ internal class EduRoomImpl(
                         Log.e("EduRoomImpl", "join成功，把添加的本地流回调出去")
                         localUser.eventListener?.onLocalStreamAdded(element)
                         /**把本地流*/
-                        iterable.remove()
+                        addedStreamsIterable.remove()
                     }
                 }
-                if (dataCache.addedStreams.size > 0) {
-                    eventListener?.onRemoteStreamsAdded(dataCache.addedStreams, this)
+                if (defaultStreams.size > 0) {
+                    eventListener?.onRemoteStreamsAdded(defaultStreams, this)
                 }
+                /**检查并处理缓存数据(处理CMD消息)*/
+                (roomSyncSession as RoomSyncHelper).handleCache(object : EduCallback<Unit> {
+                    override fun onSuccess(res: Unit?) {
+                    }
+
+                    override fun onFailure(code: Int, reason: String?) {
+                    }
+                })
             }
         }
     }
@@ -394,26 +367,10 @@ internal class EduRoomImpl(
             joining = false
             synchronized(joinSuccess) {
                 joinSuccess = false
-                clearData(false)
+                clearData()
                 callback.onFailure(code, reason)
             }
         }
-    }
-
-    /**获取本地缓存中，人流信息的最新更新时间*/
-    private fun getLastUpdatetime(): Long {
-        var lastTime: Long = 0
-        for (element in getCurUserList()) {
-            if ((element as EduUserInfoImpl).updateTime!! > lastTime) {
-                lastTime = element.updateTime!!
-            }
-        }
-        for (element in getCurStreamList()) {
-            if ((element as EduStreamInfoImpl).updateTime!! > lastTime) {
-                lastTime = element.updateTime!!
-            }
-        }
-        return lastTime
     }
 
     /**判断流信息在本地是否存在
@@ -433,17 +390,9 @@ internal class EduRoomImpl(
     }
 
     /**清楚本地缓存，离开RTM的当前频道；退出RTM*/
-    private fun clearData(release: Boolean) {
-        roomSyncHelper.removeTimeoutTask()
+    override fun clearData() {
         getCurUserList().clear()
         getCurStreamList().clear()
-        if (!leaveRoom) {
-            RteEngineImpl[roomInfo.roomUuid]?.leave()
-            leaveRoom = true
-        }
-        if (release) {
-            RteEngineImpl[roomInfo.roomUuid]?.release()
-        }
     }
 
     override fun getStudentCount(): Int {
@@ -475,33 +424,44 @@ internal class EduRoomImpl(
     }
 
     override fun getFullStreamList(): MutableList<EduStreamInfo> {
-        return eduStreamInfoList
+        return roomSyncSession.eduStreamInfoList
     }
 
     /**获取本地缓存的所有用户数据
      * 当第一个用户进入新房间(暂无用户的房间)的时候，不会有人流数据同步过来，此时如果调用此函数
      * 需要把本地用户手动添加进去*/
     override fun getFullUserList(): MutableList<EduUserInfo> {
-        if (eduUserInfoList.size == 0) {
-            eduUserInfoList.add(localUser.userInfo)
+        if (roomSyncSession.eduUserInfoList.size == 0) {
+            roomSyncSession.eduUserInfoList.add(localUser.userInfo)
         }
-        return eduUserInfoList
+        return roomSyncSession.eduUserInfoList
     }
 
     override fun leave() {
-        clearData(false)
-    }
-
-    override fun release() {
-        clearData(true)
-        roomSyncHelper.destroy()
+        clearData()
+        if (!leaveRoom) {
+            RteEngineImpl[roomInfo.roomUuid]?.leave()
+            leaveRoom = true
+        }
+        RteEngineImpl[roomInfo.roomUuid]?.release()
         eventListener = null
         localUser.eventListener = null
     }
 
     override fun onChannelMsgReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
         p0?.text?.let {
-            cmdDispatch.dispatchChannelMsg(p0?.text, eventListener)
+            val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(p0.text, object :
+                    TypeToken<CMDResponseBody<Any>>() {}.type)
+            val pair = roomSyncSession.updateSequenceId(cmdResponseBody)
+            if (pair != null) {
+                roomSyncSession.fetchLostSequence(pair.first, pair.second, object : EduCallback<Unit> {
+                    override fun onSuccess(res: Unit?) {
+                    }
+
+                    override fun onFailure(code: Int, reason: String?) {
+                    }
+                })
+            }
         }
     }
 
@@ -511,21 +471,13 @@ internal class EduRoomImpl(
     override fun onConnectionStateChanged(p0: Int, p1: Int) {
         if (rtmConnectState.isReconnecting() &&
                 p0 == RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED) {
-            val lastTime = getLastUpdatetime()
-            roomSyncHelper.updateNextTs(lastTime)
-            roomSyncHelper.interruptRtmTimeout(false)
-            roomSyncHelper.launchSyncRoomReq(object : EduCallback<Unit> {
+            roomSyncSession.fetchLostSequence(object : EduCallback<Unit> {
                 override fun onSuccess(res: Unit?) {
                 }
 
                 override fun onFailure(code: Int, reason: String?) {
-                    if (joining) {
-                        /**join流程失败*/
-                        joinFailed(code, reason, studentJoinCallback as EduCallback<EduUser>)
-                    } else if (joinSuccess) {
-                        /**无限重试，保证数据同步成功*/
-                        roomSyncHelper.launchSyncRoomReq(this)
-                    }
+                    /**无限重试，保证数据同步成功*/
+                    roomSyncSession.fetchLostSequence(this)
                 }
             })
         } else {
@@ -537,7 +489,19 @@ internal class EduRoomImpl(
 
     override fun onPeerMsgReceived(p0: RtmMessage?, p1: String?) {
         p0?.text?.let {
-            cmdDispatch.dispatchPeerMsg(p0?.text, eventListener)
+            val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(p0.text, object :
+                    TypeToken<CMDResponseBody<Any>>() {}.type)
+            cmdResponseBody.cmd = CMDId.mappingPeerMsgId(cmdResponseBody.cmd)
+            val pair = roomSyncSession.updateSequenceId(cmdResponseBody)
+            if (pair != null) {
+                roomSyncSession.fetchLostSequence(pair.first, pair.second, object : EduCallback<Unit> {
+                    override fun onSuccess(res: Unit?) {
+                    }
+
+                    override fun onFailure(code: Int, reason: String?) {
+                    }
+                })
+            }
         }
     }
 }

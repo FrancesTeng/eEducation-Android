@@ -7,7 +7,7 @@ import com.herewhite.sdk.Room;
 import com.herewhite.sdk.RoomCallbacks;
 import com.herewhite.sdk.RoomParams;
 import com.herewhite.sdk.WhiteSdk;
-import com.herewhite.sdk.domain.CameraBound;
+import com.herewhite.sdk.domain.GlobalState;
 import com.herewhite.sdk.domain.MemberState;
 import com.herewhite.sdk.domain.Promise;
 import com.herewhite.sdk.domain.RoomPhase;
@@ -86,6 +86,13 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
                 }
             });
         }
+    }
+
+    public RoomState getBoardState() {
+        if (t != null) {
+            return t.getRoomState();
+        }
+        return null;
     }
 
     public int getSceneCount() {
@@ -197,6 +204,10 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
     @Override
     public void onRoomStateChanged(RoomState modifyState) {
         if (listener != null) {
+            GlobalState state = modifyState.getGlobalState();
+            if (state != null) {
+                handler.post(() -> listener.onGlobalStateChanged(state));
+            }
             MemberState memberState = modifyState.getMemberState();
             if (memberState != null) {
                 handler.post(() -> listener.onMemberStateChanged(memberState));

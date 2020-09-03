@@ -2,7 +2,6 @@ package io.agora.education.impl.cmd.bean
 
 import io.agora.education.impl.room.data.response.EduFromUserRes
 import io.agora.education.impl.room.data.response.EduStreamRes
-import io.agora.education.impl.room.data.response.EduUserRes
 
 class CMDStreamActionMsg(
         fromUser: EduFromUserRes,

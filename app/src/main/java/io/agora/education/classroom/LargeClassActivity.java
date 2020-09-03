@@ -39,6 +39,7 @@ import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.StreamSubscribeOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.stream.data.VideoStreamType;
+import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduChatState;
 import io.agora.education.api.user.data.EduUserEvent;
@@ -98,6 +99,23 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             return R.layout.activity_large_class_landscape;
         }
+    }
+
+    @Override
+    protected void initData() {
+        super.initData();
+        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, true, true,
+                new EduCallback<EduStudent>() {
+                    @Override
+                    public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
+                        runOnUiThread(() -> showFragmentWithJoinSuccess());
+                    }
+
+                    @Override
+                    public void onFailure(int code, @org.jetbrains.annotations.Nullable String reason) {
+                        joinFailed(code, reason);
+                    }
+                });
     }
 
     @Override
@@ -628,9 +646,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
         super.onLocalUserUpdated(userEvent);
-        /**更新用户信息*/
-        EduUserInfo userInfo = userEvent.getModifiedUser();
-        chatRoomFragment.setMuteLocal(!userInfo.isChatAllowed());
     }
 
     @Override

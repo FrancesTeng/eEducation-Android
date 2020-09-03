@@ -6,28 +6,6 @@ import io.agora.education.api.user.data.EduUserInfo
 
 internal class DataCache {
 
-    /**entry接口返回的流信息(可能是上次遗留的也可能是本次autoPublish流也可能是在同步过程中添加的远端流)*/
-    var addedStreams: MutableList<EduStreamEvent> = mutableListOf()
-
-    /**同步过程中修改的流信息*/
-    var modifiedStreams: MutableList<EduStreamEvent> = mutableListOf()
-
-    /**同步过程中移除的流信息*/
-    var removedStreams: MutableList<EduStreamEvent> = mutableListOf()
-
-    fun addAddedStreams(streams: MutableList<EduStreamEvent>) {
-        this.addedStreams.addAll(streams)
-    }
-
-    fun addModifiedStreams(streams: MutableList<EduStreamEvent>) {
-        this.addedStreams.addAll(streams)
-    }
-
-    fun addRemovedStreams(streams: MutableList<EduStreamEvent>) {
-        this.addedStreams.addAll(streams)
-    }
-
-
     /**数据同步的第二阶段期间，发生改变的有效数据(是否有效取决于每条数据的updateTime)*/
     private val validOnlineUsersBySyncing = mutableListOf<EduUserInfo>()
     private val validModifiedUsersBySyncing = mutableListOf<EduUserEvent>()

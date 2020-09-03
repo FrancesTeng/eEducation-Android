@@ -9,6 +9,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import butterknife.ButterKnife;
+import io.agora.education.EduApplication;
+import io.agora.education.api.manager.EduManager;
 import io.agora.education.widget.EyeProtection;
 
 public abstract class BaseActivity extends AppCompatActivity {
@@ -63,5 +65,4 @@ public abstract class BaseActivity extends AppCompatActivity {
             viewGroup.removeView(view);
         }
     }
-
 }

@@ -3,8 +3,10 @@ package io.agora.education.impl.room.network
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.data.request.EduSyncRoomReq
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
-import io.agora.education.impl.room.data.response.EduEntryRoomRes
-import io.agora.education.impl.room.data.response.EduLoginRes
+import io.agora.education.impl.room.data.response.*
+import io.agora.education.impl.room.data.response.EduRoomInfoRes
+import io.agora.education.impl.room.data.response.EduSequenceListRes
+import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
 import io.agora.education.impl.user.data.request.*
 import io.agora.education.impl.user.data.request.EduRoomChatMsgReq
 import io.agora.education.impl.user.data.request.EduRoomMsgReq
@@ -60,7 +62,7 @@ internal interface RoomService {
     /**更新课堂状态*/
     @PUT("/scene/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
     fun updateClassroomState(
-            @Path("appId")  appId: String,
+            @Path("appId") appId: String,
             @Path("roomUUid") roomUUid: String,
             @Path("state") state: Int
     ): Call<io.agora.base.network.ResponseBody<String>>
@@ -69,7 +71,7 @@ internal interface RoomService {
      * 包括禁止聊天、禁止摄像头、禁用麦克风*/
     @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/roles/mute")
     fun updateClassroomMuteState(
-            @Path("appId")  appId: String,
+            @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Body eduRoomMuteStateReq: EduRoomMuteStateReq
     ): Call<io.agora.base.network.ResponseBody<String>>
@@ -119,4 +121,28 @@ internal interface RoomService {
             @Path("key") key: String,
             @Field("value") value: String
     ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**查询丢失的消息列表*/
+    @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/sequences")
+    fun fetchLostSequences(
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Query("nextId") nextId: Int,
+            @Query("count") count: Int?
+    ): Call<ResponseBody<EduSequenceListRes<Any>>>
+
+    /**查询快照(全量更新)*/
+    @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/snapshot")
+    fun fetchSnapshot(
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String
+    ): Call<ResponseBody<EduSequenceSnapshotRes>>
+
+    /**分配小组:请求服务端分配一个小教室*/
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/groups")
+    fun allocateGroup(
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Path("userUuid") userUuid: String
+    ): Call<ResponseBody<EduRoomInfoRes>>
 }

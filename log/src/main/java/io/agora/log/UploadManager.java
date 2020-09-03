@@ -19,7 +19,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
 import io.agora.base.callback.Callback;
 import io.agora.base.callback.ThrowableCallback;
@@ -29,44 +36,58 @@ import io.agora.log.service.bean.ResponseBody;
 import io.agora.log.service.bean.response.LogParamsRes;
 
 public class UploadManager {
+
+    public static final String ZIP = "zip";
+    public static final String LOG = "log";
+    private static final String APPSECRET = "7AIsPeMJgQAppO0Z";
+
     public static class UploadParam {
         public String host;
-        public String url;
         public String appId;
-        public String appCode;
-        public String appVersion;
         public String roomId;
+        /**
+         * zip/log; 扩展名，如果传扩展名则以扩展名为准，如果不传，terminalType=3为log，其他为zip
+         */
+        public String fileExt;
+        public String appCode;
+        public String osType;
+        public String terminalType;
+        public String appVersion;
         public String uploadPath;
-        public String callbackUrl;
 
         public UploadParam(
                 @NonNull String host,
-                @NonNull String url,
-                @Nullable String appId,
-                @NonNull String appCode,
-                @NonNull String appVersion,
+                @NonNull String appId,
                 @Nullable String roomId,
-                @NonNull String uploadPath,
-                @NonNull String callbackUrl
+                @Nullable String fileExt,
+                @Nullable String appCode,
+                @NonNull String osType,
+                @Nullable String terminalType,
+                @NonNull String appVersion,
+                @NonNull String uploadPath
         ) {
             this.host = host;
-            this.url = url;
             this.appId = appId;
-            this.appCode = appCode;
-            this.appVersion = appVersion;
             this.roomId = roomId;
+            this.fileExt = fileExt;
+            this.appCode = appCode;
+            this.osType = osType;
+            this.terminalType = terminalType;
+            this.appVersion = appVersion;
             this.uploadPath = uploadPath;
-            this.callbackUrl = callbackUrl;
         }
     }
 
     public static void upload(@NonNull Context context, @NonNull UploadParam param, @Nullable Callback<String> callback) {
         LogService service = RetrofitManager.instance().getService(param.host, LogService.class);
-        service.logParams(param.url, TextUtils.isEmpty(param.appId) ? "default" : param.appId, param.appCode, param.appVersion, param.roomId)
+        long timeStamp = System.currentTimeMillis();
+        String sign = sign(APPSECRET, param, timeStamp);
+        service.logParams(sign, String.valueOf(timeStamp), param.appId, param.roomId, param.fileExt, param.appCode,
+                param.osType, param.terminalType, param.appVersion)
                 .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<LogParamsRes>>() {
                     @Override
                     public void onSuccess(ResponseBody<LogParamsRes> res) {
-                        res.data.callbackUrl = service.logStsCallback(param.callbackUrl).request().url().toString();
+                        res.data.callbackUrl = service.logStsCallback(param.host).request().url().toString();
                         uploadByOss(context, param.uploadPath, res.data, callback);
                     }
 
@@ -122,8 +143,59 @@ public class UploadManager {
                     }
                 }
             });
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static String sign(String appSecret, UploadParam param, long timeStamp) {
+        StringBuilder stringBuilder = new StringBuilder(appSecret);
+        Map<String, Object> map = new TreeMap<>();
+        if (!TextUtils.isEmpty(param.appId)) {
+            map.put("appId", param.appId);
+        }
+        if (!TextUtils.isEmpty(param.roomId)) {
+            map.put("roomId", param.roomId);
+        }
+        if (!TextUtils.isEmpty(param.fileExt)) {
+            map.put("fileExt", param.fileExt);
+        }
+        if (!TextUtils.isEmpty(param.appCode)) {
+            map.put("appCode", param.appCode);
+        }
+        if (!TextUtils.isEmpty(param.osType)) {
+            map.put("osType", param.osType);
+        }
+        if (!TextUtils.isEmpty(param.terminalType)) {
+            map.put("terminalType", param.terminalType);
+        }
+        if (!TextUtils.isEmpty(param.appVersion)) {
+            map.put("appVersion", param.appVersion);
+        }
+        Iterator<Map.Entry<String, Object>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry element = iterator.next();
+            stringBuilder.append(element.getValue());
+        }
+        stringBuilder.append(timeStamp);
+        return getMD5Str(stringBuilder.toString());
+    }
+
+    private static String getMD5Str(String str) {
+        byte[] digest = null;
+        try {
+            MessageDigest md5 = MessageDigest.getInstance("md5");
+            digest = md5.digest(str.getBytes("utf-8"));
+        }
+        catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        //16是表示转换为16进制数
+        String md5Str = new BigInteger(1, digest).toString(16);
+        return md5Str;
     }
 }

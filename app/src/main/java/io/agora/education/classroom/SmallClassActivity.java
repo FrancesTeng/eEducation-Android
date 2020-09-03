@@ -19,6 +19,7 @@ import java.util.Locale;
 import butterknife.BindView;
 import butterknife.OnClick;
 import io.agora.education.R;
+import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
@@ -30,6 +31,7 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
@@ -58,6 +60,18 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     protected void initData() {
         super.initData();
+        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, true, true,
+                new EduCallback<EduStudent>() {
+                    @Override
+                    public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
+                        runOnUiThread(() -> showFragmentWithJoinSuccess());
+                    }
+
+                    @Override
+                    public void onFailure(int code, @org.jetbrains.annotations.Nullable String reason) {
+                        joinFailed(code, reason);
+                    }
+                });
         classVideoAdapter = new ClassVideoAdapter();
     }
 
@@ -106,10 +120,12 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         }
         transaction.commitNow();
     }
+
     @Override
     public void onTabUnselected(TabLayout.Tab tab) {
 
     }
+
     @Override
     public void onTabReselected(TabLayout.Tab tab) {
 
@@ -184,7 +200,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             }
         }
         /**有远端Camera流添加，刷新视频列表*/
-        if(notify) {
+        if (notify) {
             Log.e(TAG, "有远端Camera流添加，刷新视频列表");
             classVideoAdapter.setNewList(getCurFullStream());
         }
@@ -205,7 +221,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             }
         }
         /**有远端Camera流添加，刷新视频列表*/
-        if(notify) {
+        if (notify) {
             Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
             classVideoAdapter.setNewList(getCurFullStream());
         }
@@ -226,7 +242,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             }
         }
         /**有远端Camera流被移除，刷新视频列表*/
-        if(notify) {
+        if (notify) {
             Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
             classVideoAdapter.setNewList(getCurFullStream());
         }
@@ -273,8 +289,6 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
         super.onLocalUserUpdated(userEvent);
         /**更新用户信息*/
-        EduUserInfo userInfo = userEvent.getModifiedUser();
-        chatRoomFragment.setMuteLocal(!userInfo.isChatAllowed());
         classVideoAdapter.setNewList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }

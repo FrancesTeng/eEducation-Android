@@ -6,7 +6,7 @@ import io.agora.education.api.EduCallback
 import io.agora.rtm.ResultCallback
 
 interface IRteEngine {
-    fun init(context: Context, appId: String)
+    fun init(context: Context, appId: String, logFileDir: String)
 
     fun loginRtm(rtmUid: String, rtmToken: String, @NonNull callback: EduCallback<Unit>)
 

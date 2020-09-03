@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -35,15 +36,16 @@ import io.agora.education.classroom.SmallClassActivity;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.service.CommonService;
 import io.agora.education.util.AppUtil;
-import io.agora.education.util.UUIDUtil;
 import io.agora.education.widget.ConfirmDialog;
 import io.agora.education.widget.PolicyDialog;
-import io.agora.sdk.manager.RtmManager;
 import kotlin.Unit;
 
+import static io.agora.education.EduApplication.LogError;
+import static io.agora.education.EduApplication.getManager;
 import static io.agora.education.classroom.BaseClassActivity.RESULT_CODE;
 
 public class MainActivity extends BaseActivity {
+    private static final String TAG = "MainActivity";
 
     private final int REQUEST_CODE_DOWNLOAD = 100;
     private final int REQUEST_CODE_RTC = 101;
@@ -71,6 +73,7 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initData() {
+        LogError(TAG, "initData");
         receiver = new DownloadReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
@@ -94,7 +97,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         unregisterReceiver(receiver);
-        RtmManager.instance().reset();
+        getManager().release();
         super.onDestroy();
     }
 
@@ -240,7 +243,7 @@ public class MainActivity extends BaseActivity {
             return RoomType.ONE_ON_ONE.getValue();
         } else if (roomTypeStr.equals(getString(R.string.small_class))) {
             return RoomType.SMALL_CLASS.getValue();
-        } else if(roomTypeStr.equals(getString(R.string.large_class))) {
+        } else if (roomTypeStr.equals(getString(R.string.large_class))) {
             return RoomType.LARGE_CLASS.getValue();
         } else {
             return RoomType.BREAKOUT_CLASS.getValue();
@@ -251,7 +254,7 @@ public class MainActivity extends BaseActivity {
         /**createClassroom时，room不存在则新建，存在则返回room信息(此接口非必须调用)，
          * 只要保证在调用joinClassroom之前，classroom在服务端存在即可*/
         RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType, true);
-        EduApplication.getEduManager().scheduleClass(options, new EduCallback<Unit>() {
+        getManager().scheduleClass(options, new EduCallback<Unit>() {
             @Override
             public void onSuccess(@Nullable Unit res) {
                 Intent intent = createIntent(yourNameStr, yourUuid, roomNameStr, roomUuid, roomType);
@@ -260,13 +263,14 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFailure(int code, @Nullable String reason) {
+                Log.e(TAG, "排课失败");
             }
         });
     }
 
     private void login(String yourUuid, Intent intent) {
         EduLoginOptions loginOptions = new EduLoginOptions(yourUuid);
-        EduApplication.getEduManager().login(loginOptions, new EduCallback<Unit>() {
+        getManager().login(loginOptions, new EduCallback<Unit>() {
             @Override
             public void onSuccess(@Nullable Unit res) {
                 startActivityForResult(intent, REQUEST_CODE_RTE);
@@ -274,7 +278,7 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFailure(int code, @Nullable String reason) {
-
+                Log.e(TAG, "登录失败");
             }
         });
     }

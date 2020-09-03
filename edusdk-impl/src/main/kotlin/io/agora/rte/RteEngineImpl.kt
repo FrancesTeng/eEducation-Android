@@ -1,7 +1,9 @@
 package io.agora.rte
 
 import android.content.Context
+import android.provider.MediaStore
 import android.util.Log
+import io.agora.Constants.Companion.LOGS_DIR_NAME
 import io.agora.education.api.EduCallback
 import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.rtc.Constants
@@ -11,6 +13,8 @@ import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.RtcEngine
 import io.agora.rtm.*
+import io.agora.rtm.internal.RtmManager
+import java.io.File
 
 internal object RteEngineImpl : IRteEngine {
     lateinit var rtmClient: RtmClient
@@ -24,9 +28,13 @@ internal object RteEngineImpl : IRteEngine {
     /**rtm登录成功的标志*/
     var rtmLoginSuccess = false
 
-    override fun init(context: Context, appId: String) {
+    override fun init(context: Context, appId: String, logFileDir: String) {
+        var path = logFileDir.plus(File.separatorChar).plus("agorartm.log")
         rtmClient = RtmClient.createInstance(context, appId, rtmClientListener)
+        var code = rtmClient.setLogFile(path)
+        path = logFileDir.plus(File.separatorChar).plus("agorasdk.log")
         rtcEngine = RtcEngine.create(context, appId, rtcEngineEventHandler)
+        code = rtcEngine.setLogFile(path)
         Log.e("RteEngineImpl", "init")
 //        rtcEngine.setParameters("{\"rtc.log_filter\": 65535}")
     }
@@ -56,6 +64,8 @@ internal object RteEngineImpl : IRteEngine {
         rtmClient.logout(object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
                 rtmLoginSuccess = false
+//                rtmClient.release()
+//                RtcEngine.destroy()
                 Log.e("RteEngineImpl", "成功退出RTM")
             }
 

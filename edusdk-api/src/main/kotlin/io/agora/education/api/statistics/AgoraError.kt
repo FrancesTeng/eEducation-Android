@@ -37,5 +37,8 @@ enum class AgoraError(var value: Int) {
     // The operation failed due to an internal error.
     INTERNAL_ERROR(10),
 
+    //
+    SEQUENCE_NOT_EXISTS(404),
+
     ROOM_ALREADY_EXISTS(409),
 }

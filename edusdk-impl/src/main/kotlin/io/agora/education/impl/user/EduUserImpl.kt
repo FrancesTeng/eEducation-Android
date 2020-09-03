@@ -111,7 +111,7 @@ internal open class EduUserImpl(
                                 /**更新流信息的更新时间*/
                                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
 //                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
-                                RteEngineImpl.muteLocalStream(!streamInfo.hasVideo, !streamInfo.hasAudio)
+                                RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
                                 RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
                                 callback.onSuccess(true)
                             }

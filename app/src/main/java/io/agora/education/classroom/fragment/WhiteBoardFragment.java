@@ -1,10 +1,14 @@
 package io.agora.education.classroom.fragment;
 
+import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
+
+import androidx.annotation.NonNull;
 
 import com.herewhite.sdk.RoomParams;
 import com.herewhite.sdk.WhiteSdk;
@@ -12,18 +16,21 @@ import com.herewhite.sdk.WhiteSdkConfiguration;
 import com.herewhite.sdk.WhiteboardView;
 import com.herewhite.sdk.domain.Appliance;
 import com.herewhite.sdk.domain.CameraBound;
-import com.herewhite.sdk.domain.DeviceType;
+import com.herewhite.sdk.domain.GlobalState;
 import com.herewhite.sdk.domain.MemberState;
 import com.herewhite.sdk.domain.Promise;
 import com.herewhite.sdk.domain.RoomPhase;
 import com.herewhite.sdk.domain.SDKError;
 import com.herewhite.sdk.domain.SceneState;
+import com.herewhite.sdk.domain.WhiteDisplayerState;
 
 import butterknife.BindView;
 import butterknife.OnTouch;
 import io.agora.base.ToastManager;
 import io.agora.education.R;
 import io.agora.education.base.BaseFragment;
+import io.agora.education.classroom.bean.board.BoardFollowMode;
+import io.agora.education.classroom.bean.board.BoardState;
 import io.agora.education.classroom.widget.whiteboard.ApplianceView;
 import io.agora.education.classroom.widget.whiteboard.ColorPicker;
 import io.agora.education.classroom.widget.whiteboard.PageControlView;
@@ -32,6 +39,7 @@ import io.agora.whiteboard.netless.listener.BoardEventListener;
 import io.agora.whiteboard.netless.manager.BoardManager;
 
 public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnCheckedChangeListener, PageControlView.PageControlListener, BoardEventListener {
+    private static final String TAG = "WhiteBoardFragment";
 
     @BindView(R.id.white_board_view)
     protected WhiteboardView white_board_view;
@@ -46,8 +54,17 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     private WhiteSdk whiteSdk;
     private BoardManager boardManager = new BoardManager();
+    private String curLocalUuid;
     private final double miniScale = 0.1d;
     private final double maxScale = 10d;
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        if(context instanceof GlobalStateChangeListener) {
+            listener = (GlobalStateChangeListener) context;
+        }
+    }
 
     @Override
     protected int getLayoutResId() {
@@ -56,6 +73,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     @Override
     protected void initData() {
+        WhiteDisplayerState.setCustomGlobalStateClass(BoardState.class);
 //        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(DeviceType.touch, 10, 0.1);
         WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(getString(R.string.whiteboard_app_id), true);
         whiteSdk = new WhiteSdk(white_board_view, context, configuration);
@@ -76,10 +94,11 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
         page_control_view.setListener(this);
     }
 
-    public void initBoardWithRoomToken(String uuid, String roomToken) {
+    public void initBoardWithRoomToken(String uuid, String roomToken, String localUserUuid) {
         if (TextUtils.isEmpty(uuid) || TextUtils.isEmpty(roomToken)) {
             return;
         }
+        this.curLocalUuid = localUserUuid;
         boardManager.getRoomPhase(new Promise<RoomPhase>() {
             @Override
             public void then(RoomPhase phase) {
@@ -188,6 +207,14 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     }
 
     @Override
+    public void onGlobalStateChanged(GlobalState state) {
+        Log.e(TAG, "onGlobalStateChanged");
+        if(listener != null) {
+            listener.onGlobalStateChanged(state);
+        }
+    }
+
+    @Override
     public void onSceneStateChanged(SceneState state) {
         page_control_view.setPageIndex(state.getIndex(), state.getScenes().length);
     }
@@ -195,6 +222,11 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     @Override
     public void onMemberStateChanged(MemberState state) {
         appliance_view.check(appliance_view.getApplianceId(state.getCurrentApplianceName()));
+    }
+
+    private GlobalStateChangeListener listener;
+    public interface GlobalStateChangeListener {
+        void onGlobalStateChanged(GlobalState state);
     }
 
 }
