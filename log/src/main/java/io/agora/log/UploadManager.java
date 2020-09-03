@@ -15,6 +15,7 @@ import com.alibaba.sdk.android.oss.common.auth.OSSCredentialProvider;
 import com.alibaba.sdk.android.oss.common.auth.OSSStsTokenCredentialProvider;
 import com.alibaba.sdk.android.oss.model.PutObjectRequest;
 import com.alibaba.sdk.android.oss.model.PutObjectResult;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -42,53 +43,47 @@ public class UploadManager {
     private static final String APPSECRET = "7AIsPeMJgQAppO0Z";
 
     public static class UploadParam {
-        public String host;
         public String appId;
         public String roomId;
-        /**
-         * zip/log; 扩展名，如果传扩展名则以扩展名为准，如果不传，terminalType=3为log，其他为zip
-         */
         public String fileExt;
-        public String appCode;
         public String osType;
         public String terminalType;
         public String appVersion;
-        public String uploadPath;
+        public Object tag;
 
         public UploadParam(
-                @NonNull String host,
                 @NonNull String appId,
                 @Nullable String roomId,
+                /**
+                 * zip/log; 扩展名，如果传扩展名则以扩展名为准，如果不传，terminalType=3为log，其他为zip
+                 */
                 @Nullable String fileExt,
-                @Nullable String appCode,
                 @NonNull String osType,
                 @Nullable String terminalType,
                 @NonNull String appVersion,
-                @NonNull String uploadPath
+                @Nullable Object tag
         ) {
-            this.host = host;
             this.appId = appId;
             this.roomId = roomId;
             this.fileExt = fileExt;
-            this.appCode = appCode;
             this.osType = osType;
             this.terminalType = terminalType;
             this.appVersion = appVersion;
-            this.uploadPath = uploadPath;
+            this.tag = tag;
         }
     }
 
-    public static void upload(@NonNull Context context, @NonNull UploadParam param, @Nullable Callback<String> callback) {
-        LogService service = RetrofitManager.instance().getService(param.host, LogService.class);
+    public static void upload(@NonNull Context context, @NonNull String host, @NonNull String uploadPath,
+                              @NonNull UploadParam param, @Nullable Callback<String> callback) {
+        LogService service = RetrofitManager.instance().getService(host, LogService.class);
         long timeStamp = System.currentTimeMillis();
         String sign = sign(APPSECRET, param, timeStamp);
-        service.logParams(sign, String.valueOf(timeStamp), param.appId, param.roomId, param.fileExt, param.appCode,
-                param.osType, param.terminalType, param.appVersion)
+        service.logParams(sign, String.valueOf(timeStamp), param)
                 .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<LogParamsRes>>() {
                     @Override
                     public void onSuccess(ResponseBody<LogParamsRes> res) {
-                        res.data.callbackUrl = service.logStsCallback(param.host).request().url().toString();
-                        uploadByOss(context, param.uploadPath, res.data, callback);
+                        res.data.callbackUrl = service.logStsCallback(host).request().url().toString();
+                        uploadByOss(context, uploadPath, res.data, callback);
                     }
 
                     @Override
@@ -149,36 +144,43 @@ public class UploadManager {
         }
     }
 
+//    private static String sign(String appSecret, UploadParam param, long timeStamp) {
+//        StringBuilder stringBuilder = new StringBuilder(appSecret);
+//        Map<String, Object> map = new TreeMap<>();
+//        if (!TextUtils.isEmpty(param.appId)) {
+//            map.put("appId", param.appId);
+//        }
+//        if (!TextUtils.isEmpty(param.roomId)) {
+//            map.put("roomId", param.roomId);
+//        }
+//        if (!TextUtils.isEmpty(param.fileExt)) {
+//            map.put("fileExt", param.fileExt);
+//        }
+//        if (!TextUtils.isEmpty(param.appCode)) {
+//            map.put("appCode", param.appCode);
+//        }
+//        if (!TextUtils.isEmpty(param.osType)) {
+//            map.put("osType", param.osType);
+//        }
+//        if (!TextUtils.isEmpty(param.terminalType)) {
+//            map.put("terminalType", param.terminalType);
+//        }
+//        if (!TextUtils.isEmpty(param.appVersion)) {
+//            map.put("appVersion", param.appVersion);
+//        }
+//        Iterator<Map.Entry<String, Object>> iterator = map.entrySet().iterator();
+//        while (iterator.hasNext()) {
+//            Map.Entry element = iterator.next();
+//            stringBuilder.append(element.getValue());
+//        }
+//        stringBuilder.append(timeStamp);
+//        return getMD5Str(stringBuilder.toString());
+//    }
+
     private static String sign(String appSecret, UploadParam param, long timeStamp) {
         StringBuilder stringBuilder = new StringBuilder(appSecret);
-        Map<String, Object> map = new TreeMap<>();
-        if (!TextUtils.isEmpty(param.appId)) {
-            map.put("appId", param.appId);
-        }
-        if (!TextUtils.isEmpty(param.roomId)) {
-            map.put("roomId", param.roomId);
-        }
-        if (!TextUtils.isEmpty(param.fileExt)) {
-            map.put("fileExt", param.fileExt);
-        }
-        if (!TextUtils.isEmpty(param.appCode)) {
-            map.put("appCode", param.appCode);
-        }
-        if (!TextUtils.isEmpty(param.osType)) {
-            map.put("osType", param.osType);
-        }
-        if (!TextUtils.isEmpty(param.terminalType)) {
-            map.put("terminalType", param.terminalType);
-        }
-        if (!TextUtils.isEmpty(param.appVersion)) {
-            map.put("appVersion", param.appVersion);
-        }
-        Iterator<Map.Entry<String, Object>> iterator = map.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry element = iterator.next();
-            stringBuilder.append(element.getValue());
-        }
-        stringBuilder.append(timeStamp);
+        String json = new Gson().toJson(param);
+        stringBuilder.append(json).append(timeStamp);
         return getMD5Str(stringBuilder.toString());
     }
 

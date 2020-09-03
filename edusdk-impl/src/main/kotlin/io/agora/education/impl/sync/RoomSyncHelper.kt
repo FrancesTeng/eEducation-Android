@@ -1,6 +1,5 @@
 package io.agora.education.impl.sync
 
-import android.util.Log
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Convert
@@ -12,15 +11,11 @@ import io.agora.education.api.room.EduRoom
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.cmd.CMDDataMergeProcessor
-import io.agora.education.impl.cmd.bean.CMDId
 import io.agora.education.impl.cmd.bean.CMDResponseBody
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.request.EduSyncRoomReq
-import io.agora.education.impl.room.data.request.EduSyncStep
 import io.agora.education.impl.room.data.response.EduSequenceListRes
 import io.agora.education.impl.room.data.response.EduSequenceRes
 import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
-import io.agora.education.impl.room.data.response.EduSnapshotRes
 import io.agora.education.impl.room.network.RoomService
 import java.util.*
 

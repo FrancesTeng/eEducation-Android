@@ -162,22 +162,23 @@ internal class EduManagerImpl(
     }
 
     override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError {
-        val uploadParam = UploadManager.UploadParam(API_BASE_URL, APPID, null, ZIP,
-                null, "Android", Build.BRAND, BuildConfig.VERSION_NAME, options.logFileDir!!)
-        UploadManager.upload(options.context, uploadParam, object : ThrowableCallback<String> {
-            override fun onSuccess(res: String?) {
-                res?.let {
-                    callback.onSuccess(res)
-                }
-            }
+        val uploadParam = UploadManager.UploadParam(APPID, null, ZIP, "Android",
+                Build.BRAND.plus("-").plus(Build.DEVICE), BuildConfig.VERSION_NAME, null)
+        UploadManager.upload(options.context, API_BASE_URL, options.logFileDir!!, uploadParam,
+                object : ThrowableCallback<String> {
+                    override fun onSuccess(res: String?) {
+                        res?.let {
+                            callback.onSuccess(res)
+                        }
+                    }
 
-            override fun onFailure(throwable: Throwable?) {
-                var error = throwable as? BusinessException
-                error?.code?.let {
-                    callback.onFailure(error?.code, error?.message ?: throwable?.message)
-                }
-            }
-        })
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        error?.code?.let {
+                            callback.onFailure(error?.code, error?.message ?: throwable?.message)
+                        }
+                    }
+                })
         return AgoraError.NONE
     }
 }

@@ -191,33 +191,24 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                     /**流的Add和Remove跟随人员进出,所以此处的Add和Remove不会走了*/
                     CMDStreamAction.Add.value -> {
                         Log.e("CMDDispatch", "收到新添加流的通知：${text}")
-//                        val validAddStreams = CMDDataMergeProcessor.addStreamWithAction(cmdStreamActionMsg,
-//                                (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
-//                        Log.e("CMDDispatch", "有效新添加流大小：" + validAddStreams.size)
-//                        /**如果当前正在加入房间的过程中，不回调数据;只保证更新的数据合并到集合中即可*/
-//                        synchronized(eduRoom.joinSuccess) {
-//                            if (eduRoom.joinSuccess) {
-//                                /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
-//                                val iterable = validAddStreams.iterator()
-//                                while (iterable.hasNext()) {
-//                                    val element = iterable.next()
-//                                    val streamInfo = element.modifiedStream
-//                                    if (streamInfo.publisher == eduRoom.localUser.userInfo) {
-//                                        RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
-//                                        Log.e("CMDDispatch", "join成功，把新添加的本地流回调出去")
-//                                        eduRoom.localUser.eventListener?.onLocalStreamAdded(element)
-//                                        iterable.remove()
-//                                    }
-//                                }
-//                                if (validAddStreams.size > 0) {
-//                                    Log.e("CMDDispatch", "join成功，把新添加远端流回调出去")
-//                                    eventListener?.onRemoteStreamsAdded(validAddStreams, eduRoom)
-//                                } else {
-//                                }
-//                            } else {
-//                                eduRoom.addedStreams.addAll(validAddStreams)
-//                            }
-//                        }
+                        val validAddStreams = CMDDataMergeProcessor.addStreamWithAction(cmdStreamActionMsg,
+                                (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
+                        Log.e("CMDDispatch", "有效新添加流大小：" + validAddStreams.size)/**判断有效的数据中是否有本地流的数据,有则处理并回调*/
+                        val iterable = validAddStreams.iterator()
+                        while (iterable.hasNext()) {
+                            val element = iterable.next()
+                            val streamInfo = element.modifiedStream
+                            if (streamInfo.publisher == eduRoom.localUser.userInfo) {
+                                RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                                Log.e("CMDDispatch", "join成功，把新添加的本地流回调出去")
+                                eduRoom.localUser.eventListener?.onLocalStreamAdded(element)
+                                iterable.remove()
+                            }
+                        }
+                        if (validAddStreams.size > 0) {
+                            Log.e("CMDDispatch", "join成功，把新添加远端流回调出去")
+                            cmdCallbackManager.onRemoteStreamsAdded(validAddStreams, eduRoom)
+                        }
                     }
                     CMDStreamAction.Modify.value -> {
                         Log.e("CMDDispatch", "收到修改流的通知：${text}")
