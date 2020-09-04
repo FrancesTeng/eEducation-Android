@@ -52,11 +52,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
     fun dispatchMsg(cmdResponseBody: CMDResponseBody<Any>?) {
         val text = Gson().toJson(cmdResponseBody)
         cmdResponseBody?.let {
-            if (CMDId.isPeerMsg(cmdResponseBody.cmd)) {
-                dispatchPeerMsg(text)
-            } else {
-                dispatchChannelMsg(text)
-            }
+            dispatchChannelMsg(text)
         }
     }
 
@@ -193,7 +189,8 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         Log.e("CMDDispatch", "收到新添加流的通知：${text}")
                         val validAddStreams = CMDDataMergeProcessor.addStreamWithAction(cmdStreamActionMsg,
                                 (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
-                        Log.e("CMDDispatch", "有效新添加流大小：" + validAddStreams.size)/**判断有效的数据中是否有本地流的数据,有则处理并回调*/
+                        Log.e("CMDDispatch", "有效新添加流大小：" + validAddStreams.size)
+                        /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
                         val iterable = validAddStreams.iterator()
                         while (iterable.hasNext()) {
                             val element = iterable.next()

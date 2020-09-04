@@ -3,6 +3,8 @@ package io.agora.education.classroom;
 import android.util.Log;
 import android.view.View;
 
+import com.google.gson.Gson;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -153,6 +155,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
         super.onRemoteStreamsInitialized(streams, classRoom);
         Log.e(TAG, "onRemoteStreamsInitialized");
         EduStreamInfo streamInfo = getTeacherStream();
+        Log.e(TAG, "老师的流信息:" + new Gson().toJson(streamInfo));
         if (streamInfo != null) {
             video_teacher.setName(streamInfo.getPublisher().getUserName());
             renderStream(streamInfo, video_teacher.getVideoLayout());

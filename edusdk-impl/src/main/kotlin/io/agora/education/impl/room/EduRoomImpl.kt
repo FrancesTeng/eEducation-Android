@@ -115,6 +115,7 @@ internal class EduRoomImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
+                        error = error ?: BusinessException(throwable?.message)
                         joinFailed(error?.code ?: AgoraError.INTERNAL_ERROR.value,
                                 error?.message
                                         ?: throwable?.message, callback as EduCallback<EduUser>)
@@ -271,9 +272,9 @@ internal class EduRoomImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        joinFailed(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message
-                                        ?: throwable?.message, callback as EduCallback<EduUser>)
+                        error = error ?: BusinessException(throwable?.message)
+                        joinFailed(error?.code, error?.message
+                                ?: throwable?.message, callback as EduCallback<EduUser>)
                     }
                 }))
     }
@@ -488,20 +489,12 @@ internal class EduRoomImpl(
     }
 
     override fun onPeerMsgReceived(p0: RtmMessage?, p1: String?) {
+        /**RTM保证peerMsg能到达,不用走同步检查(seq衔接性检查)*/
         p0?.text?.let {
             val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(p0.text, object :
                     TypeToken<CMDResponseBody<Any>>() {}.type)
             cmdResponseBody.cmd = CMDId.mappingPeerMsgId(cmdResponseBody.cmd)
-            val pair = roomSyncSession.updateSequenceId(cmdResponseBody)
-            if (pair != null) {
-                roomSyncSession.fetchLostSequence(pair.first, pair.second, object : EduCallback<Unit> {
-                    override fun onSuccess(res: Unit?) {
-                    }
-
-                    override fun onFailure(code: Int, reason: String?) {
-                    }
-                })
-            }
+            cmdDispatch.dispatchPeerMsg(Gson().toJson(cmdResponseBody))
         }
     }
 }

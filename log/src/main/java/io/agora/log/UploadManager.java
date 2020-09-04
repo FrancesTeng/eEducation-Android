@@ -40,50 +40,52 @@ public class UploadManager {
 
     public static final String ZIP = "zip";
     public static final String LOG = "log";
-    private static final String APPSECRET = "7AIsPeMJgQAppO0Z";
 
     public static class UploadParam {
         public String appId;
-        public String roomId;
-        public String fileExt;
-        public String osType;
-        public String terminalType;
         public String appVersion;
+        public String deviceName;
+        public String deviceVersion;
+        public String fileExt;
+        public String platform;
         public Object tag;
 
         public UploadParam(
                 @NonNull String appId,
-                @Nullable String roomId,
+                @Nullable String appVersion,
+                @Nullable String deviceName,
+                @NonNull String deviceVersion,
                 /**
                  * zip/log; 扩展名，如果传扩展名则以扩展名为准，如果不传，terminalType=3为log，其他为zip
                  */
                 @Nullable String fileExt,
-                @NonNull String osType,
-                @Nullable String terminalType,
-                @NonNull String appVersion,
+                @NonNull String platform,
                 @Nullable Object tag
         ) {
             this.appId = appId;
-            this.roomId = roomId;
-            this.fileExt = fileExt;
-            this.osType = osType;
-            this.terminalType = terminalType;
             this.appVersion = appVersion;
+            this.deviceName = deviceName;
+            this.deviceVersion = deviceVersion;
+            this.fileExt = fileExt;
+            this.platform = platform;
             this.tag = tag;
         }
     }
 
-    public static void upload(@NonNull Context context, @NonNull String host, @NonNull String uploadPath,
+    public static void upload(@NonNull Context context, @NonNull String appSecret,
+                              @NonNull String host, @NonNull String uploadPath,
                               @NonNull UploadParam param, @Nullable Callback<String> callback) {
         LogService service = RetrofitManager.instance().getService(host, LogService.class);
         long timeStamp = System.currentTimeMillis();
-        String sign = sign(APPSECRET, param, timeStamp);
+        String sign = sign(appSecret, param, timeStamp);
         service.logParams(sign, String.valueOf(timeStamp), param)
                 .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<LogParamsRes>>() {
                     @Override
                     public void onSuccess(ResponseBody<LogParamsRes> res) {
                         res.data.callbackUrl = service.logStsCallback(host).request().url().toString();
-                        uploadByOss(context, uploadPath, res.data, callback);
+                        new Thread(() -> {
+                            uploadByOss(context, uploadPath, res.data, callback);
+                        }).start();
                     }
 
                     @Override

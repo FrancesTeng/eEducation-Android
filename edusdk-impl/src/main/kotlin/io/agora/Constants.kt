@@ -8,5 +8,6 @@ internal class Constants {
         const val API_BASE_URL: String = "https://api-solutions-dev.sh.agoralab.co"
         lateinit var AgoraLog: LogManager
         const val LOGS_DIR_NAME = "logs"
+        const val LOG_APPSECRET = "7AIsPeMJgQAppO0Z";
     }
 }

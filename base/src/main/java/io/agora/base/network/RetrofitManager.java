@@ -94,14 +94,13 @@ public class RetrofitManager {
                 try {
                     String errorBodyStr = new String(response.errorBody().bytes());
                     ResponseBody errorBody = new Gson().fromJson(errorBodyStr, ResponseBody.class);
-                    if(errorBody == null){
+                    if (errorBody == null) {
                         throwableCallback(new Throwable(response.errorBody().string()));
-                    }
-                    else
-                    {
+                    } else {
                         throwableCallback(new BusinessException(errorBody.code, String.valueOf(errorBody.msg)));
                     }
-                } catch (IOException e) {
+                }
+                catch (IOException e) {
                     throwableCallback(e);
                 }
             } else {

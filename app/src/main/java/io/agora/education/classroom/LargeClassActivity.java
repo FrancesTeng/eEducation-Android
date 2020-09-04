@@ -656,7 +656,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
-        /**本地流被添加(是老师同意本地用户的举手连麦请求)*/
     }
 
     @Override
@@ -675,19 +674,5 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamRemoved(streamEvent);
-        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-        Log.e(TAG, "本地流被移除:" + streamInfo.getStreamUuid());
-//        if (localCoVideoStatus == CoVideoing) {
-//            video_student.setName(streamInfo.getPublisher().getUserName());
-//            renderStream(streamInfo, null);
-//            video_student.muteVideo(!streamInfo.getHasVideo());
-//            video_student.muteAudio(!streamInfo.getHasAudio());
-//            video_student.setViewVisibility(View.GONE);
-//            if (curLinkedUser.equals(streamInfo.getPublisher())) {
-//                curLinkedUser = null;
-//            }
-//            localCoVideoStatus = DisCoVideo;
-//            resetHandState();
-//        }
     }
 }

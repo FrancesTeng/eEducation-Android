@@ -1,5 +1,7 @@
 package io.agora.education.impl.sync
 
+import android.util.Log
+import com.google.gson.Gson
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Convert
@@ -19,6 +21,7 @@ import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
 import io.agora.education.impl.room.network.RoomService
 import java.util.*
 
+/**只同步管理channelMsg，不同步peerMsg，因为RTM能保障peerMsg到达，而且peerMsg只和业务有关*/
 internal class RoomSyncHelper(private val eduRoom: EduRoom, maxRetry: Int)
     : RoomSyncSession() {
 
@@ -129,6 +132,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, maxRetry: Int)
                 .fetchLostSequences(APPID, eduRoom.roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceListRes<Any>>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceListRes<Any>>?) {
+                        Log.e(TAG, "请求到的丢失数据:${Gson().toJson(res)}")
                         res?.data?.let {
                             /**把缺失的seq数据添加到集合中*/
                             addSequenceData(res.data as EduSequenceListRes<Any>)
@@ -175,6 +179,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, maxRetry: Int)
                 .fetchSnapshot(APPID, eduRoom.roomInfo.roomUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceSnapshotRes>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceSnapshotRes>?) {
+                        Log.e(TAG, "请求到的快照数据:${Gson().toJson(res)}")
                         /**因为是全量数据，所以直接全部赋值即可*/
                         res?.data?.let {
                             CMDDataMergeProcessor.syncSnapshotToRoom(eduRoom, it.snapshot)

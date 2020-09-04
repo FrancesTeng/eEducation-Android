@@ -1,12 +1,12 @@
 package io.agora.education.impl.manager
 
 import android.os.Build
-import android.system.Os
 import android.util.Base64
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.AgoraLog
 import io.agora.Constants.Companion.LOGS_DIR_NAME
+import io.agora.Constants.Companion.LOG_APPSECRET
 import io.agora.Convert
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
@@ -26,7 +26,6 @@ import io.agora.education.impl.room.data.response.EduLoginRes
 import io.agora.education.impl.room.network.RoomService
 import io.agora.log.LogManager
 import io.agora.log.UploadManager
-import io.agora.log.UploadManager.ZIP
 import io.agora.rte.RteEngineImpl
 import java.io.File
 
@@ -97,13 +96,14 @@ internal class EduManagerImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
+                        error = error ?: BusinessException(throwable?.message)
                         error?.code?.let {
                             if (error?.code == AgoraError.ROOM_ALREADY_EXISTS.value) {
 //                                createSuccess(config, callback)
                                 callback.onSuccess(Unit)
                             } else {
-                                callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                        error?.message ?: throwable?.message)
+                                callback.onFailure(error?.code, error?.message
+                                        ?: throwable?.message)
                             }
                         }
                     }
@@ -132,6 +132,7 @@ internal class EduManagerImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
+                        error = error ?: BusinessException(throwable?.message)
                         error?.code?.let {
                             callback.onFailure(error?.code, error?.message ?: throwable?.message)
                         }
@@ -162,9 +163,9 @@ internal class EduManagerImpl(
     }
 
     override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError {
-        val uploadParam = UploadManager.UploadParam(APPID, null, ZIP, "Android",
-                Build.BRAND.plus("-").plus(Build.DEVICE), BuildConfig.VERSION_NAME, null)
-        UploadManager.upload(options.context, API_BASE_URL, options.logFileDir!!, uploadParam,
+        val uploadParam = UploadManager.UploadParam(APPID, BuildConfig.VERSION_NAME, Build.DEVICE,
+                Build.VERSION.SDK, "ZIP", "Android", null)
+        UploadManager.upload(options.context, LOG_APPSECRET, API_BASE_URL, options.logFileDir!!, uploadParam,
                 object : ThrowableCallback<String> {
                     override fun onSuccess(res: String?) {
                         res?.let {
@@ -174,6 +175,7 @@ internal class EduManagerImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
+                        error = error ?: BusinessException(throwable?.message)
                         error?.code?.let {
                             callback.onFailure(error?.code, error?.message ?: throwable?.message)
                         }

@@ -137,7 +137,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     element.streams?.forEach {
                         val videoSourceType = Convert.convertVideoSourceType(it.videoSourceType)
                         val streamInfo = EduStreamInfoImpl(it.streamUuid, it.streamName, videoSourceType,
-                                it.audioState == EduAudioState.Open.value, it.videoState == EduVideoState.Open.value,
+                                it.videoState == EduVideoState.Open.value, it.audioState == EduAudioState.Open.value,
                                 publisher, it.updateTime)
                         if (streamInfoList.contains(streamInfo)) {
                             val index = streamInfoList.indexOf(streamInfo)
@@ -464,10 +464,10 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             eduRoom.roomProperties = snapshotRoomRes.roomProperties
             /**TODO 此处缺少另外三个参数的信息，后台没返回*/
             val snapshotUserRes = snapshotRes.users
-            val validAddedUserList = addUserWithOnline(snapshotUserRes, (eduRoom as EduRoomImpl)
-                    .getCurUserList(), eduRoom.getCurRoomType())
-            val validAddedStreamList = addStreamWithUserOnline(snapshotUserRes, (eduRoom as EduRoomImpl)
-                    .getCurStreamList(), eduRoom.getCurRoomType())
+            val validAddedUserList = addUserWithOnline(snapshotUserRes, eduRoom.getCurUserList(),
+                    eduRoom.getCurRoomType())
+            val validAddedStreamList = addStreamWithUserOnline(snapshotUserRes, eduRoom.getCurStreamList(),
+                    eduRoom.getCurRoomType())
         }
     }
 }

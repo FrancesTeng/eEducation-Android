@@ -4,6 +4,9 @@ enum class AgoraError(var value: Int) {
     // No error.
     NONE(0),
 
+    // The operation failed due to an internal error.
+    INTERNAL_ERROR(-1),
+
     // An operation is valid, but currently unsupported.
     UNSUPPORTED_OPERATION(1),
 
@@ -33,9 +36,6 @@ enum class AgoraError(var value: Int) {
     // Some resource has been exhausted; file handles, hardware resources, ports,
     // etc.
     RESOURCE_EXHAUSTED(9),
-
-    // The operation failed due to an internal error.
-    INTERNAL_ERROR(10),
 
     //
     SEQUENCE_NOT_EXISTS(404),
