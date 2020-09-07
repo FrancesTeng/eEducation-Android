@@ -1,6 +1,8 @@
 package io.agora.education.api.user.data
 
 import io.agora.education.api.room.data.Property
+import io.agora.education.api.stream.data.EduStreamEvent
+import io.agora.education.api.stream.data.EduStreamInfo
 
 enum class EduUserRole(var value: Int) {
     TEACHER(1),
@@ -44,6 +46,15 @@ open class EduUserInfo(
     lateinit var streamUuid: String
     var userProperties: Map<String, String> = mapOf()
 }
+
+open class EduLocalUserInfo(
+        userUuid: String,
+        userName: String,
+        role: EduUserRole,
+        isChatAllowed: Boolean?,
+        var userToken: String?,
+        var streams: MutableList<EduStreamEvent>
+) : EduUserInfo(userUuid, userName, role, isChatAllowed)
 
 enum class EduChatState(var value: Int) {
     NotAllow(1),

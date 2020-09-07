@@ -5,7 +5,6 @@ import io.agora.education.api.board.EduBoard
 import io.agora.education.api.record.EduRecord
 import io.agora.education.api.room.data.EduRoomInfo
 import io.agora.education.api.room.data.EduRoomStatus
-import io.agora.education.api.room.data.Property
 import io.agora.education.api.room.data.RoomJoinOptions
 import io.agora.education.api.room.listener.EduRoomEventListener
 import io.agora.education.api.stream.data.EduStreamInfo
@@ -19,9 +18,8 @@ abstract class EduRoom(val roomInfo: EduRoomInfo, val roomStatus: EduRoomStatus)
     companion object {
         fun create(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus): EduRoom {
             val cla = Class.forName("io.agora.education.impl.room.EduRoomImpl")
-            val eduRoom = cla.getConstructor(EduRoomInfo::class.java, EduRoomStatus::class.java)
+            return cla.getConstructor(EduRoomInfo::class.java, EduRoomStatus::class.java)
                     .newInstance(roomInfo, roomStatus) as EduRoom
-            return eduRoom
         }
     }
 
@@ -35,9 +33,7 @@ abstract class EduRoom(val roomInfo: EduRoomInfo, val roomStatus: EduRoomStatus)
 
     abstract fun allocateGroup(roomUuid: String, userUuid: String, callback: EduCallback<EduRoomInfo>)
 
-    abstract fun joinClassroomAsTeacher(options: RoomJoinOptions, callback: EduCallback<EduTeacher>)
-
-    abstract fun joinClassroomAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
+    abstract fun joinClassroom(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
 
     abstract fun getStudentCount(): Int
 

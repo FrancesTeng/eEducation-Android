@@ -11,6 +11,7 @@ import com.alibaba.sdk.android.oss.OSS;
 import com.alibaba.sdk.android.oss.OSSClient;
 import com.alibaba.sdk.android.oss.ServiceException;
 import com.alibaba.sdk.android.oss.callback.OSSCompletedCallback;
+import com.alibaba.sdk.android.oss.common.auth.OSSAuthCredentialsProvider;
 import com.alibaba.sdk.android.oss.common.auth.OSSCredentialProvider;
 import com.alibaba.sdk.android.oss.common.auth.OSSStsTokenCredentialProvider;
 import com.alibaba.sdk.android.oss.model.PutObjectRequest;
@@ -40,6 +41,7 @@ public class UploadManager {
 
     public static final String ZIP = "zip";
     public static final String LOG = "log";
+    private static final String callbackPath = "/monitor/v1/log/oss/callback";
 
     public static class UploadParam {
         public String appId;
@@ -82,7 +84,8 @@ public class UploadManager {
                 .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<LogParamsRes>>() {
                     @Override
                     public void onSuccess(ResponseBody<LogParamsRes> res) {
-                        res.data.callbackUrl = service.logStsCallback(host).request().url().toString();
+                        res.data.callbackUrl = service.logStsCallback(host).request().url()
+                                .toString().concat(callbackPath);
                         new Thread(() -> {
                             uploadByOss(context, uploadPath, res.data, callback);
                         }).start();
@@ -109,9 +112,9 @@ public class UploadManager {
                 put("callbackBodyType", param.callbackContentType);
                 put("callbackBody", param.callbackBody);
             }});
-
             // 推荐使用OSSAuthCredentialsProvider。token过期可以及时更新。
-            OSSCredentialProvider credentialProvider = new OSSStsTokenCredentialProvider(param.accessKeyId, param.accessKeySecret, param.securityToken);
+            OSSCredentialProvider credentialProvider = new OSSStsTokenCredentialProvider(param.accessKeyId,
+                    param.accessKeySecret, param.securityToken);
             OSS oss = new OSSClient(context, param.ossEndpoint, credentialProvider);
             oss.asyncPutObject(put, new OSSCompletedCallback<PutObjectRequest, PutObjectResult>() {
                 @Override

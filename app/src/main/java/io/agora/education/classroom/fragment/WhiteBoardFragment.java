@@ -61,7 +61,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        if(context instanceof GlobalStateChangeListener) {
+        if (context instanceof GlobalStateChangeListener) {
             listener = (GlobalStateChangeListener) context;
         }
     }
@@ -209,7 +209,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     @Override
     public void onGlobalStateChanged(GlobalState state) {
         Log.e(TAG, "onGlobalStateChanged");
-        if(listener != null) {
+        if (listener != null) {
             listener.onGlobalStateChanged(state);
         }
     }
@@ -225,6 +225,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     }
 
     private GlobalStateChangeListener listener;
+
     public interface GlobalStateChangeListener {
         void onGlobalStateChanged(GlobalState state);
     }

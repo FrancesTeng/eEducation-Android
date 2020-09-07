@@ -39,6 +39,11 @@ internal class RteChannelImpl(
     }
 
     private val rtcChannelEventHandler = object : IRtcChannelEventHandler() {
+        override fun onNetworkQuality(rtcChannel: RtcChannel?, uid: Int, txQuality: Int, rxQuality: Int) {
+            super.onNetworkQuality(rtcChannel, uid, txQuality, rxQuality)
+            eventListener?.onNetworkQuality(uid, txQuality, rxQuality)
+        }
+
         override fun onClientRoleChanged(rtcChannel: RtcChannel?, oldRole: Int, newRole: Int) {
             super.onClientRoleChanged(rtcChannel, oldRole, newRole)
             Log.e("RteChannelImpl", rtcChannel?.channelId() + "," + oldRole + "," + newRole)

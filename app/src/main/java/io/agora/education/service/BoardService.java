@@ -11,6 +11,7 @@ public interface BoardService {
 
     @GET("/board/apps/{appId}/v1/rooms/{roomUuid}")
     Call<ResponseBody<BoardBean>> getBoardInfo(
+            @Path("token") String userToken,
             @Path("appId") String appId,
             @Path("roomUuid") String roomUuid
     );

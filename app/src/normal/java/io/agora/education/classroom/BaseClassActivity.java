@@ -24,6 +24,7 @@ import io.agora.base.network.RetrofitManager;
 import io.agora.education.R;
 import io.agora.education.RoomEntry;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.manager.listener.EduManagerEventListener;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
@@ -73,7 +74,7 @@ import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
 import static io.agora.education.classroom.bean.record.RecordState.END;
 
 public abstract class BaseClassActivity extends BaseActivity implements EduRoomEventListener, EduUserEventListener,
-        WhiteBoardFragment.GlobalStateChangeListener {
+        EduManagerEventListener, WhiteBoardFragment.GlobalStateChangeListener {
     private static final String TAG = BaseClassActivity.class.getSimpleName();
 
     public static final String ROOMENTRY = "roomEntry";
@@ -96,7 +97,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     private EduStreamInfo localCameraStream, localScreenStream;
     protected BoardBean mainBoardBean;
     private RecordBean mainRecordBean;
-
 
     @Override
     protected void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
@@ -154,10 +154,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             return;
         }
         isJoining = true;
-        RoomJoinOptions options = new RoomJoinOptions(yourUuid, yourNameStr, new RoomMediaOptions(
-                autoSubscribe, autoSubscribe, autoPublish, autoPublish
-        ));
-        eduRoom.joinClassroomAsStudent(options, new EduCallback<EduStudent>() {
+        RoomJoinOptions options = new RoomJoinOptions(yourUuid, yourNameStr, EduUserRole.STUDENT,
+                new RoomMediaOptions(autoSubscribe, autoPublish));
+        eduRoom.joinClassroom(options, new EduCallback<EduStudent>() {
             @Override
             public void onSuccess(@Nullable EduStudent res) {
                 joinSuccess = true;
@@ -372,7 +371,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         String boardJson = getProperty(roomProperties, BOARD);
         if (TextUtils.isEmpty(boardJson)) {
             RetrofitManager.instance().getService(API_BASE_URL, BoardService.class)
-                    .getBoardInfo(getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid())
+                    .getBoardInfo(mainEduRoom.localUser.getUserInfo().getUserToken(),
+                            getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid())
                     .enqueue(new RetrofitManager.Callback(0, new ThrowableCallback<ResponseBody<BoardBean>>() {
                         @Override
                         public void onFailure(@androidx.annotation.Nullable Throwable throwable) {
@@ -423,10 +423,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
-    }
-
-    @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
         /**收到群聊消息，进行处理并展示*/
         ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
@@ -434,11 +430,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         chatMsg.isMe = chatMsg.getFromUser().equals(classRoom.localUser.getUserInfo());
         chatRoomFragment.addMessage(chatMsg);
         Log.e(TAG, "成功添加一条聊天消息");
-    }
-
-    @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
-
     }
 
     @Override
@@ -559,11 +550,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
-
-    }
-
-    @Override
     public void onNetworkQualityChanged(@NotNull io.agora.education.api.statistics.NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
 
     }
@@ -628,6 +614,21 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
+
+    }
+
+    @Override
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
+
+    }
+
+    @Override
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
+
     }
 
     @Override

@@ -27,6 +27,7 @@ internal class EduSnapshotRoomInfoRes(
 
 internal class EduSnapshotRoomStateRes(
         val state: Int,
+        val startTime: Long,
         val muteChat: RoleMuteConfig?,
         val muteVideo: RoleMuteConfig?,
         val muteAudio: RoleMuteConfig?

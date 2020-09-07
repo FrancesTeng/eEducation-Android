@@ -37,18 +37,8 @@ enum class CMDId(var value: Int) {
 
 
     /**点对点-用户-私聊*/
-    PeerMsgReceived(1001),
+    PeerMsgReceived(1),
 
     /**点对点--自定义消息(可以使用户的信令)*/
-    PeerCustomMsgReceived(1099);
-
-    companion object {
-        fun mappingPeerMsgId(cmd: Int): Int {
-            return cmd + 1000
-        }
-
-        fun isPeerMsg(cmd: Int): Boolean {
-            return (cmd == PeerCustomMsgReceived.value || cmd == PeerMsgReceived.value)
-        }
-    }
+    PeerCustomMsgReceived(99);
 }

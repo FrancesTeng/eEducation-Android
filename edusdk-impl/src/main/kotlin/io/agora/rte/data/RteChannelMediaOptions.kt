@@ -13,7 +13,7 @@ internal class RteChannelMediaOptions(autoSubscribeAudio: Boolean, autoSubscribe
 
     companion object {
         fun build(mediaOptions: RoomMediaOptions): RteChannelMediaOptions {
-            return RteChannelMediaOptions(mediaOptions.autoSubscribeAudio, mediaOptions.autoSubscribeVideo)
+            return RteChannelMediaOptions(mediaOptions.autoSubscribe, mediaOptions.autoSubscribe)
         }
     }
 }

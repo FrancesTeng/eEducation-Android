@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.gson.Gson
 import io.agora.Convert
 import io.agora.education.api.room.EduRoom
+import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduAudioState
@@ -459,8 +460,13 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             val snapshotRoomRes = snapshotRes.room
             eduRoom.roomInfo.roomName = snapshotRoomRes.roomInfo.roomName
             eduRoom.roomInfo.roomUuid = snapshotRoomRes.roomInfo.roomUuid
+            val roomStatus = snapshotRoomRes.roomState
             eduRoom.roomStatus.isStudentChatAllowed = Convert.extractStudentChatAllowState(
-                    snapshotRoomRes.roomState.muteChat, (eduRoom as EduRoomImpl).getCurRoomType())
+                    roomStatus.muteChat, (eduRoom as EduRoomImpl).getCurRoomType())
+            eduRoom.roomStatus.courseState = Convert.convertRoomState(roomStatus.state)
+            if (roomStatus.state == EduRoomState.START.value) {
+                eduRoom.roomStatus.startTime = roomStatus.startTime
+            }
             eduRoom.roomProperties = snapshotRoomRes.roomProperties
             /**TODO 此处缺少另外三个参数的信息，后台没返回*/
             val snapshotUserRes = snapshotRes.users
@@ -468,6 +474,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     eduRoom.getCurRoomType())
             val validAddedStreamList = addStreamWithUserOnline(snapshotUserRes, eduRoom.getCurStreamList(),
                     eduRoom.getCurRoomType())
+            eduRoom.roomStatus.onlineUsersCount = validAddedUserList.size
         }
     }
 }

@@ -1,10 +1,10 @@
 package io.agora.education.api.room.data
 
+import io.agora.education.api.user.data.EduUserRole
+
 data class RoomMediaOptions(
-        var autoSubscribeVideo: Boolean = true,
-        var autoSubscribeAudio: Boolean = true,
-        var autoPublishCamera: Boolean = true,
-        var autoPublishMicrophone: Boolean = true
+        var autoSubscribe: Boolean = true,
+        var autoPublish: Boolean = true
 ) {
     /**用户传了primaryStreamId,那么就用他当做streamUuid;如果没传，就是默认值，后端会生成一个streamUuid*/
     var primaryStreamId: Int = DefaultStreamId
@@ -18,21 +18,21 @@ data class RoomMediaOptions(
     }
 
     fun isAutoPublish(): Boolean {
-        return this.autoPublishCamera || this.autoPublishMicrophone
+        return this.autoPublish
     }
 
     fun isAutoSubscribe(): Boolean {
-        return this.autoSubscribeVideo || this.autoSubscribeAudio
+        return this.autoSubscribe
     }
 }
 
 data class RoomJoinOptions(
-        var userUuid: String,
-        var userName: String,
-        var mediaOptions: RoomMediaOptions
+        val userUuid: String,
+        val userName: String,
+        val roleType: EduUserRole,
+        val mediaOptions: RoomMediaOptions
 ) {
     fun closeAutoPublish() {
-        mediaOptions.autoPublishCamera = false
-        mediaOptions.autoPublishMicrophone = false
+        mediaOptions.autoPublish = false
     }
 }

@@ -4,50 +4,20 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.agora.Convert
+import io.agora.education.api.manager.listener.EduManagerEventListener
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
-import io.agora.education.api.room.listener.EduRoomEventListener
 import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.request.EduSyncFinished
-import io.agora.education.impl.room.data.request.EduSyncStep
 import io.agora.rte.RteEngineImpl
 import java.util.*
 
 internal class CMDDispatch(private val eduRoom: EduRoom) {
-
-    private var cmdCallbackManager: CMDCallbackManager = CMDCallbackManager()
-
-    /**数据同步期间屏蔽针对room和userStream的改变*/
-    private var roomStateChangeEnable: Boolean = true
-    private var userStreamChangeEnable: Boolean = true
-
-    /**关闭 数据改变开关，说明因为某种原因需要同步数据
-     * 1：join流程
-     * 2：断线重连
-     * 3：数据超时，重新求情*/
-    fun disableDataChangeEnable() {
-        roomStateChangeEnable = false
-        userStreamChangeEnable = false
-    }
-
-    private fun filterMsg(cmdResponseBody: CMDResponseBody<Any>): Boolean {
-        var pass = true
-        when (cmdResponseBody.cmd) {
-            CMDId.RoomStateChange.value, CMDId.RoomMuteStateChange.value, CMDId.RoomPropertyChanged.value -> {
-                pass = roomStateChangeEnable
-            }
-            CMDId.UserStateChange.value, CMDId.UserJoinOrLeave.value, CMDId.StreamStateChange.value,
-            CMDId.UserPropertiedChanged.value -> {
-                pass = userStreamChangeEnable
-            }
-        }
-        return pass
-    }
+    private val cmdCallbackManager: CMDCallbackManager = CMDCallbackManager()
 
     fun dispatchMsg(cmdResponseBody: CMDResponseBody<Any>?) {
         val text = Gson().toJson(cmdResponseBody)
@@ -59,10 +29,6 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
     fun dispatchChannelMsg(text: String) {
         val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(text, object :
                 TypeToken<CMDResponseBody<Any>>() {}.type)
-        /**过滤消息*/
-        if (!filterMsg(cmdResponseBody)) {
-            return
-        }
         when (cmdResponseBody.cmd) {
             CMDId.RoomStateChange.value -> {
                 /**课堂状态发生改变*/
@@ -259,19 +225,19 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
         }
     }
 
-    fun dispatchPeerMsg(text: String) {
+    fun dispatchPeerMsg(text: String, listener: EduManagerEventListener?) {
         val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(text, object :
                 TypeToken<CMDResponseBody<Any>>() {}.type)
         when (cmdResponseBody.cmd) {
             CMDId.PeerMsgReceived.value -> {
                 /**点对点的聊天消息*/
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom) as EduChatMsg
-                cmdCallbackManager.onUserChatMessageReceived(eduMsg, eduRoom)
+                cmdCallbackManager.onUserChatMessageReceived(eduMsg, eduRoom, listener)
             }
             CMDId.PeerCustomMsgReceived.value -> {
                 /**点对点的自定义消息(可以是用户自定义的信令)*/
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom)
-                cmdCallbackManager.onUserMessageReceived(eduMsg, eduRoom)
+                cmdCallbackManager.onUserMessageReceived(eduMsg, eduRoom, listener)
             }
 //            /**只要发起数据同步请求就会受到此消息*/
 //            CMDId.SyncRoomInfo.value -> {
@@ -364,4 +330,5 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
 //            }
         }
     }
+
 }

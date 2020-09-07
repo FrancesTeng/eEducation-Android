@@ -25,11 +25,7 @@ interface EduRoomEventListener {
 
     fun onRoomMessageReceived(message: EduMsg, classRoom: EduRoom)
 
-    fun onUserMessageReceived(message: EduMsg, classRoom: EduRoom)
-
     fun onRoomChatMessageReceived(chatMsg: EduChatMsg, classRoom: EduRoom)
-
-    fun onUserChatMessageReceived(chatMsg: EduChatMsg, classRoom: EduRoom)
 
     fun onRemoteStreamsInitialized(streams: List<EduStreamInfo>, classRoom: EduRoom)
 
@@ -44,8 +40,6 @@ interface EduRoomEventListener {
     fun onRoomPropertyChanged(classRoom: EduRoom)
 
     fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, classRoom: EduRoom)
-
-    fun onConnectionStateChanged(state: ConnectionState, reason: ConnectionStateChangeReason, classRoom: EduRoom)
 
     fun onNetworkQualityChanged(quality: NetworkQuality, user: EduUserInfo, classRoom: EduRoom)
 }

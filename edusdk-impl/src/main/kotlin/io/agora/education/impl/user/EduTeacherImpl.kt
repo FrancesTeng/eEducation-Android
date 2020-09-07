@@ -18,6 +18,7 @@ import io.agora.Convert
 import io.agora.education.api.room.data.EduMuteState
 import io.agora.education.api.room.data.Property
 import io.agora.education.api.statistics.AgoraError
+import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.listener.EduTeacherEventListener
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.network.RoomService
@@ -29,7 +30,7 @@ import io.agora.education.impl.user.data.request.RoleMuteConfig
 import io.agora.education.impl.user.network.UserService
 
 internal class EduTeacherImpl(
-        userInfo: EduUserInfo
+        userInfo: EduLocalUserInfo
 ) : EduUserImpl(userInfo), EduTeacher {
     override fun setEventListener(eventListener: EduTeacherEventListener) {
         this.eventListener = eventListener

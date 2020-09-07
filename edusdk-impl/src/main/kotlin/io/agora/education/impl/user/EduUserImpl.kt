@@ -19,6 +19,7 @@ import io.agora.education.api.room.data.Property
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
+import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 import io.agora.education.impl.room.EduRoomImpl
@@ -40,14 +41,13 @@ import io.agora.rte.RteChannelImpl
 import io.agora.rte.RteEngineImpl
 
 internal open class EduUserImpl(
-        override var userInfo: EduUserInfo
+        override var userInfo: EduLocalUserInfo
 ) : EduUser {
     override var videoEncoderConfig = VideoEncoderConfig()
 
     override var eventListener: EduUserEventListener? = null
 
     lateinit var eduRoom: EduRoomImpl
-    lateinit var USERTOKEN: String
 
     private val surfaceViewList = mutableListOf<SurfaceView>()
 
@@ -61,7 +61,7 @@ internal open class EduUserImpl(
 
         /**根据当前配置生成一个流信息*/
         val streamInfo = EduStreamInfoImpl(options.streamUuid, options.streamName, VideoSourceType.CAMERA,
-                options.enableCamera, options.enableMicrophone, this.userInfo, System.currentTimeMillis())
+                options.enableMicrophone, options.enableCamera, this.userInfo, System.currentTimeMillis())
         callback.onSuccess(streamInfo)
     }
 

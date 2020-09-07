@@ -9,6 +9,8 @@ import androidx.annotation.Nullable;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Map;
 
 import io.agora.base.PreferenceManager;
@@ -19,12 +21,18 @@ import io.agora.education.api.logger.DebugItem;
 import io.agora.education.api.logger.LogLevel;
 import io.agora.education.api.manager.EduManager;
 import io.agora.education.api.manager.EduManagerOptions;
+import io.agora.education.api.manager.listener.EduManagerEventListener;
+import io.agora.education.api.message.EduChatMsg;
+import io.agora.education.api.message.EduMsg;
+import io.agora.education.api.room.EduRoom;
+import io.agora.education.api.statistics.ConnectionState;
+import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.service.bean.request.UserReq;
 import io.agora.education.service.bean.response.AppConfigRes;
 import io.agora.log.LogManager;
 import kotlin.jvm.internal.TypeReference;
 
-public class EduApplication extends Application {
+public class EduApplication extends Application implements EduManagerEventListener {
     private static final String TAG = "EduApplication";
 
     public static EduApplication instance;
@@ -50,6 +58,7 @@ public class EduApplication extends Application {
         options.setCustomerCertificate(customerCertificate);
         options.setLogFileDir(getCacheDir().getAbsolutePath());
         eduManager = EduManager.init(options);
+        eduManager.setEduManagerEventListener(this);
         /**上传log*/
         eduManager.uploadDebugItem(DebugItem.LOG, new EduCallback<String>() {
             @Override
@@ -110,4 +119,21 @@ public class EduApplication extends Application {
         return instance.config.multiLanguage;
     }
 
+    /**
+     * eduManager的回调
+     */
+    @Override
+    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
+
+    }
+
+    @Override
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
+
+    }
+
+    @Override
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
+
+    }
 }

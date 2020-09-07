@@ -442,36 +442,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
-        super.onUserMessageReceived(message, classRoom);
-        PeerMsg peerMsg = PeerMsg.fromJson(message.getMessage(), PeerMsg.class);
-        if (peerMsg.cmd == PeerMsg.Cmd.CO_VIDEO) {
-            PeerMsg.CoVideoMsg coVideoMsg = peerMsg.getMsg(PeerMsg.CoVideoMsg.class);
-            switch (coVideoMsg.type) {
-                case REJECT:
-                    onLinkMediaChanged(false);
-                    ToastManager.showShort(R.string.reject_interactive);
-                    break;
-                case ACCEPT:
-                    onLinkMediaChanged(true);
-                    ToastManager.showShort(R.string.accept_interactive);
-                    break;
-                case ABORT:
-                    onLinkMediaChanged(false);
-                    ToastManager.showShort(R.string.abort_interactive);
-                    break;
-            }
-        }
-    }
-
-    @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
         super.onRoomChatMessageReceived(eduChatMsg, classRoom);
-    }
-
-    @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
-        super.onUserChatMessageReceived(chatMsg, classRoom);
     }
 
     @Override
@@ -633,11 +605,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
-        super.onConnectionStateChanged(state, reason, classRoom);
-    }
-
-    @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
         title_view.setNetworkQuality(quality.getValue());
@@ -674,5 +641,38 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamRemoved(streamEvent);
+    }
+
+    @Override
+    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
+        super.onUserMessageReceived(message, classRoom);
+        PeerMsg peerMsg = PeerMsg.fromJson(message.getMessage(), PeerMsg.class);
+        if (peerMsg.cmd == PeerMsg.Cmd.CO_VIDEO) {
+            PeerMsg.CoVideoMsg coVideoMsg = peerMsg.getMsg(PeerMsg.CoVideoMsg.class);
+            switch (coVideoMsg.type) {
+                case REJECT:
+                    onLinkMediaChanged(false);
+                    ToastManager.showShort(R.string.reject_interactive);
+                    break;
+                case ACCEPT:
+                    onLinkMediaChanged(true);
+                    ToastManager.showShort(R.string.accept_interactive);
+                    break;
+                case ABORT:
+                    onLinkMediaChanged(false);
+                    ToastManager.showShort(R.string.abort_interactive);
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
+        super.onUserChatMessageReceived(chatMsg, classRoom);
+    }
+
+    @Override
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
+        super.onConnectionStateChanged(state, reason, classRoom);
     }
 }

@@ -6,11 +6,12 @@ import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.data.Property
 import io.agora.education.api.stream.data.*
+import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 
 interface EduUser {
-    var userInfo: EduUserInfo
+    var userInfo: EduLocalUserInfo
     var videoEncoderConfig: VideoEncoderConfig
 
     var eventListener: EduUserEventListener?

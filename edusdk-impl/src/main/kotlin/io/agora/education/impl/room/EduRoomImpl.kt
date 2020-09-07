@@ -13,7 +13,6 @@ import io.agora.education.api.EduCallback
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
 import io.agora.education.api.user.EduStudent
-import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.Convert
@@ -23,28 +22,26 @@ import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
-import io.agora.education.impl.cmd.*
-import io.agora.education.impl.cmd.bean.CMDId
 import io.agora.education.impl.cmd.bean.CMDResponseBody
+import io.agora.education.impl.cmd.CMDDispatch
+import io.agora.education.impl.manager.EduManagerImpl
 import io.agora.education.impl.record.EduRecordImpl
 import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.EduRoomInfoImpl
-import io.agora.education.impl.room.data.RtmConnectState
 import io.agora.education.impl.room.data.request.EduJoinClassroomReq
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.room.network.RoomService
-import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.sync.RoomSyncHelper
 import io.agora.education.impl.sync.RoomSyncSession
 import io.agora.education.impl.user.EduStudentImpl
 import io.agora.education.impl.user.EduUserImpl
+import io.agora.education.impl.user.data.EduLocalUserInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.education.impl.user.network.UserService
 import io.agora.education.impl.util.CommonUtil
 import io.agora.rtc.Constants.*
 import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rte.RteChannelEventListener
-import io.agora.rte.RteEngineEventListener
 import io.agora.rte.RteEngineImpl
 import io.agora.rte.data.RteChannelMediaOptions
 import io.agora.rtm.*
@@ -52,20 +49,19 @@ import io.agora.rtm.*
 internal class EduRoomImpl(
         roomInfo: EduRoomInfo,
         roomStatus: EduRoomStatus
-) : EduRoom(roomInfo, roomStatus), RteChannelEventListener, RteEngineEventListener {
+) : EduRoom(roomInfo, roomStatus), RteChannelEventListener {
 
     internal var roomSyncSession: RoomSyncSession
     internal var cmdDispatch: CMDDispatch
-    internal val rtmConnectState = RtmConnectState()
 
     init {
         RteEngineImpl.createChannel(roomInfo.roomUuid, this)
-        /**为RteEngine设置eventListener*/
-        RteEngineImpl.eventListener = this
         roomSyncSession = RoomSyncHelper(this, 3)
         record = EduRecordImpl()
         board = EduBoardImpl()
         cmdDispatch = CMDDispatch(this)
+        /**管理当前room*/
+        EduManagerImpl.addRoom(this)
     }
 
     lateinit var rtcToken: String
@@ -123,83 +119,14 @@ internal class EduRoomImpl(
                 }))
     }
 
-    /**此处先注释暂不实现*/
-    @Deprecated(message = "此处先注释暂不实现,移动端暂无老师")
-    override fun joinClassroomAsTeacher(options: RoomJoinOptions, callback: EduCallback<EduTeacher>) {
-//        val localUserInfo = EduUserInfo(options.userUuid, options.userName, EduUserRole.TEACHER, null)
-//        /**此处需要把localUserInfo设置进localUser中*/
-//        localUser = EduUserImpl(localUserInfo)
-//        (localUser as EduUserImpl).roomMediaOptions = options.mediaOptions
-//        /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
-//        val roomType = getCurRoomType()
-//        val role = Convert.convertUserRole(localUserInfo.role, roomType)
-//        val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName,
-//                role, options.mediaOptions.primaryStreamId.toString())
-//        RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
-//                .joinClassroom(APPID, roomInfo.roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
-//                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {
-//                    override fun onSuccess(res: ResponseBody<EduEntryRes>?) {
-//                        val classRoomEntryRes = res?.data!!
-//                        /**设置全局静态数据*/
-//                        USERTOKEN = classRoomEntryRes.user.userToken
-//                        RTMTOKEN = classRoomEntryRes.user.rtmToken
-//                        RTCTOKEN = classRoomEntryRes.user.rtcToken
-//                        localUserInfo.isChatAllowed = classRoomEntryRes.user.muteChat == EduChatState.Allow.value
-//                        /**解析返回的room相关数据并同步保存至本地*/
-//                        roomStatus.startTime = classRoomEntryRes.room.roomState.startTime
-//                        roomStatus.courseState = Convert.convertRoomState(classRoomEntryRes.room.roomState.state)
-//                        roomStatus.isStudentChatAllowed = Convert.extractStudentChatAllowState(
-//                                classRoomEntryRes.room.roomState, getCurRoomType())
-//                        /**加入rte(包括rtm和rtc)*/
-//                        val channelMediaOptions = ChannelMediaOptions()
-//                        channelMediaOptions.autoSubscribeAudio = options.mediaOptions.autoSubscribeAudio
-//                        channelMediaOptions.autoSubscribeVideo = options.mediaOptions.autoSubscribeVideo
-//                        joinRte(RTCTOKEN, RTMTOKEN, options.userUuid.toInt(), channelMediaOptions, object : ResultCallback<Void> {
-//                            override fun onSuccess(p0: Void?) {
-//
-//                            }
-//
-//                            override fun onFailure(p0: ErrorInfo?) {
-//
-//                            }
-//                        })
-//                        /**同步用户和流的全量数据*/
-//                        syncUserList(null, count, object : EduCallback<Unit> {
-//                            override fun onSuccess(res: Unit?) {
-//                                eventListener?.onRemoteUsersInitialized(eduUserInfoList, this@EduRoomImpl)
-//                            }
-//
-//                            override fun onFailure(code: Int, reason: String?) {
-//
-//                            }
-//                        })
-//                        syncStreamList(null, count, object : EduCallback<Unit> {
-//                            override fun onSuccess(res: Unit?) {
-//                                eventListener?.onRemoteStreamsInitialized(eduStreamInfoList, this@EduRoomImpl)
-//                            }
-//
-//                            override fun onFailure(code: Int, reason: String?) {
-//
-//                            }
-//                        })
-//                        callback.onSuccess(localUser as EduTeacherImpl)
-//                    }
-//
-//                    override fun onFailure(throwable: Throwable?) {
-//                        val error = throwable as BusinessException
-//                        callback.onFailure(error.code, error.message)
-//                    }
-//                }))
-    }
-
     /**上课过程中，学生的角色目前不发生改变;
      * join流程包括请求加入classroom的API接口、加入rte、同步roomInfo、同步、本地流初始化成功，任何一步出错即视为join失败*/
-    override fun joinClassroomAsStudent(options: RoomJoinOptions, callback: EduCallback<EduStudent>) {
+    override fun joinClassroom(options: RoomJoinOptions, callback: EduCallback<EduStudent>) {
         this.curClassType = ClassType.Sub
         this.joining = true
         this.studentJoinCallback = callback
-        val localUserInfo = EduUserInfoImpl(options.userUuid, options.userName, EduUserRole.STUDENT,
-                true, System.currentTimeMillis())
+        val localUserInfo = EduLocalUserInfoImpl(options.userUuid, options.userName, EduUserRole.STUDENT,
+                true, null, mutableListOf(), System.currentTimeMillis())
         /**此处需要把localUserInfo设置进localUser中*/
         localUser = EduStudentImpl(localUserInfo)
         (localUser as EduUserImpl).eduRoom = this
@@ -218,7 +145,7 @@ internal class EduRoomImpl(
                     override fun onSuccess(res: ResponseBody<EduEntryRes>?) {
                         roomEntryRes = res?.data!!
                         /**解析返回的user相关数据*/
-                        (localUser as EduUserImpl).USERTOKEN = roomEntryRes.user.userToken
+                        localUser.userInfo.userToken = roomEntryRes.user.userToken
                         rtcToken = roomEntryRes.user.rtcToken
                         RetrofitManager.instance().addHeader("token", roomEntryRes.user.userToken)
                         localUserInfo.isChatAllowed = roomEntryRes.user.muteChat == EduChatState.Allow.value
@@ -290,7 +217,7 @@ internal class EduRoomImpl(
                                         callback: EduCallback<Unit>) {
         /**初始化或更新本地用户的本地流*/
         val localStreamInitOptions = LocalStreamInitOptions(classRoomEntryRes.user.streamUuid,
-                roomMediaOptions.autoPublishCamera, roomMediaOptions.autoPublishMicrophone)
+                roomMediaOptions.autoPublish, roomMediaOptions.autoPublish)
         localUser.initOrUpdateLocalStream(localStreamInitOptions, object : EduCallback<EduStreamInfo> {
             override fun onSuccess(streamInfo: EduStreamInfo?) {
                 /**判断是否需要更新本地的流信息(因为当前流信息在本地可能已经存在)*/
@@ -339,6 +266,9 @@ internal class EduRoomImpl(
                     val streamInfo = element.modifiedStream
                     /**判断是否推本地流*/
                     if (streamInfo.publisher == localUser.userInfo) {
+                        /**本地流维护在本地用户信息中*/
+                        localUser.userInfo.streams.add(element)
+                        /**根据流信息，更新本地媒体状态*/
                         RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
                         Log.e("EduRoomImpl", "join成功，把添加的本地流回调出去")
                         localUser.eventListener?.onLocalStreamAdded(element)
@@ -447,6 +377,8 @@ internal class EduRoomImpl(
         RteEngineImpl[roomInfo.roomUuid]?.release()
         eventListener = null
         localUser.eventListener = null
+        /**移除掉当前room*/
+        EduManagerImpl.removeRoom(this)
     }
 
     override fun onChannelMsgReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
@@ -467,34 +399,5 @@ internal class EduRoomImpl(
     }
 
     override fun onNetworkQuality(uid: Int, txQuality: Int, rxQuality: Int) {
-    }
-
-    override fun onConnectionStateChanged(p0: Int, p1: Int) {
-        if (rtmConnectState.isReconnecting() &&
-                p0 == RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED) {
-            roomSyncSession.fetchLostSequence(object : EduCallback<Unit> {
-                override fun onSuccess(res: Unit?) {
-                }
-
-                override fun onFailure(code: Int, reason: String?) {
-                    /**无限重试，保证数据同步成功*/
-                    roomSyncSession.fetchLostSequence(this)
-                }
-            })
-        } else {
-            eventListener?.onConnectionStateChanged(Convert.convertConnectionState(p0),
-                    Convert.convertConnectionStateChangeReason(p1), this)
-        }
-        rtmConnectState.lastConnectionState = p0
-    }
-
-    override fun onPeerMsgReceived(p0: RtmMessage?, p1: String?) {
-        /**RTM保证peerMsg能到达,不用走同步检查(seq衔接性检查)*/
-        p0?.text?.let {
-            val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(p0.text, object :
-                    TypeToken<CMDResponseBody<Any>>() {}.type)
-            cmdResponseBody.cmd = CMDId.mappingPeerMsgId(cmdResponseBody.cmd)
-            cmdDispatch.dispatchPeerMsg(Gson().toJson(cmdResponseBody))
-        }
     }
 }

@@ -158,9 +158,6 @@ internal object RteEngineImpl : IRteEngine {
     }
 
     private val rtcEngineEventHandler = object : IRtcEngineEventHandler() {
-        override fun onNetworkQuality(uid: Int, txQuality: Int, rxQuality: Int) {
-            eventListener?.onNetworkQuality(uid, txQuality, rxQuality)
-        }
 
         override fun onError(err: Int) {
             Log.e("RteEngineImpl", String.format("onError code %d message %s", err, RtcEngine.getErrorDescription(err)))

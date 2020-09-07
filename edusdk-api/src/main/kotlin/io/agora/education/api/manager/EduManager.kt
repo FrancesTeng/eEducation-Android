@@ -5,6 +5,7 @@ import io.agora.education.R
 import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
+import io.agora.education.api.manager.listener.EduManagerEventListener
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduLoginOptions
 import io.agora.education.api.room.data.RoomCreateOptions
@@ -21,6 +22,8 @@ abstract class EduManager(
                     .getConstructor(EduManagerOptions::class.java).newInstance(options) as EduManager
         }
     }
+
+    var eduManagerEventListener: EduManagerEventListener? = null
 
 //    abstract fun createClassroom(config: RoomCreateOptions, callback: EduCallback<EduRoom>)
 
