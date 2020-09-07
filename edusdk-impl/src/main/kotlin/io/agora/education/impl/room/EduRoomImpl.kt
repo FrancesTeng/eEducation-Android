@@ -20,6 +20,7 @@ import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduChatState
+import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
 import io.agora.education.impl.cmd.bean.CMDResponseBody
@@ -145,14 +146,14 @@ internal class EduRoomImpl(
                     override fun onSuccess(res: ResponseBody<EduEntryRes>?) {
                         roomEntryRes = res?.data!!
                         /**解析返回的user相关数据*/
-                        localUser.userInfo.userToken = roomEntryRes.user.userToken
+                        localUserInfo.userToken = roomEntryRes.user.userToken
                         rtcToken = roomEntryRes.user.rtcToken
                         RetrofitManager.instance().addHeader("token", roomEntryRes.user.userToken)
                         localUserInfo.isChatAllowed = roomEntryRes.user.muteChat == EduChatState.Allow.value
                         localUserInfo.userProperties = roomEntryRes.user.userProperties
                         localUserInfo.streamUuid = roomEntryRes.user.streamUuid
-                        /**把本地用户信息合并到本地缓存中*/
-                        roomSyncSession.eduUserInfoList.add(localUserInfo)
+                        /**把本地用户信息合并到本地缓存中(需要转换类型)*/
+                        roomSyncSession.eduUserInfoList.add(Convert.convertUserInfo(localUserInfo))
                         /**获取用户可能存在的流信息待join成功后进行处理;*/
                         roomEntryRes.user.streams?.let {
                             /**转换并合并流信息到本地缓存*/
@@ -363,7 +364,9 @@ internal class EduRoomImpl(
      * 需要把本地用户手动添加进去*/
     override fun getFullUserList(): MutableList<EduUserInfo> {
         if (roomSyncSession.eduUserInfoList.size == 0) {
-            roomSyncSession.eduUserInfoList.add(localUser.userInfo)
+            /**把localUserInfo转换为userInfo，保持集合中数据类型统一*/
+            val userInfo = Convert.convertUserInfo(localUser.userInfo)
+            roomSyncSession.eduUserInfoList.add(userInfo)
         }
         return roomSyncSession.eduUserInfoList
     }

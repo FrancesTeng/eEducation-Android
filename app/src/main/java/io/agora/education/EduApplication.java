@@ -32,7 +32,7 @@ import io.agora.education.service.bean.response.AppConfigRes;
 import io.agora.log.LogManager;
 import kotlin.jvm.internal.TypeReference;
 
-public class EduApplication extends Application implements EduManagerEventListener {
+public class EduApplication extends Application {
     private static final String TAG = "EduApplication";
 
     public static EduApplication instance;
@@ -58,7 +58,6 @@ public class EduApplication extends Application implements EduManagerEventListen
         options.setCustomerCertificate(customerCertificate);
         options.setLogFileDir(getCacheDir().getAbsolutePath());
         eduManager = EduManager.init(options);
-        eduManager.setEduManagerEventListener(this);
         /**上传log*/
         eduManager.uploadDebugItem(DebugItem.LOG, new EduCallback<String>() {
             @Override
@@ -119,21 +118,4 @@ public class EduApplication extends Application implements EduManagerEventListen
         return instance.config.multiLanguage;
     }
 
-    /**
-     * eduManager的回调
-     */
-    @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
-
-    }
-
-    @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
-
-    }
-
-    @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
-
-    }
 }

@@ -207,7 +207,8 @@ internal class EduManagerImpl(
         p0?.text?.let {
             val cmdResponseBody = Gson().fromJson<CMDResponseBody<RtmMsg>>(p0.text, object :
                     TypeToken<CMDResponseBody<RtmMsg>>() {}.type)
-            findRoom(cmdResponseBody.data.fromRoom)?.let {
+            val eduRoom = findRoom(cmdResponseBody.data.fromRoom)
+            eduRoom?.let {
                 (it as EduRoomImpl).cmdDispatch.dispatchPeerMsg(Gson().toJson(cmdResponseBody), eduManagerEventListener)
             }
         }

@@ -5,10 +5,12 @@ import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.user.data.EduBaseUserInfo
+import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.room.data.response.EduFromUserRes
 import io.agora.education.impl.room.data.response.EduUserRes
+import io.agora.education.impl.user.data.EduLocalUserInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.rte.RteEngineImpl
 
@@ -17,10 +19,9 @@ internal open class CMDProcessor {
         const val TAG = "CMDProcessor"
 
         /**调用此函数之前须确保first和second代表的是同一个用户
-         *
          * 比较first的数据是否比second的更为接近当前时间(即找出一个最新数据)
-         * @return > 0（first > second）
-         *         !(> 0) first <= second*/
+         * @return > 0（user > old）
+         *         !(> 0) user <= old*/
         internal fun compareUserInfoTime(first: EduUserInfo, second: EduUserInfo): Long {
             /**判断更新时间是否为空(为空的有可能是原始数据)*/
             if ((first as EduUserInfoImpl).updateTime == null) {

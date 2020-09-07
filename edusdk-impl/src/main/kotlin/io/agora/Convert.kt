@@ -9,6 +9,7 @@ import io.agora.education.api.statistics.ConnectionState
 import io.agora.education.api.statistics.ConnectionStateChangeReason
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduChatState
+import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.education.impl.cmd.bean.CMDResponseBody
@@ -23,6 +24,7 @@ import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.request.LimitConfig
 import io.agora.education.impl.room.data.request.RoleConfig
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
+import io.agora.education.impl.user.data.EduLocalUserInfoImpl
 import io.agora.education.impl.user.data.request.RoleMuteConfig
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.RtmStatusCode.ConnectionChangeReason.*
@@ -381,6 +383,11 @@ internal class Convert {
         fun convertEduSequenceRes(sequence: EduSequenceRes<Any>): CMDResponseBody<Any> {
             return CMDResponseBody(sequence.cmd, sequence.version, 0, null, sequence.sequence,
                     sequence.data)
+        }
+
+        fun convertUserInfo(userInfo: EduLocalUserInfo): EduUserInfoImpl {
+            return EduUserInfoImpl(userInfo.userUuid, userInfo.userName, userInfo.role,
+                    userInfo.isChatAllowed ?: false, (userInfo as EduLocalUserInfoImpl).updateTime)
         }
     }
 }

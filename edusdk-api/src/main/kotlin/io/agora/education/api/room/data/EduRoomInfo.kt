@@ -12,4 +12,11 @@ open class EduRoomInfo(
                     .newInstance(roomType, roomUuid, roomName) as EduRoomInfo
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null || other !is EduRoomInfo) {
+            return false
+        }
+        return (other.roomUuid == this.roomUuid && other.roomName == this.roomName)
+    }
 }

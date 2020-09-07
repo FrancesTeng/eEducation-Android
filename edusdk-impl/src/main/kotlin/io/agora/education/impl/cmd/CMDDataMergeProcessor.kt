@@ -464,7 +464,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             eduRoom.roomStatus.isStudentChatAllowed = Convert.extractStudentChatAllowState(
                     roomStatus.muteChat, (eduRoom as EduRoomImpl).getCurRoomType())
             eduRoom.roomStatus.courseState = Convert.convertRoomState(roomStatus.state)
-            if (roomStatus.state == EduRoomState.START.value) {
+            if(roomStatus.state == EduRoomState.START.value) {
                 eduRoom.roomStatus.startTime = roomStatus.startTime
             }
             eduRoom.roomProperties = snapshotRoomRes.roomProperties

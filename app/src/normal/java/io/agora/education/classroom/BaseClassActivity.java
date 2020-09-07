@@ -21,6 +21,7 @@ import java.util.Map;
 import butterknife.BindView;
 import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.RetrofitManager;
+import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.RoomEntry;
 import io.agora.education.api.EduCallback;
@@ -46,6 +47,7 @@ import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
+import io.agora.education.api.user.data.EduLocalUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
@@ -102,10 +104,12 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     protected void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.e(TAG, "onCreate");
+
     }
 
     @Override
     protected void initData() {
+        EduApplication.getManager().setEduManagerEventListener(this);
         roomEntry = getIntent().getParcelableExtra(ROOMENTRY);
         RoomCreateOptions createOptions = new RoomCreateOptions(roomEntry.getRoomUuid(),
                 roomEntry.getRoomName(), roomEntry.getRoomType(), true);
@@ -371,7 +375,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         String boardJson = getProperty(roomProperties, BOARD);
         if (TextUtils.isEmpty(boardJson)) {
             RetrofitManager.instance().getService(API_BASE_URL, BoardService.class)
-                    .getBoardInfo(mainEduRoom.localUser.getUserInfo().getUserToken(),
+                    .getBoardInfo(((EduLocalUserInfo) mainEduRoom.localUser.getUserInfo()).getUserToken(),
                             getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid())
                     .enqueue(new RetrofitManager.Callback(0, new ThrowableCallback<ResponseBody<BoardBean>>() {
                         @Override
@@ -616,6 +620,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         }
     }
 
+    /**
+     * eduManager的回调
+     */
     @Override
     public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
 
@@ -631,6 +638,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     }
 
+    /**
+     * 白板的全局回调
+     */
     @Override
     public void onGlobalStateChanged(GlobalState state) {
         if (getClassType() == RoomType.ONE_ON_ONE.getValue()) {
