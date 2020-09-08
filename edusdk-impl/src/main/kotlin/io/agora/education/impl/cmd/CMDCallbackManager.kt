@@ -77,11 +77,11 @@ internal class CMDCallbackManager {
     }
 
 
-    fun onUserChatMessageReceived(chatMsg: EduChatMsg, classRoom: EduRoom, listener: EduManagerEventListener?) {
-        listener?.onUserChatMessageReceived(chatMsg, classRoom)
+    fun onUserChatMessageReceived(chatMsg: EduChatMsg, listener: EduManagerEventListener?) {
+        listener?.onUserChatMessageReceived(chatMsg)
     }
 
-    fun onUserMessageReceived(message: EduMsg, classRoom: EduRoom, listener: EduManagerEventListener?) {
-        listener?.onUserMessageReceived(message, classRoom)
+    fun onUserMessageReceived(message: EduMsg, listener: EduManagerEventListener?) {
+        listener?.onUserMessageReceived(message)
     }
 }

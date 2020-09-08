@@ -130,8 +130,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
      * 私聊自定义消息回调
      */
     @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
-        super.onUserMessageReceived(message, classRoom);
+    public void onUserMessageReceived(@NotNull EduMsg message) {
+        super.onUserMessageReceived(message);
     }
 
     /**
@@ -146,8 +146,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
      * 私聊消息回调
      */
     @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
-        super.onUserChatMessageReceived(chatMsg, classRoom);
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg) {
+        super.onUserChatMessageReceived(chatMsg);
     }
 
     @Override
@@ -267,8 +267,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
-        super.onConnectionStateChanged(state, reason, classRoom);
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
+        super.onConnectionStateChanged(state, reason);
     }
 
     @Override

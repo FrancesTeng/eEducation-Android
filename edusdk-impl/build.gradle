@@ -41,7 +41,6 @@ android {
 
 dependencies {
     implementation project(':edusdk-api')
-    implementation project(':base')
     implementation project(':log')
     implementation 'io.agora.rtc:full-sdk:2.9.0.105'
     implementation 'io.agora.rtm:rtm-sdk:1.2.2'

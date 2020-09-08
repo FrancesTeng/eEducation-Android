@@ -164,8 +164,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
-        super.onUserMessageReceived(message, classRoom);
+    public void onUserMessageReceived(@NotNull EduMsg message) {
+        super.onUserMessageReceived(message);
     }
 
     @Override
@@ -174,8 +174,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
-        super.onUserChatMessageReceived(chatMsg, classRoom);
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg) {
+        super.onUserChatMessageReceived(chatMsg);
     }
 
     @Override
@@ -275,8 +275,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
-        super.onConnectionStateChanged(state, reason, classRoom);
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
+        super.onConnectionStateChanged(state, reason);
     }
 
     @Override

@@ -14,7 +14,7 @@ internal class CommonUtil {
         fun buildRtcOptionalInfo(eduRoom: EduRoom): String {
             val info = JsonObject()
             info.addProperty("demo_ver", BuildConfig.VERSION_NAME)
-            when ((eduRoom.roomInfo as EduRoomInfoImpl).roomType) {
+            when ((eduRoom.getRoomInfo() as EduRoomInfoImpl).roomType) {
                 RoomType.ONE_ON_ONE -> {
                     info.addProperty("demo_scenario", "One on One Classroom")
                 }

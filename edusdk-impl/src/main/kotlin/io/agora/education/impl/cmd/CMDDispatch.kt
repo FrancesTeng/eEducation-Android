@@ -34,8 +34,8 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 /**课堂状态发生改变*/
                 val rtmRoomState = Gson().fromJson<CMDResponseBody<CMDRoomState>>(text, object :
                         TypeToken<CMDResponseBody<CMDRoomState>>() {}.type).data
-                eduRoom.roomStatus.courseState = Convert.convertRoomState(rtmRoomState.state)
-                eduRoom.roomStatus.startTime = rtmRoomState.startTime
+                eduRoom.getRoomStatus().courseState = Convert.convertRoomState(rtmRoomState.state)
+                eduRoom.getRoomStatus().startTime = rtmRoomState.startTime
                 val operator = Convert.convertUserInfo(rtmRoomState.operator, (eduRoom as EduRoomImpl).getCurRoomType())
                 cmdCallbackManager.onRoomStatusChanged(RoomStatusEvent.COURSE_STATE, operator, eduRoom)
             }
@@ -47,7 +47,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         /**判断本次更改是否包含针对学生的全部禁聊;*/
                         val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster
                         broadcasterMuteChat?.let {
-                            eduRoom.roomStatus.isStudentChatAllowed = broadcasterMuteChat.toInt() == EduAudioState.Open.value
+                            eduRoom.getRoomStatus().isStudentChatAllowed = broadcasterMuteChat.toInt() == EduAudioState.Open.value
                         }
                         /**
                          * roomStatus中仅定义了isStudentChatAllowed来标识是否全员禁聊；没有属性来标识是否全员禁摄像头和麦克风；
@@ -58,7 +58,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         /**判断本次更改是否包含针对学生的全部禁聊;*/
                         val audienceMuteChat = rtmRoomMuteState.muteChat?.audience
                         audienceMuteChat?.let {
-                            eduRoom.roomStatus.isStudentChatAllowed = audienceMuteChat.toInt() == EduAudioState.Open.value
+                            eduRoom.getRoomStatus().isStudentChatAllowed = audienceMuteChat.toInt() == EduAudioState.Open.value
                         }
                     }
                 }
@@ -232,12 +232,12 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
             CMDId.PeerMsgReceived.value -> {
                 /**点对点的聊天消息*/
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom) as EduChatMsg
-                cmdCallbackManager.onUserChatMessageReceived(eduMsg, eduRoom, listener)
+                cmdCallbackManager.onUserChatMessageReceived(eduMsg, listener)
             }
             CMDId.PeerCustomMsgReceived.value -> {
                 /**点对点的自定义消息(可以是用户自定义的信令)*/
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom)
-                cmdCallbackManager.onUserMessageReceived(eduMsg, eduRoom, listener)
+                cmdCallbackManager.onUserMessageReceived(eduMsg, listener)
             }
 //            /**只要发起数据同步请求就会受到此消息*/
 //            CMDId.SyncRoomInfo.value -> {

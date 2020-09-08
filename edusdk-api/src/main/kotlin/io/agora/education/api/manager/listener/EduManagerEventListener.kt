@@ -8,9 +8,9 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason
 
 interface EduManagerEventListener {
 
-    fun onUserMessageReceived(message: EduMsg, classRoom: EduRoom)
+    fun onUserMessageReceived(message: EduMsg)
 
-    fun onUserChatMessageReceived(chatMsg: EduChatMsg, classRoom: EduRoom)
+    fun onUserChatMessageReceived(chatMsg: EduChatMsg)
 
-    fun onConnectionStateChanged(state: ConnectionState, reason: ConnectionStateChangeReason, classRoom: EduRoom)
+    fun onConnectionStateChanged(state: ConnectionState, reason: ConnectionStateChangeReason)
 }

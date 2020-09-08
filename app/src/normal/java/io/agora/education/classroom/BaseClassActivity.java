@@ -101,10 +101,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     private RecordBean mainRecordBean;
 
     @Override
-    protected void onCreate(@androidx.annotation.Nullable Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.e(TAG, "onCreate");
-
     }
 
     @Override
@@ -624,17 +623,17 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
      * eduManager的回调
      */
     @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
+    public void onUserMessageReceived(@NotNull EduMsg message) {
 
     }
 
     @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg) {
 
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
 
     }
 

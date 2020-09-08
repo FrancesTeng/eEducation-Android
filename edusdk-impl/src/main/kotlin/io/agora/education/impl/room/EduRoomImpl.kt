@@ -57,7 +57,7 @@ internal class EduRoomImpl(
 
     init {
         RteEngineImpl.createChannel(roomInfo.roomUuid, this)
-        roomSyncSession = RoomSyncHelper(this, 3)
+        roomSyncSession = RoomSyncHelper(this, roomInfo, roomStatus, 3)
         record = EduRecordImpl()
         board = EduBoardImpl()
         cmdDispatch = CMDDispatch(this)
@@ -88,7 +88,7 @@ internal class EduRoomImpl(
     var defaultStreams: MutableList<EduStreamEvent> = mutableListOf()
 
     internal fun getCurRoomType(): RoomType {
-        return (roomInfo as EduRoomInfoImpl).roomType
+        return (getRoomInfo() as EduRoomInfoImpl).roomType
     }
 
     internal fun getCurUserList(): MutableList<EduUserInfo> {
@@ -141,7 +141,7 @@ internal class EduRoomImpl(
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
                 mediaOptions.primaryStreamId.toString(), if (mediaOptions.isAutoPublish()) 1 else 0)
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
-                .joinClassroom(APPID, roomInfo.roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
+                .joinClassroom(APPID, getRoomInfo().roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {
                     override fun onSuccess(res: ResponseBody<EduEntryRes>?) {
                         roomEntryRes = res?.data!!
@@ -161,9 +161,9 @@ internal class EduRoomImpl(
                             defaultStreams.addAll(streamEvents)
                         }
                         /**解析返回的room相关数据并同步保存至本地*/
-                        roomStatus.startTime = roomEntryRes.room.roomState.startTime
-                        roomStatus.courseState = Convert.convertRoomState(roomEntryRes.room.roomState.state)
-                        roomStatus.isStudentChatAllowed = Convert.extractStudentChatAllowState(
+                        getRoomStatus().startTime = roomEntryRes.room.roomState.startTime
+                        getRoomStatus().courseState = Convert.convertRoomState(roomEntryRes.room.roomState.state)
+                        getRoomStatus().isStudentChatAllowed = Convert.extractStudentChatAllowState(
                                 roomEntryRes.room.roomState.muteChat, getCurRoomType())
                         roomProperties = roomEntryRes.room.roomProperties
                         /**加入rte(包括rtm和rtc)*/
@@ -209,9 +209,9 @@ internal class EduRoomImpl(
 
     private fun joinRte(rtcToken: String, rtcUid: Long, channelMediaOptions: ChannelMediaOptions,
                         @NonNull callback: ResultCallback<Void>) {
-        RteEngineImpl.setClientRole(roomInfo.roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
+        RteEngineImpl.setClientRole(getRoomInfo().roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
         val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(this)
-        RteEngineImpl[roomInfo.roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
+        RteEngineImpl[getRoomInfo().roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
     }
 
     private fun initOrUpdateLocalStream(classRoomEntryRes: EduEntryRes, roomMediaOptions: RoomMediaOptions,
@@ -232,10 +232,10 @@ internal class EduRoomImpl(
                     callback.onSuccess(Unit)
                 } else {
                     /**大班课场景下为audience,小班课一对一都是broadcaster*/
-                    RteEngineImpl.setClientRole(roomInfo.roomUuid, if (getCurRoomType() !=
+                    RteEngineImpl.setClientRole(getRoomInfo().roomUuid, if (getCurRoomType() !=
                             RoomType.LARGE_CLASS) CLIENT_ROLE_BROADCASTER else CLIENT_ROLE_AUDIENCE)
                     if (mediaOptions.isAutoPublish()) {
-                        val code = RteEngineImpl.publish(roomInfo.roomUuid)
+                        val code = RteEngineImpl.publish(getRoomInfo().roomUuid)
                         Log.e("EduRoomImpl", "publish: $code")
                     }
                     callback.onSuccess(Unit)
@@ -255,7 +255,7 @@ internal class EduRoomImpl(
             synchronized(joinSuccess) {
                 Log.e("EduStudentImpl", "加入房间成功")
                 /**维护本地存储的在线人数*/
-                roomStatus.onlineUsersCount = getCurUserList().size
+                getRoomStatus().onlineUsersCount = getCurUserList().size
                 callback.onSuccess(eduUser as EduStudent)
                 eventListener?.onRemoteUsersInitialized(getCurUserList(), this@EduRoomImpl)
                 eventListener?.onRemoteStreamsInitialized(getCurStreamList(), this@EduRoomImpl)
@@ -267,7 +267,7 @@ internal class EduRoomImpl(
                     val streamInfo = element.modifiedStream
                     /**判断是否推本地流*/
                     if (streamInfo.publisher == localUser.userInfo) {
-                        /**本地流维护在本地用户信息中*/
+                        /**本地流维护在本地用户信息中和全局集合中*/
                         localUser.userInfo.streams.add(element)
                         /**根据流信息，更新本地媒体状态*/
                         RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
@@ -327,6 +327,14 @@ internal class EduRoomImpl(
         getCurStreamList().clear()
     }
 
+    override fun getRoomInfo(): EduRoomInfo {
+        return roomSyncSession.roomInfo
+    }
+
+    override fun getRoomStatus(): EduRoomStatus {
+        return roomSyncSession.roomStatus
+    }
+
     override fun getStudentCount(): Int {
         return getStudentList().size
     }
@@ -363,21 +371,21 @@ internal class EduRoomImpl(
      * 当第一个用户进入新房间(暂无用户的房间)的时候，不会有人流数据同步过来，此时如果调用此函数
      * 需要把本地用户手动添加进去*/
     override fun getFullUserList(): MutableList<EduUserInfo> {
-        if (roomSyncSession.eduUserInfoList.size == 0) {
-            /**把localUserInfo转换为userInfo，保持集合中数据类型统一*/
-            val userInfo = Convert.convertUserInfo(localUser.userInfo)
-            roomSyncSession.eduUserInfoList.add(userInfo)
-        }
+//        if (roomSyncSession.eduUserInfoList.size == 0) {
+//            /**把localUserInfo转换为userInfo，保持集合中数据类型统一*/
+//            val userInfo = Convert.convertUserInfo(localUser.userInfo)
+//            roomSyncSession.eduUserInfoList.add(userInfo)
+//        }
         return roomSyncSession.eduUserInfoList
     }
 
     override fun leave() {
         clearData()
         if (!leaveRoom) {
-            RteEngineImpl[roomInfo.roomUuid]?.leave()
+            RteEngineImpl[getRoomInfo().roomUuid]?.leave()
             leaveRoom = true
         }
-        RteEngineImpl[roomInfo.roomUuid]?.release()
+        RteEngineImpl[getRoomInfo().roomUuid]?.release()
         eventListener = null
         localUser.eventListener = null
         /**移除掉当前room*/

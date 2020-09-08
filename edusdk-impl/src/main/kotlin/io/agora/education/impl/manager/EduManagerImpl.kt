@@ -196,7 +196,7 @@ internal class EduManagerImpl(
                 })
             } else {
                 eduManagerEventListener?.onConnectionStateChanged(Convert.convertConnectionState(p0),
-                        Convert.convertConnectionStateChangeReason(p1), it)
+                        Convert.convertConnectionStateChangeReason(p1))
             }
         }
         rtmConnectState.lastConnectionState = p0
@@ -216,7 +216,7 @@ internal class EduManagerImpl(
 
     private fun findRoom(roomInfo: EduRoomInfo): EduRoom? {
         eduRooms?.forEach {
-            if (roomInfo == it.roomInfo) {
+            if (roomInfo == it.getRoomInfo()) {
                 return it
             }
         }

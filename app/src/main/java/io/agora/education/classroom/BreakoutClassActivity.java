@@ -237,10 +237,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onUserMessageReceived(@NotNull EduMsg message, @NotNull EduRoom classRoom) {
-        super.onUserMessageReceived(message, classRoom);
-        if (classRoom.equals(subEduRoom)) {
-        }
+    public void onUserMessageReceived(@NotNull EduMsg message) {
+        super.onUserMessageReceived(message);
+//        if (classRoom.equals(subEduRoom)) {
+//        }
     }
 
     @Override
@@ -251,10 +251,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg, @NotNull EduRoom classRoom) {
-        super.onUserChatMessageReceived(chatMsg, classRoom);
-        if (classRoom.equals(subEduRoom)) {
-        }
+    public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg) {
+        super.onUserChatMessageReceived(chatMsg);
+//        if (classRoom.equals(subEduRoom)) {
+//        }
     }
 
     @Override
@@ -444,10 +444,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason, @NotNull EduRoom classRoom) {
-        super.onConnectionStateChanged(state, reason, classRoom);
-        if (classRoom.equals(subEduRoom)) {
-        }
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
+        super.onConnectionStateChanged(state, reason);
+//        if (classRoom.equals(subEduRoom)) {
+//        }
     }
 
     @Override

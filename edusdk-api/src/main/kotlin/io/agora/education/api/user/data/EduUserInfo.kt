@@ -5,6 +5,7 @@ import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.stream.data.EduStreamInfo
 
 enum class EduUserRole(var value: Int) {
+    EduRoleTypeInvalid(0),
     TEACHER(1),
     STUDENT(2)
 }

@@ -61,7 +61,7 @@ internal open class EduUserImpl(
 
         /**根据当前配置生成一个流信息*/
         val streamInfo = EduStreamInfoImpl(options.streamUuid, options.streamName, VideoSourceType.CAMERA,
-                options.enableMicrophone, options.enableCamera, this.userInfo, System.currentTimeMillis())
+                options.enableCamera, options.enableMicrophone, this.userInfo, System.currentTimeMillis())
         callback.onSuccess(streamInfo)
     }
 
@@ -74,15 +74,15 @@ internal open class EduUserImpl(
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
 //        RteEngineImpl.rtcEngine.muteRemoteAudioStream(uid, options.subscribeAudio)
 //        RteEngineImpl.rtcEngine.muteRemoteVideoStream(uid, options.subscribeVideo)
-        (RteEngineImpl[eduRoom.roomInfo.roomUuid] as RteChannelImpl).rtcChannel.muteRemoteAudioStream(
+        (RteEngineImpl[eduRoom.getRoomInfo().roomUuid] as RteChannelImpl).rtcChannel.muteRemoteAudioStream(
                 uid, !options.subscribeAudio)
-        (RteEngineImpl[eduRoom.roomInfo.roomUuid] as RteChannelImpl).rtcChannel.muteRemoteVideoStream(
+        (RteEngineImpl[eduRoom.getRoomInfo().roomUuid] as RteChannelImpl).rtcChannel.muteRemoteVideoStream(
                 uid, !options.subscribeVideo)
     }
 
     override fun unSubscribeStream(stream: EduStreamInfo) {
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-        RteEngineImpl.muteRemoteStream(eduRoom.roomInfo.roomUuid, uid, muteAudio = true, muteVideo = true)
+        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, muteAudio = true, muteVideo = true)
     }
 
     /**
@@ -92,7 +92,7 @@ internal open class EduUserImpl(
      * */
     override fun publishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
         /**设置角色*/
-        RteEngineImpl.setClientRole(eduRoom.roomInfo.roomUuid, CLIENT_ROLE_BROADCASTER)
+        RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
         /**改变流状态的参数*/
         val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
@@ -104,7 +104,7 @@ internal open class EduUserImpl(
                 /**unMute*/
                 Log.e("EduUserImpl", "开始更新本地流信息-unMute")
                 RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                        .updateStreamInfo(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                        .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
                                 streamInfo.streamUuid, eduStreamStatusReq)
                         .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                             override fun onSuccess(res: ResponseBody<String>?) {
@@ -112,7 +112,7 @@ internal open class EduUserImpl(
                                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
 //                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
                                 RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                                RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
+                                RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
                                 callback.onSuccess(true)
                             }
 
@@ -127,9 +127,9 @@ internal open class EduUserImpl(
                 Log.e("EduUserImpl", "开始初始化和更新本地流-mute")
                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
                 RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
+                RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
                 RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                        .updateStreamInfo(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                        .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
                                 streamInfo.streamUuid, eduStreamStatusReq)
                         .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                             override fun onSuccess(res: ResponseBody<String>?) {
@@ -148,13 +148,13 @@ internal open class EduUserImpl(
             /**流信息不存在于本地，说明是新建*/
             Log.e("EduUserImpl", "新建本地流信息")
             RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                    .createStream(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                    .createStream(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
                             streamInfo.streamUuid, eduStreamStatusReq)
                     .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                         override fun onSuccess(res: ResponseBody<String>?) {
                             Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
                             RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                            RteEngineImpl.publish(eduRoom.roomInfo.roomUuid)
+                            RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
                             callback.onSuccess(true)
                         }
 
@@ -170,14 +170,14 @@ internal open class EduUserImpl(
     override fun unPublishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
         Log.e("EduUserImpl", "删除本地流")
         RetrofitManager.instance().getService(API_BASE_URL, StreamService::class.java)
-                .deleteStream(APPID, eduRoom.roomInfo.roomUuid, userInfo.userUuid,
+                .deleteStream(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
                         streamInfo.streamUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         RteEngineImpl.muteLocalStream(muteAudio = true, muteVideo = true)
-                        RteEngineImpl.unpublish(eduRoom.roomInfo.roomUuid)
+                        RteEngineImpl.unpublish(eduRoom.getRoomInfo().roomUuid)
                         /**设置角色*/
-                        RteEngineImpl.setClientRole(eduRoom.roomInfo.roomUuid, CLIENT_ROLE_AUDIENCE)
+                        RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_AUDIENCE)
                         callback.onSuccess(true)
                     }
 
@@ -192,7 +192,7 @@ internal open class EduUserImpl(
     override fun sendRoomMessage(message: String, callback: EduCallback<EduMsg>) {
         val roomMsgReq = EduRoomMsgReq(message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendChannelCustomMessage(APPID, eduRoom.roomInfo.roomUuid, roomMsgReq)
+                .sendChannelCustomMessage(APPID, eduRoom.getRoomInfo().roomUuid, roomMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
@@ -210,7 +210,7 @@ internal open class EduUserImpl(
     override fun sendUserMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduMsg>) {
         val userMsgReq = EduUserMsgReq(message)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendPeerCustomMessage(APPID, eduRoom.roomInfo.roomUuid, remoteUser.userUuid, userMsgReq)
+                .sendPeerCustomMessage(APPID, eduRoom.getRoomInfo().roomUuid, remoteUser.userUuid, userMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
@@ -228,7 +228,7 @@ internal open class EduUserImpl(
     override fun sendRoomChatMessage(message: String, callback: EduCallback<EduChatMsg>) {
         val roomChatMsgReq = EduRoomChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendRoomChatMsg(APPID, eduRoom.roomInfo.roomUuid, roomChatMsgReq)
+                .sendRoomChatMsg(APPID, eduRoom.getRoomInfo().roomUuid, roomChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduChatMsg(userInfo, message, System.currentTimeMillis(),
@@ -247,7 +247,7 @@ internal open class EduUserImpl(
     override fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduChatMsg>) {
         val userChatMsgReq = EduUserChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .sendPeerChatMsg(APPID, eduRoom.roomInfo.roomUuid, remoteUser.userUuid, userChatMsgReq)
+                .sendPeerChatMsg(APPID, eduRoom.getRoomInfo().roomUuid, remoteUser.userUuid, userChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduChatMsg(userInfo, message, System.currentTimeMillis(),
@@ -322,7 +322,7 @@ internal open class EduUserImpl(
 
     override fun updateRoomProperty(property: Property, callback: EduCallback<Unit>) {
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .addRoomProperty(APPID, eduRoom.roomInfo.roomUuid, property.key, property.value)
+                .addRoomProperty(APPID, eduRoom.getRoomInfo().roomUuid, property.key, property.value)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
                     override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -338,7 +338,7 @@ internal open class EduUserImpl(
 
     override fun updateUserProperty(property: Property, targetUser: EduUserInfo, callback: EduCallback<Unit>) {
         RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
-                .addProperty(APPID, eduRoom.roomInfo.roomUuid, eduRoom.roomInfo.roomUuid,
+                .addProperty(APPID, eduRoom.getRoomInfo().roomUuid, eduRoom.getRoomInfo().roomUuid,
                         property.key, property.value)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {

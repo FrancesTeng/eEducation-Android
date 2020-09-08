@@ -327,18 +327,18 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             }
             val roomState = roomInfoRes.roomState
             val courseState = Convert.convertRoomState(roomState?.state!!)
-            if (eduRoom.roomStatus.courseState != courseState) {
-                eduRoom.roomStatus.courseState = courseState
+            if (eduRoom.getRoomStatus().courseState != courseState) {
+                eduRoom.getRoomStatus().courseState = courseState
                 event = RoomStatusEvent.COURSE_STATE
             }
-            if (eduRoom.roomStatus.startTime != roomState.startTime) {
-                eduRoom.roomStatus.startTime = roomState.startTime
+            if (eduRoom.getRoomStatus().startTime != roomState.startTime) {
+                eduRoom.getRoomStatus().startTime = roomState.startTime
                 event = RoomStatusEvent.COURSE_STATE
             }
             val isStudentChatAllowed = Convert.extractStudentChatAllowState(roomState.muteChat,
                     (eduRoom as EduRoomImpl).getCurRoomType())
-            if (eduRoom.roomStatus.isStudentChatAllowed != isStudentChatAllowed) {
-                eduRoom.roomStatus.isStudentChatAllowed = isStudentChatAllowed
+            if (eduRoom.getRoomStatus().isStudentChatAllowed != isStudentChatAllowed) {
+                eduRoom.getRoomStatus().isStudentChatAllowed = isStudentChatAllowed
                 event = RoomStatusEvent.STUDENT_CHAT
             }
             return event
@@ -458,23 +458,22 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
         /**同步房间的快照信息*/
         fun syncSnapshotToRoom(eduRoom: EduRoom, snapshotRes: EduSnapshotRes) {
             val snapshotRoomRes = snapshotRes.room
-            eduRoom.roomInfo.roomName = snapshotRoomRes.roomInfo.roomName
-            eduRoom.roomInfo.roomUuid = snapshotRoomRes.roomInfo.roomUuid
+            eduRoom.getRoomInfo().roomName = snapshotRoomRes.roomInfo.roomName
+            eduRoom.getRoomInfo().roomUuid = snapshotRoomRes.roomInfo.roomUuid
             val roomStatus = snapshotRoomRes.roomState
-            eduRoom.roomStatus.isStudentChatAllowed = Convert.extractStudentChatAllowState(
+            eduRoom.getRoomStatus().isStudentChatAllowed = Convert.extractStudentChatAllowState(
                     roomStatus.muteChat, (eduRoom as EduRoomImpl).getCurRoomType())
-            eduRoom.roomStatus.courseState = Convert.convertRoomState(roomStatus.state)
-            if(roomStatus.state == EduRoomState.START.value) {
-                eduRoom.roomStatus.startTime = roomStatus.startTime
+            eduRoom.getRoomStatus().courseState = Convert.convertRoomState(roomStatus.state)
+            if (roomStatus.state == EduRoomState.START.value) {
+                eduRoom.getRoomStatus().startTime = roomStatus.startTime
             }
             eduRoom.roomProperties = snapshotRoomRes.roomProperties
-            /**TODO 此处缺少另外三个参数的信息，后台没返回*/
             val snapshotUserRes = snapshotRes.users
             val validAddedUserList = addUserWithOnline(snapshotUserRes, eduRoom.getCurUserList(),
                     eduRoom.getCurRoomType())
             val validAddedStreamList = addStreamWithUserOnline(snapshotUserRes, eduRoom.getCurStreamList(),
                     eduRoom.getCurRoomType())
-            eduRoom.roomStatus.onlineUsersCount = validAddedUserList.size
+            eduRoom.getRoomStatus().onlineUsersCount = validAddedUserList.size
         }
     }
 }

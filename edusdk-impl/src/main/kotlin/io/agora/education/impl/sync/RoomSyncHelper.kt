@@ -10,6 +10,8 @@ import io.agora.base.network.BusinessException
 import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
 import io.agora.education.api.room.EduRoom
+import io.agora.education.api.room.data.EduRoomInfo
+import io.agora.education.api.room.data.EduRoomStatus
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.cmd.CMDDataMergeProcessor
@@ -22,8 +24,9 @@ import io.agora.education.impl.room.network.RoomService
 import java.util.*
 
 /**只同步管理channelMsg，不同步peerMsg，因为RTM能保障peerMsg到达，而且peerMsg只和业务有关*/
-internal class RoomSyncHelper(private val eduRoom: EduRoom, maxRetry: Int)
-    : RoomSyncSession() {
+internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInfo,
+                              roomStatus: EduRoomStatus, maxRetry: Int)
+    : RoomSyncSession(roomInfo, roomStatus) {
 
     companion object {
         val TAG = "RoomSyncHelper"
@@ -129,7 +132,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, maxRetry: Int)
     override fun fetchLostSequence(nextId: Int, count: Int?, callback: EduCallback<Unit>) {
         syncing = true
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .fetchLostSequences(APPID, eduRoom.roomInfo.roomUuid, nextId, count)
+                .fetchLostSequences(APPID, roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceListRes<Any>>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceListRes<Any>>?) {
                         Log.e(TAG, "请求到的丢失数据:${Gson().toJson(res)}")
@@ -176,7 +179,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, maxRetry: Int)
     override fun fetchSnapshot(callback: EduCallback<Unit>) {
         syncing = true
         RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
-                .fetchSnapshot(APPID, eduRoom.roomInfo.roomUuid)
+                .fetchSnapshot(APPID, roomInfo.roomUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceSnapshotRes>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceSnapshotRes>?) {
                         Log.e(TAG, "请求到的快照数据:${Gson().toJson(res)}")

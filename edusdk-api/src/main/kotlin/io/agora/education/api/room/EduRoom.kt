@@ -13,7 +13,7 @@ import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserInfo
 
-abstract class EduRoom(val roomInfo: EduRoomInfo, val roomStatus: EduRoomStatus) {
+abstract class EduRoom(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus) {
 
     companion object {
         fun create(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus): EduRoom {
@@ -34,6 +34,10 @@ abstract class EduRoom(val roomInfo: EduRoomInfo, val roomStatus: EduRoomStatus)
     abstract fun allocateGroup(roomUuid: String, userUuid: String, callback: EduCallback<EduRoomInfo>)
 
     abstract fun joinClassroom(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
+
+    abstract fun getRoomInfo(): EduRoomInfo
+
+    abstract fun getRoomStatus(): EduRoomStatus
 
     abstract fun getStudentCount(): Int
 
@@ -58,6 +62,6 @@ abstract class EduRoom(val roomInfo: EduRoomInfo, val roomStatus: EduRoomStatus)
         if (other !is EduRoom) {
             return false
         }
-        return other.roomInfo.roomUuid.equals(this.roomInfo.roomUuid)
+        return other.getRoomInfo().roomUuid.equals(this.getRoomInfo().roomUuid)
     }
 }
