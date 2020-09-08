@@ -73,7 +73,6 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':base')
     implementation project(':log')
-    implementation project(':sdk')
     implementation project(':timeline')
     implementation project(':whiteboard')
     implementation project(':edusdk-api')
