@@ -8,24 +8,23 @@ import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
-import io.agora.base.network.RetrofitManager
 import io.agora.education.api.EduCallback
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
 import io.agora.education.api.user.EduStudent
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
-import io.agora.Convert
+import io.agora.education.impl.util.Convert
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduChatState
-import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
 import io.agora.education.impl.cmd.bean.CMDResponseBody
 import io.agora.education.impl.cmd.CMDDispatch
 import io.agora.education.impl.manager.EduManagerImpl
+import io.agora.education.impl.network.RetrofitManager
 import io.agora.education.impl.record.EduRecordImpl
 import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.EduRoomInfoImpl
@@ -37,12 +36,11 @@ import io.agora.education.impl.sync.RoomSyncSession
 import io.agora.education.impl.user.EduStudentImpl
 import io.agora.education.impl.user.EduUserImpl
 import io.agora.education.impl.user.data.EduLocalUserInfoImpl
-import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.education.impl.user.network.UserService
 import io.agora.education.impl.util.CommonUtil
 import io.agora.rtc.Constants.*
 import io.agora.rtc.models.ChannelMediaOptions
-import io.agora.rte.RteChannelEventListener
+import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rte.RteEngineImpl
 import io.agora.rte.data.RteChannelMediaOptions
 import io.agora.rtm.*
@@ -50,14 +48,14 @@ import io.agora.rtm.*
 internal class EduRoomImpl(
         roomInfo: EduRoomInfo,
         roomStatus: EduRoomStatus
-) : EduRoom(roomInfo, roomStatus), RteChannelEventListener {
+) : EduRoom(roomInfo, roomStatus), io.agora.rte.listener.RteChannelEventListener {
 
-    internal var roomSyncSession: RoomSyncSession
+    internal var syncSession: RoomSyncSession
     internal var cmdDispatch: CMDDispatch
 
     init {
-        RteEngineImpl.createChannel(roomInfo.roomUuid, this)
-        roomSyncSession = RoomSyncHelper(this, roomInfo, roomStatus, 3)
+        io.agora.rte.RteEngineImpl.createChannel(roomInfo.roomUuid, this)
+        syncSession = RoomSyncHelper(this, roomInfo, roomStatus, 3)
         record = EduRecordImpl()
         board = EduBoardImpl()
         cmdDispatch = CMDDispatch(this)
@@ -92,15 +90,15 @@ internal class EduRoomImpl(
     }
 
     internal fun getCurUserList(): MutableList<EduUserInfo> {
-        return roomSyncSession.eduUserInfoList
+        return syncSession.eduUserInfoList
     }
 
     internal fun getCurStreamList(): MutableList<EduStreamInfo> {
-        return roomSyncSession.eduStreamInfoList
+        return syncSession.eduStreamInfoList
     }
 
     override fun allocateGroup(roomUuid: String, userUuid: String, callback: EduCallback<EduRoomInfo>) {
-        RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
+        RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .allocateGroup(APPID, roomUuid, userUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduRoomInfoRes>> {
                     override fun onSuccess(res: ResponseBody<EduRoomInfoRes>?) {
@@ -129,8 +127,8 @@ internal class EduRoomImpl(
         val localUserInfo = EduLocalUserInfoImpl(options.userUuid, options.userName, EduUserRole.STUDENT,
                 true, null, mutableListOf(), System.currentTimeMillis())
         /**此处需要把localUserInfo设置进localUser中*/
-        localUser = EduStudentImpl(localUserInfo)
-        (localUser as EduUserImpl).eduRoom = this
+        syncSession.localUser = EduStudentImpl(localUserInfo)
+        (syncSession.localUser as EduUserImpl).eduRoom = this
         /**大班课强制不自动发流*/
         if (getCurRoomType() == RoomType.LARGE_CLASS) {
             options.closeAutoPublish()
@@ -140,7 +138,7 @@ internal class EduRoomImpl(
         val role = Convert.convertUserRole(localUserInfo.role, getCurRoomType(), curClassType)
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
                 mediaOptions.primaryStreamId.toString(), if (mediaOptions.isAutoPublish()) 1 else 0)
-        RetrofitManager.instance().getService(API_BASE_URL, UserService::class.java)
+        RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .joinClassroom(APPID, getRoomInfo().roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {
                     override fun onSuccess(res: ResponseBody<EduEntryRes>?) {
@@ -148,12 +146,12 @@ internal class EduRoomImpl(
                         /**解析返回的user相关数据*/
                         localUserInfo.userToken = roomEntryRes.user.userToken
                         rtcToken = roomEntryRes.user.rtcToken
-                        RetrofitManager.instance().addHeader("token", roomEntryRes.user.userToken)
+                        RetrofitManager.instance()!!.addHeader("token", roomEntryRes.user.userToken)
                         localUserInfo.isChatAllowed = roomEntryRes.user.muteChat == EduChatState.Allow.value
                         localUserInfo.userProperties = roomEntryRes.user.userProperties
                         localUserInfo.streamUuid = roomEntryRes.user.streamUuid
                         /**把本地用户信息合并到本地缓存中(需要转换类型)*/
-                        roomSyncSession.eduUserInfoList.add(Convert.convertUserInfo(localUserInfo))
+                        syncSession.eduUserInfoList.add(Convert.convertUserInfo(localUserInfo))
                         /**获取用户可能存在的流信息待join成功后进行处理;*/
                         roomEntryRes.user.streams?.let {
                             /**转换并合并流信息到本地缓存*/
@@ -168,16 +166,16 @@ internal class EduRoomImpl(
                         roomProperties = roomEntryRes.room.roomProperties
                         /**加入rte(包括rtm和rtc)*/
                         joinRte(rtcToken, roomEntryRes.user.streamUuid.toLong(),
-                                RteChannelMediaOptions.build(mediaOptions), object : ResultCallback<Void> {
+                                mediaOptions.convert(), object : ResultCallback<Void> {
                             override fun onSuccess(p0: Void?) {
                                 /**拉去全量数据*/
-                                roomSyncSession.fetchSnapshot(object : EduCallback<Unit> {
+                                syncSession.fetchSnapshot(object : EduCallback<Unit> {
                                     override fun onSuccess(res: Unit?) {
                                         /**全量数据拉取并合并成功*/
                                         /**初始化本地流*/
                                         initOrUpdateLocalStream(roomEntryRes, mediaOptions, object : EduCallback<Unit> {
                                             override fun onSuccess(res: Unit?) {
-                                                joinSuccess(localUser, studentJoinCallback as EduCallback<EduUser>)
+                                                joinSuccess(syncSession.localUser, studentJoinCallback as EduCallback<EduUser>)
                                             }
 
                                             override fun onFailure(code: Int, reason: String?) {
@@ -209,9 +207,9 @@ internal class EduRoomImpl(
 
     private fun joinRte(rtcToken: String, rtcUid: Long, channelMediaOptions: ChannelMediaOptions,
                         @NonNull callback: ResultCallback<Void>) {
-        RteEngineImpl.setClientRole(getRoomInfo().roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
+        io.agora.rte.RteEngineImpl.setClientRole(getRoomInfo().roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
         val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(this)
-        RteEngineImpl[getRoomInfo().roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
+        io.agora.rte.RteEngineImpl[getRoomInfo().roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
     }
 
     private fun initOrUpdateLocalStream(classRoomEntryRes: EduEntryRes, roomMediaOptions: RoomMediaOptions,
@@ -219,7 +217,7 @@ internal class EduRoomImpl(
         /**初始化或更新本地用户的本地流*/
         val localStreamInitOptions = LocalStreamInitOptions(classRoomEntryRes.user.streamUuid,
                 roomMediaOptions.autoPublish, roomMediaOptions.autoPublish)
-        localUser.initOrUpdateLocalStream(localStreamInitOptions, object : EduCallback<EduStreamInfo> {
+        syncSession.localUser.initOrUpdateLocalStream(localStreamInitOptions, object : EduCallback<EduStreamInfo> {
             override fun onSuccess(streamInfo: EduStreamInfo?) {
                 /**判断是否需要更新本地的流信息(因为当前流信息在本地可能已经存在)*/
                 val pos = streamExistsInLocal(streamInfo)
@@ -227,15 +225,16 @@ internal class EduRoomImpl(
                     getCurStreamList()[pos] = streamInfo!!
                 }
                 /**如果当前用户是观众则调用unPublishStream(刷新服务器上可能存在的旧流)*/
-                if (Convert.convertUserRole(localUser.userInfo.role, getCurRoomType(), curClassType)
-                        == EduUserRoleStr.audience.value) {
+                val role = Convert.convertUserRole(syncSession.localUser.userInfo.role,
+                        getCurRoomType(), curClassType)
+                if (role == EduUserRoleStr.audience.value) {
                     callback.onSuccess(Unit)
                 } else {
                     /**大班课场景下为audience,小班课一对一都是broadcaster*/
-                    RteEngineImpl.setClientRole(getRoomInfo().roomUuid, if (getCurRoomType() !=
+                    io.agora.rte.RteEngineImpl.setClientRole(getRoomInfo().roomUuid, if (getCurRoomType() !=
                             RoomType.LARGE_CLASS) CLIENT_ROLE_BROADCASTER else CLIENT_ROLE_AUDIENCE)
                     if (mediaOptions.isAutoPublish()) {
-                        val code = RteEngineImpl.publish(getRoomInfo().roomUuid)
+                        val code = io.agora.rte.RteEngineImpl.publish(getRoomInfo().roomUuid)
                         Log.e("EduRoomImpl", "publish: $code")
                     }
                     callback.onSuccess(Unit)
@@ -266,13 +265,13 @@ internal class EduRoomImpl(
                     val element = addedStreamsIterable.next()
                     val streamInfo = element.modifiedStream
                     /**判断是否推本地流*/
-                    if (streamInfo.publisher == localUser.userInfo) {
+                    if (streamInfo.publisher == syncSession.localUser.userInfo) {
                         /**本地流维护在本地用户信息中和全局集合中*/
-                        localUser.userInfo.streams.add(element)
+                        syncSession.localUser.userInfo.streams.add(element)
                         /**根据流信息，更新本地媒体状态*/
-                        RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                        io.agora.rte.RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
                         Log.e("EduRoomImpl", "join成功，把添加的本地流回调出去")
-                        localUser.eventListener?.onLocalStreamAdded(element)
+                        syncSession.localUser.eventListener?.onLocalStreamAdded(element)
                         /**把本地流*/
                         addedStreamsIterable.remove()
                     }
@@ -281,7 +280,7 @@ internal class EduRoomImpl(
                     eventListener?.onRemoteStreamsAdded(defaultStreams, this)
                 }
                 /**检查并处理缓存数据(处理CMD消息)*/
-                (roomSyncSession as RoomSyncHelper).handleCache(object : EduCallback<Unit> {
+                (syncSession as RoomSyncHelper).handleCache(object : EduCallback<Unit> {
                     override fun onSuccess(res: Unit?) {
                     }
 
@@ -327,12 +326,16 @@ internal class EduRoomImpl(
         getCurStreamList().clear()
     }
 
+    override fun getLocalUser(): EduUser {
+        return syncSession.localUser
+    }
+
     override fun getRoomInfo(): EduRoomInfo {
-        return roomSyncSession.roomInfo
+        return syncSession.roomInfo
     }
 
     override fun getRoomStatus(): EduRoomStatus {
-        return roomSyncSession.roomStatus
+        return syncSession.roomStatus
     }
 
     override fun getStudentCount(): Int {
@@ -364,7 +367,7 @@ internal class EduRoomImpl(
     }
 
     override fun getFullStreamList(): MutableList<EduStreamInfo> {
-        return roomSyncSession.eduStreamInfoList
+        return syncSession.eduStreamInfoList
     }
 
     /**获取本地缓存的所有用户数据
@@ -376,18 +379,18 @@ internal class EduRoomImpl(
 //            val userInfo = Convert.convertUserInfo(localUser.userInfo)
 //            roomSyncSession.eduUserInfoList.add(userInfo)
 //        }
-        return roomSyncSession.eduUserInfoList
+        return syncSession.eduUserInfoList
     }
 
     override fun leave() {
         clearData()
         if (!leaveRoom) {
-            RteEngineImpl[getRoomInfo().roomUuid]?.leave()
+            io.agora.rte.RteEngineImpl[getRoomInfo().roomUuid]?.leave()
             leaveRoom = true
         }
-        RteEngineImpl[getRoomInfo().roomUuid]?.release()
+        io.agora.rte.RteEngineImpl[getRoomInfo().roomUuid]?.release()
         eventListener = null
-        localUser.eventListener = null
+        syncSession.localUser.eventListener = null
         /**移除掉当前room*/
         EduManagerImpl.removeRoom(this)
     }
@@ -396,9 +399,9 @@ internal class EduRoomImpl(
         p0?.text?.let {
             val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(p0.text, object :
                     TypeToken<CMDResponseBody<Any>>() {}.type)
-            val pair = roomSyncSession.updateSequenceId(cmdResponseBody)
+            val pair = syncSession.updateSequenceId(cmdResponseBody)
             if (pair != null) {
-                roomSyncSession.fetchLostSequence(pair.first, pair.second, object : EduCallback<Unit> {
+                syncSession.fetchLostSequence(pair.first, pair.second, object : EduCallback<Unit> {
                     override fun onSuccess(res: Unit?) {
                     }
 

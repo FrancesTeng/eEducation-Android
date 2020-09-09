@@ -278,7 +278,7 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFailure(int code, @Nullable String reason) {
-                Log.e(TAG, "登录失败");
+                Log.e(TAG, "登录失败-> code:" + code + ",reason:" + reason);
             }
         });
     }

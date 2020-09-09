@@ -1,36 +1,24 @@
 package io.agora.education;
 
 import android.app.Application;
-import android.os.Handler;
+import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
 import io.agora.base.PreferenceManager;
 import io.agora.base.ToastManager;
-import io.agora.base.network.ResponseBody;
+import io.agora.base.network.RetrofitManager;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.logger.DebugItem;
 import io.agora.education.api.logger.LogLevel;
 import io.agora.education.api.manager.EduManager;
 import io.agora.education.api.manager.EduManagerOptions;
-import io.agora.education.api.manager.listener.EduManagerEventListener;
-import io.agora.education.api.message.EduChatMsg;
-import io.agora.education.api.message.EduMsg;
-import io.agora.education.api.room.EduRoom;
-import io.agora.education.api.statistics.ConnectionState;
-import io.agora.education.api.statistics.ConnectionStateChangeReason;
-import io.agora.education.service.bean.request.UserReq;
+import io.agora.education.api.util.CryptoUtil;
 import io.agora.education.service.bean.response.AppConfigRes;
-import io.agora.log.LogManager;
-import kotlin.jvm.internal.TypeReference;
+import kotlin.text.Charsets;
 
 public class EduApplication extends Application {
     private static final String TAG = "EduApplication";
@@ -70,6 +58,10 @@ public class EduApplication extends Application {
                 Log.e(TAG, "日志上传错误->code:" + code + ", reason:" + reason);
             }
         });
+        /**为OKHttp添加Authorization的header*/
+        String auth = Base64.encodeToString((customerId + ":" + customerCertificate)
+                .getBytes(Charsets.UTF_8), Base64.DEFAULT).replace("\n", "").trim();
+        RetrofitManager.instance().addHeader("Authorization", CryptoUtil.getAuth(auth));
     }
 
     public static EduManager getManager() {

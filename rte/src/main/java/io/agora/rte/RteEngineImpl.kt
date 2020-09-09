@@ -1,29 +1,21 @@
 package io.agora.rte
 
 import android.content.Context
-import android.provider.MediaStore
 import android.util.Log
-import io.agora.Constants.Companion.LOGS_DIR_NAME
-import io.agora.education.api.EduCallback
-import io.agora.education.api.stream.data.EduStreamInfo
-import io.agora.rtc.Constants
-import io.agora.rtc.Constants.CHANNEL_PROFILE_LIVE_BROADCASTING
 import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcEngineEventHandler
-import io.agora.rtc.RtcChannel
 import io.agora.rtc.RtcEngine
+import io.agora.rtc.video.VideoCanvas
+import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.*
-import io.agora.rtm.internal.RtmManager
 import java.io.File
 
-internal object RteEngineImpl : IRteEngine {
-    lateinit var rtmClient: RtmClient
-        private set
-    lateinit var rtcEngine: RtcEngine
-        private set
-    private val channelMap = mutableMapOf<String, IRteChannel>()
+object RteEngineImpl : IRteEngine {
+    internal lateinit var rtmClient: RtmClient
+    internal lateinit var rtcEngine: RtcEngine
+    private val channelMap = mutableMapOf<String, io.agora.rte.IRteChannel>()
 
-    var eventListener: RteEngineEventListener? = null
+    var eventListener: io.agora.rte.listener.RteEngineEventListener? = null
 
     /**rtm登录成功的标志*/
     var rtmLoginSuccess = false
@@ -39,7 +31,7 @@ internal object RteEngineImpl : IRteEngine {
 //        rtcEngine.setParameters("{\"rtc.log_filter\": 65535}")
     }
 
-    override fun loginRtm(rtmUid: String, rtmToken: String, callback: EduCallback<Unit>) {
+    override fun loginRtm(rtmUid: String, rtmToken: String, callback: RteCallback<Unit>) {
         /**rtm不能重复登录*/
         if (!rtmLoginSuccess) {
             rtmClient.login(rtmToken, rtmUid, object : ResultCallback<Void> {
@@ -78,8 +70,8 @@ internal object RteEngineImpl : IRteEngine {
         })
     }
 
-    override fun createChannel(channelId: String, eventListener: RteChannelEventListener): IRteChannel {
-        val rteChannel = RteChannelImpl(channelId, eventListener)
+    override fun createChannel(channelId: String, eventListener: io.agora.rte.listener.RteChannelEventListener): io.agora.rte.IRteChannel {
+        val rteChannel = io.agora.rte.RteChannelImpl(channelId, eventListener)
         channelMap[channelId] = rteChannel
         return rteChannel
     }
@@ -89,13 +81,13 @@ internal object RteEngineImpl : IRteEngine {
         rtcEngine.enableLocalAudio(video)
     }
 
-    operator fun get(channelId: String): IRteChannel? {
+    operator fun get(channelId: String): io.agora.rte.IRteChannel? {
         return channelMap[channelId]
     }
 
     override fun setClientRole(channelId: String, role: Int) {
         if (channelMap.isNotEmpty()) {
-            val code = (channelMap[channelId] as RteChannelImpl).rtcChannel.setClientRole(role)
+            val code = (channelMap[channelId] as io.agora.rte.RteChannelImpl).rtcChannel.setClientRole(role)
             if (code == 0) {
                 Log.e("RteEngineImpl", "成功设置角色为:$role")
             }
@@ -104,14 +96,14 @@ internal object RteEngineImpl : IRteEngine {
 
     override fun publish(channelId: String): Int {
         if (channelMap.isNotEmpty()) {
-            return (channelMap[channelId] as RteChannelImpl).rtcChannel.publish()
+            return (channelMap[channelId] as io.agora.rte.RteChannelImpl).rtcChannel.publish()
         }
         return -1
     }
 
     override fun unpublish(channelId: String): Int {
         if (channelMap.isNotEmpty()) {
-            return (channelMap[channelId] as RteChannelImpl).rtcChannel.unpublish()
+            return (channelMap[channelId] as io.agora.rte.RteChannelImpl).rtcChannel.unpublish()
         }
         return -1
     }
@@ -137,6 +129,30 @@ internal object RteEngineImpl : IRteEngine {
         val code0 = rtcEngine.muteLocalVideoStream(muteAudio)
         val code1 = rtcEngine.muteLocalAudioStream(muteVideo)
         return if (code0 == ERR_OK && code1 == ERR_OK) ERR_OK else -1
+    }
+
+    override fun setVideoEncoderConfiguration(config: VideoEncoderConfiguration): Int {
+        return rtcEngine.setVideoEncoderConfiguration(config)
+    }
+
+    override fun enableVideo(): Int {
+        return rtcEngine.enableVideo()
+    }
+
+    override fun enableAudio(): Int {
+        return rtcEngine.enableAudio()
+    }
+
+    override fun switchCamera(): Int {
+        return rtcEngine.switchCamera()
+    }
+
+    override fun setupLocalVideo(local: VideoCanvas): Int {
+        return rtcEngine.setupLocalVideo(local)
+    }
+
+    override fun setupRemoteVideo(local: VideoCanvas): Int {
+        return rtcEngine.setupRemoteVideo(local)
     }
 
     private val rtmClientListener = object : RtmClientListener {

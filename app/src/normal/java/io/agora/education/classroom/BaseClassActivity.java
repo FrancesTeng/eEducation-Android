@@ -208,12 +208,12 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     private void switchLocalVideoAudio(boolean openVideo, boolean openAudio) {
         /**先更新本地流信息和rte状态*/
-        mainEduRoom.localUser.initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
+        mainEduRoom.getLocalUser().initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
                 openVideo, openAudio), new EduCallback<EduStreamInfo>() {
             @Override
             public void onSuccess(@Nullable EduStreamInfo res) {
                 /**把更新后的流信息同步至服务器*/
-                mainEduRoom.localUser.publishStream(res, new EduCallback<Boolean>() {
+                mainEduRoom.getLocalUser().publishStream(res, new EduCallback<Boolean>() {
                     @Override
                     public void onSuccess(@Nullable Boolean res) {
                     }
@@ -230,23 +230,23 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         });
     }
 
-    public EduRoom getMainEduRoom() {
+    protected EduRoom getMainEduRoom() {
         return mainEduRoom;
     }
 
     public final EduUser getLocalUser() {
-        return mainEduRoom.localUser;
+        return mainEduRoom.getLocalUser();
     }
 
-    public final EduUserInfo getLocalUserInfo() {
-        return mainEduRoom.localUser.getUserInfo();
+    protected final EduUserInfo getLocalUserInfo() {
+        return mainEduRoom.getLocalUser().getUserInfo();
     }
 
     public EduStreamInfo getLocalCameraStream() {
         return localCameraStream;
     }
 
-    public void setLocalCameraStream(EduStreamInfo streamInfo) {
+    protected void setLocalCameraStream(EduStreamInfo streamInfo) {
         this.localCameraStream = streamInfo;
     }
 
@@ -374,7 +374,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         String boardJson = getProperty(roomProperties, BOARD);
         if (TextUtils.isEmpty(boardJson)) {
             RetrofitManager.instance().getService(API_BASE_URL, BoardService.class)
-                    .getBoardInfo(((EduLocalUserInfo) mainEduRoom.localUser.getUserInfo()).getUserToken(),
+                    .getBoardInfo((mainEduRoom.getLocalUser().getUserInfo()).getUserToken(),
                             getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid())
                     .enqueue(new RetrofitManager.Callback(0, new ThrowableCallback<ResponseBody<BoardBean>>() {
                         @Override
@@ -430,7 +430,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         /**收到群聊消息，进行处理并展示*/
         ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
                 eduChatMsg.getTimeStamp(), eduChatMsg.getType());
-        chatMsg.isMe = chatMsg.getFromUser().equals(classRoom.localUser.getUserInfo());
+        chatMsg.isMe = chatMsg.getFromUser().equals(classRoom.getLocalUser().getUserInfo());
         chatRoomFragment.addMessage(chatMsg);
         Log.e(TAG, "成功添加一条聊天消息");
     }
@@ -570,14 +570,11 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     }
 
-    protected String aaa = "-1";
-
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         Log.e(TAG, "收到添加本地流的回调");
         switch (streamEvent.getModifiedStream().getVideoSourceType()) {
             case CAMERA:
-                aaa = "100";
                 localCameraStream = streamEvent.getModifiedStream();
                 Log.e(TAG, "收到添加本地Camera流的回调");
                 break;

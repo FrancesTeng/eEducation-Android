@@ -25,7 +25,6 @@ abstract class EduRoom(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus) {
 
     var roomProperties: Map<String, Any>? = mapOf()
 
-    lateinit var localUser: EduUser
     lateinit var board: EduBoard
     lateinit var record: EduRecord
 
@@ -34,6 +33,8 @@ abstract class EduRoom(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus) {
     abstract fun allocateGroup(roomUuid: String, userUuid: String, callback: EduCallback<EduRoomInfo>)
 
     abstract fun joinClassroom(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
+
+    abstract fun getLocalUser(): EduUser
 
     abstract fun getRoomInfo(): EduRoomInfo
 

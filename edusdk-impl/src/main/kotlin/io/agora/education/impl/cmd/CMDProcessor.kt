@@ -1,16 +1,14 @@
 package io.agora.education.impl.cmd
 
-import io.agora.Convert
+import io.agora.education.impl.util.Convert
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.user.data.EduBaseUserInfo
-import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.room.data.response.EduFromUserRes
 import io.agora.education.impl.room.data.response.EduUserRes
-import io.agora.education.impl.user.data.EduLocalUserInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.rte.RteEngineImpl
 
@@ -74,7 +72,7 @@ internal open class CMDProcessor {
                 val iterable = validModifiedUserList.iterator()
                 while (iterable.hasNext()) {
                     val element = iterable.next()
-                    if (element.modifiedUser == eduRoom.localUser.userInfo) {
+                    if (element.modifiedUser == eduRoom.getLocalUser().userInfo) {
                         iterable.remove()
                         validModifiedLocalUsersBySyncing.add(element)
                     }
@@ -86,9 +84,9 @@ internal open class CMDProcessor {
                 while (iterable.hasNext()) {
                     val element = iterable.next()
                     val streamInfo = element.modifiedStream
-                    if (streamInfo.publisher == eduRoom.localUser.userInfo) {
+                    if (streamInfo.publisher == eduRoom.getLocalUser().userInfo) {
                         iterable.remove()
-                        RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                        io.agora.rte.RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
                         validAddedLocalStreamsBySyncing.add(element)
                     }
                 }
@@ -98,7 +96,7 @@ internal open class CMDProcessor {
                 val iterable = validModifiedStreamList.iterator()
                 while (iterable.hasNext()) {
                     val element = iterable.next()
-                    if (element.modifiedStream.publisher == eduRoom.localUser.userInfo) {
+                    if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
                         iterable.remove()
                         validModifiedLocalStreamsBySyncing.add(element)
                     }
@@ -109,7 +107,7 @@ internal open class CMDProcessor {
                 val iterable = validRemovedStreamList.iterator()
                 while (iterable.hasNext()) {
                     val element = iterable.next()
-                    if (element.modifiedStream.publisher == eduRoom.localUser.userInfo) {
+                    if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
                         validRemovedStreamList.remove(element)
                         validRemovedLocalStreamsBySyncing.add(element)
                     }

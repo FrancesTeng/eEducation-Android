@@ -18,7 +18,6 @@ import butterknife.OnClick;
 import io.agora.education.R;
 import io.agora.education.classroom.BaseClassActivity;
 import io.agora.rtc.Constants;
-import io.agora.sdk.annotation.NetworkQuality;
 
 public class TitleView extends ConstraintLayout {
 
@@ -60,7 +59,7 @@ public class TitleView extends ConstraintLayout {
         ((Activity) getContext()).runOnUiThread(() -> tv_room_name.setText(title));
     }
 
-    public void setNetworkQuality(@NetworkQuality int quality) {
+    public void setNetworkQuality(int quality) {
         ((Activity) getContext()).runOnUiThread(() -> {
             if (iv_quality != null) {
                 switch (quality) {

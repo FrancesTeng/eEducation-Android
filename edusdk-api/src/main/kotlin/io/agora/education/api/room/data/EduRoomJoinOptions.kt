@@ -1,6 +1,7 @@
 package io.agora.education.api.room.data
 
 import io.agora.education.api.user.data.EduUserRole
+import io.agora.rte.data.RteChannelMediaOptions
 
 data class RoomMediaOptions(
         var autoSubscribe: Boolean = true,
@@ -23,6 +24,10 @@ data class RoomMediaOptions(
 
     fun isAutoSubscribe(): Boolean {
         return this.autoSubscribe
+    }
+
+    fun convert(): RteChannelMediaOptions {
+        return RteChannelMediaOptions(autoSubscribe, autoSubscribe)
     }
 }
 

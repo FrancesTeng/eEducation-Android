@@ -1,4 +1,4 @@
-package io.agora.rte
+package io.agora.rte.listener
 
 import io.agora.rtm.RtmChannelMember
 import io.agora.rtm.RtmMessage

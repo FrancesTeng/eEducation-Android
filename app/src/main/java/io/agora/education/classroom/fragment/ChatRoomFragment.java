@@ -110,30 +110,32 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
             if (object instanceof RecordMsg) {
                 RecordMsg msg = (RecordMsg) object;
                 if (context instanceof BaseClassActivity) {
-                    fetchRecordList(EduApplication.getAppId(), msg.getRoomUuid(), nextId, new EduCallback<RecordRes.RecordDetail>() {
-                        @Override
-                        public void onSuccess(@Nullable RecordRes.RecordDetail recordDetail) {
-                            if (recordDetail.isFinished()) {
-                                String url = recordDetail.url;
-                                if (!TextUtils.isEmpty(url)) {
-                                    Intent intent = new Intent(context, ReplayActivity.class);
-                                    intent.putExtra(ReplayActivity.WHITEBOARD_ROOM_ID, recordDetail.roomUuid);
-                                    intent.putExtra(ReplayActivity.WHITEBOARD_START_TIME, recordDetail.startTime);
-                                    intent.putExtra(ReplayActivity.WHITEBOARD_END_TIME, recordDetail.endTime);
-                                    intent.putExtra(ReplayActivity.WHITEBOARD_URL, url);
-                                    intent.putExtra(ReplayActivity.WHITEBOARD_ID, recordDetail.boardId);
-                                    intent.putExtra(ReplayActivity.WHITEBOARD_TOKEN, recordDetail.boardToken);
-                                    startActivity(intent);
+                    fetchRecordList(((BaseClassActivity) context).getLocalUser().getUserInfo()
+                                    .getUserToken(), EduApplication.getAppId(),
+                            msg.getRoomUuid(), nextId, new EduCallback<RecordRes.RecordDetail>() {
+                                @Override
+                                public void onSuccess(@Nullable RecordRes.RecordDetail recordDetail) {
+                                    if (recordDetail.isFinished()) {
+                                        String url = recordDetail.url;
+                                        if (!TextUtils.isEmpty(url)) {
+                                            Intent intent = new Intent(context, ReplayActivity.class);
+                                            intent.putExtra(ReplayActivity.WHITEBOARD_ROOM_ID, recordDetail.roomUuid);
+                                            intent.putExtra(ReplayActivity.WHITEBOARD_START_TIME, recordDetail.startTime);
+                                            intent.putExtra(ReplayActivity.WHITEBOARD_END_TIME, recordDetail.endTime);
+                                            intent.putExtra(ReplayActivity.WHITEBOARD_URL, url);
+                                            intent.putExtra(ReplayActivity.WHITEBOARD_ID, recordDetail.boardId);
+                                            intent.putExtra(ReplayActivity.WHITEBOARD_TOKEN, recordDetail.boardToken);
+                                            startActivity(intent);
+                                        }
+                                    } else {
+                                        ToastManager.showShort(R.string.wait_record);
+                                    }
                                 }
-                            } else {
-                                ToastManager.showShort(R.string.wait_record);
-                            }
-                        }
 
-                        @Override
-                        public void onFailure(int code, @Nullable String reason) {
-                        }
-                    });
+                                @Override
+                                public void onFailure(int code, @Nullable String reason) {
+                                }
+                            });
                 }
             }
         }
@@ -142,15 +144,15 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
     private int nextId = 0, total = 0;
     private List<RecordRes.RecordDetail> recordDetails = new ArrayList<>();
 
-    private void fetchRecordList(String appId, String roomId, int next, EduCallback<RecordRes.RecordDetail> callback) {
+    private void fetchRecordList(String userToken, String appId, String roomId, int next, EduCallback<RecordRes.RecordDetail> callback) {
         RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, RecordService.class)
-                .record(EduApplication.getAppId(), ((BaseClassActivity) context).getRoomUuid(), next)
+                .record(userToken, appId, roomId, next)
                 .enqueue(new BaseCallback<>(data -> {
                     total = data.total;
                     nextId = data.nextId;
                     recordDetails.addAll(data.list);
                     if (recordDetails.size() < total) {
-                        fetchRecordList(appId, roomId, nextId, callback);
+                        fetchRecordList(userToken, appId, roomId, nextId, callback);
                     } else {
                         nextId = total = 0;
                         long max = 0;

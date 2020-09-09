@@ -1,6 +1,6 @@
 package io.agora.education.impl.room.data
 
-import io.agora.Convert
+import io.agora.education.impl.util.Convert
 import io.agora.education.api.room.data.EduRoomInfo
 import io.agora.education.api.room.data.RoomType
 

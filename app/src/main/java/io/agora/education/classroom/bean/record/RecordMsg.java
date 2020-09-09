@@ -13,6 +13,7 @@ public class RecordMsg extends ChannelMsg.ChatMsg {
     public RecordMsg(@NonNull String roomUuid, @NotNull EduUserInfo fromUser, @NotNull String message,
                      long timeStamp, int type) {
         super(fromUser, message, timeStamp, type);
+        this.roomUuid = roomUuid;
     }
 
     public String getRoomUuid() {

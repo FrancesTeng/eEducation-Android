@@ -6,13 +6,11 @@ import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcChannelEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
-import io.agora.rte.RteEngineImpl.rtmLoginSuccess
 import io.agora.rtm.*
-import io.agora.rtm.RtmStatusCode.LeaveChannelError.LEAVE_CHANNEL_ERR_USER_NOT_LOGGED_IN
 
 internal class RteChannelImpl(
         channelId: String,
-        private var eventListener: RteChannelEventListener?
+        private var eventListener: io.agora.rte.listener.RteChannelEventListener?
 ) : IRteChannel {
 
     private val rtmChannelListener = object : RtmChannelListener {

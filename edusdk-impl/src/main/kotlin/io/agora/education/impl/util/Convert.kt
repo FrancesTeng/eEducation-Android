@@ -1,4 +1,4 @@
-package io.agora
+package io.agora.education.impl.util
 
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
@@ -259,10 +259,10 @@ internal class Convert {
             val eduStreamInfos = (eduRoom as EduRoomImpl).getCurStreamList()
             synchronized(eduStreamInfos) {
                 streamResList.forEach {
-                    val videoSourceType = Convert.convertVideoSourceType(it.videoSourceType)
+                    val videoSourceType = convertVideoSourceType(it.videoSourceType)
                     val streamInfo = EduStreamInfoImpl(it.streamUuid, it.streamName, videoSourceType,
                             it.videoState == EduVideoState.Open.value,
-                            it.audioState == EduAudioState.Open.value, eduRoom.localUser.userInfo,
+                            it.audioState == EduAudioState.Open.value, eduRoom.getLocalUser().userInfo,
                             it.updateTime
                     )
                     /**整合流信息到本地缓存中*/
@@ -274,7 +274,7 @@ internal class Convert {
         }
 
         fun convertStreamInfo(syncStreamRes: CMDSyncStreamRes, eduUserInfo: EduUserInfo): EduStreamInfo {
-            val videoSourceType = Convert.convertVideoSourceType(syncStreamRes.videoSourceType)
+            val videoSourceType = convertVideoSourceType(syncStreamRes.videoSourceType)
             val hasVideo = syncStreamRes.videoState == EduVideoState.Open.value
             val hasAudio = syncStreamRes.audioState == EduAudioState.Open.value
             return EduStreamInfoImpl(syncStreamRes.streamUuid,

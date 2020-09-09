@@ -181,7 +181,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
-        userListFragment.setLocalUserUuid(classRoom.localUser.getUserInfo().getUserUuid());
+        userListFragment.setLocalUserUuid(classRoom.getLocalUser().getUserInfo().getUserUuid());
         classVideoAdapter.setNewList(getCurFullStream());
     }
 

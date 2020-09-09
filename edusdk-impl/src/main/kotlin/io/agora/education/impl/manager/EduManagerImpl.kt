@@ -9,10 +9,9 @@ import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.AgoraLog
 import io.agora.Constants.Companion.LOGS_DIR_NAME
 import io.agora.Constants.Companion.LOG_APPSECRET
-import io.agora.Convert
+import io.agora.education.impl.util.Convert
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
-import io.agora.base.network.RetrofitManager
 import io.agora.education.BuildConfig
 import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.DebugItem
@@ -26,25 +25,25 @@ import io.agora.education.api.room.data.RoomCreateOptions
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.util.CryptoUtil
 import io.agora.education.impl.ResponseBody
-import io.agora.education.impl.cmd.bean.CMDId
 import io.agora.education.impl.cmd.bean.CMDResponseBody
 import io.agora.education.impl.cmd.bean.RtmMsg
+import io.agora.education.impl.network.RetrofitManager
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.RtmConnectState
 import io.agora.education.impl.room.data.response.EduLoginRes
 import io.agora.education.impl.room.network.RoomService
 import io.agora.log.LogManager
 import io.agora.log.UploadManager
-import io.agora.rte.RteEngineEventListener
+import io.agora.rte.RteCallback
 import io.agora.rte.RteEngineImpl
 import io.agora.rtm.RtmMessage
 import io.agora.rtm.RtmStatusCode
+import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
 
 internal class EduManagerImpl(
         options: EduManagerOptions
-) : EduManager(options), RteEngineEventListener {
+) : EduManager(options), io.agora.rte.listener.RteEngineEventListener {
 
     companion object {
         /**管理所有EduRoom示例的集合*/
@@ -68,19 +67,26 @@ internal class EduManagerImpl(
         }
         LogManager.init(options.logFileDir!!, "AgoraEducation")
         AgoraLog = LogManager("SDK")
-        RteEngineImpl.init(options.context, options.appId, options.logFileDir!!)
+        io.agora.rte.RteEngineImpl.init(options.context, options.appId, options.logFileDir!!)
         /**为RteEngine设置eventListener*/
-        RteEngineImpl.eventListener = this
+        io.agora.rte.RteEngineImpl.eventListener = this
         APPID = options.appId
         val auth = Base64.encodeToString("${options.customerId}:${options.customerCertificate}"
                 .toByteArray(Charsets.UTF_8), Base64.DEFAULT).replace("\n", "").trim()
-        RetrofitManager.instance().addHeader("Authorization", CryptoUtil.getAuth(auth))
+        RetrofitManager.instance()!!.addHeader("Authorization", CryptoUtil.getAuth(auth))
+        RetrofitManager.instance()!!.setLogger(object : HttpLoggingInterceptor.Logger {
+            override fun log(message: String) {
+                /**OKHttp的log写入SDK的log文件*/
+                logMessage(message, LogLevel.INFO)
+            }
+        })
     }
 
     override fun scheduleClass(config: RoomCreateOptions, callback: EduCallback<Unit>) {
-        RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
+        RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .createClassroom(APPID, config.roomUuid, Convert.convertRoomCreateOptions(config))
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<
+                        io.agora.base.network.ResponseBody<String>> {
                     /**接口返回Int类型的roomId*/
                     override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
 //                        createSuccess(config, callback)
@@ -104,14 +110,14 @@ internal class EduManagerImpl(
     }
 
     override fun login(loginOptions: EduLoginOptions, callback: EduCallback<Unit>) {
-        RetrofitManager.instance().getService(API_BASE_URL, RoomService::class.java)
+        RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .login(APPID, loginOptions.userUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduLoginRes>> {
                     override fun onSuccess(res: ResponseBody<EduLoginRes>?) {
                         val loginRes = res?.data
                         loginRes?.let {
                             RteEngineImpl.loginRtm(loginRes.userUuid, loginRes.rtmToken,
-                                    object : EduCallback<Unit> {
+                                    object : RteCallback<Unit> {
                                         override fun onSuccess(res: Unit?) {
                                             callback.onSuccess(res)
                                         }
@@ -134,7 +140,7 @@ internal class EduManagerImpl(
     }
 
     override fun release() {
-        RteEngineImpl.logoutRtm()
+        io.agora.rte.RteEngineImpl.logoutRtm()
         eduRooms.clear()
     }
 
@@ -163,6 +169,7 @@ internal class EduManagerImpl(
                 object : ThrowableCallback<String> {
                     override fun onSuccess(res: String?) {
                         res?.let {
+                            logMessage("日志上传成功->$res", LogLevel.INFO)
                             callback.onSuccess(res)
                         }
                     }
@@ -171,6 +178,8 @@ internal class EduManagerImpl(
                         var error = throwable as? BusinessException
                         error = error ?: BusinessException(throwable?.message)
                         error?.code?.let {
+                            logMessage("日志上传错误->code:${error?.code}, reason:${error?.message
+                                    ?: throwable?.message}", LogLevel.ERROR)
                             callback.onFailure(error?.code, error?.message ?: throwable?.message)
                         }
                     }
@@ -185,13 +194,13 @@ internal class EduManagerImpl(
         eduRooms?.forEach {
             if (rtmConnectState.isReconnecting() &&
                     p0 == RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED) {
-                (it as EduRoomImpl).roomSyncSession.fetchLostSequence(object : EduCallback<Unit> {
+                (it as EduRoomImpl).syncSession.fetchLostSequence(object : EduCallback<Unit> {
                     override fun onSuccess(res: Unit?) {
                     }
 
                     override fun onFailure(code: Int, reason: String?) {
                         /**无限重试，保证数据同步成功*/
-                        it.roomSyncSession.fetchLostSequence(this)
+                        it.syncSession.fetchLostSequence(this)
                     }
                 })
             } else {

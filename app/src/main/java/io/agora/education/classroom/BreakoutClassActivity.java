@@ -261,7 +261,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            userListFragment.setLocalUserUuid(classRoom.localUser.getUserInfo().getUserUuid());
+            userListFragment.setLocalUserUuid(classRoom.getLocalUser().getUserInfo().getUserUuid());
             classVideoAdapter.setNewList(getCurFullStream());
         } else {
             for (EduStreamInfo streamInfo : streams) {

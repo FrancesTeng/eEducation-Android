@@ -3,11 +3,10 @@ package io.agora.education.impl.cmd
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import io.agora.Convert
+import io.agora.education.impl.util.Convert
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.EduRoom
-import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.education.impl.cmd.bean.CMDResponseBody
 import io.agora.education.impl.cmd.bean.RtmMsg

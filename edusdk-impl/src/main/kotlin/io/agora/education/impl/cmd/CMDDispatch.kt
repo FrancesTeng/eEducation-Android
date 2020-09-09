@@ -3,7 +3,7 @@ package io.agora.education.impl.cmd
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import io.agora.Convert
+import io.agora.education.impl.util.Convert
 import io.agora.education.api.manager.listener.EduManagerEventListener
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.room.EduRoom
@@ -47,7 +47,8 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         /**判断本次更改是否包含针对学生的全部禁聊;*/
                         val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster
                         broadcasterMuteChat?.let {
-                            eduRoom.getRoomStatus().isStudentChatAllowed = broadcasterMuteChat.toInt() == EduAudioState.Open.value
+                            eduRoom.getRoomStatus().isStudentChatAllowed =
+                                    broadcasterMuteChat.toInt() == EduAudioState.Open.value
                         }
                         /**
                          * roomStatus中仅定义了isStudentChatAllowed来标识是否全员禁聊；没有属性来标识是否全员禁摄像头和麦克风；
@@ -58,7 +59,8 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         /**判断本次更改是否包含针对学生的全部禁聊;*/
                         val audienceMuteChat = rtmRoomMuteState.muteChat?.audience
                         audienceMuteChat?.let {
-                            eduRoom.getRoomStatus().isStudentChatAllowed = audienceMuteChat.toInt() == EduAudioState.Open.value
+                            eduRoom.getRoomStatus().isStudentChatAllowed =
+                                    audienceMuteChat.toInt() == EduAudioState.Open.value
                         }
                     }
                 }
@@ -124,9 +126,9 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 cmdCallbackManager.onRemoteUserUpdated(validUserList, eduRoom)
                 /**判断有效的数据中是否有本地用户的数据,有则处理并回调*/
                 for (element in validUserList) {
-                    if (element.modifiedUser.userUuid == eduRoom.localUser.userInfo.userUuid) {
+                    if (element.modifiedUser.userUuid == eduRoom.getLocalUser().userInfo.userUuid) {
                         cmdCallbackManager.onLocalUserUpdated(EduUserEvent(element.modifiedUser,
-                                element.operatorUser), eduRoom.localUser)
+                                element.operatorUser), eduRoom.getLocalUser())
                     }
                 }
             }
@@ -136,8 +138,8 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 val updatedUserInfo = CMDDataMergeProcessor.updateUserPropertyWithChange(cmdUserPropertyRes,
                         (eduRoom as EduRoomImpl).getCurUserList())
                 updatedUserInfo?.let {
-                    if (updatedUserInfo == eduRoom.localUser.userInfo) {
-                        eduRoom.localUser.eventListener?.onLocalUserPropertyUpdated(it)
+                    if (updatedUserInfo == eduRoom.getLocalUser().userInfo) {
+                        eduRoom.getLocalUser().eventListener?.onLocalUserPropertyUpdated(it)
                     } else {
                         /**远端用户property发生改变如何回调出去*/
                         val userInfos = Collections.singletonList(updatedUserInfo)
@@ -161,10 +163,10 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         while (iterable.hasNext()) {
                             val element = iterable.next()
                             val streamInfo = element.modifiedStream
-                            if (streamInfo.publisher == eduRoom.localUser.userInfo) {
-                                RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                            if (streamInfo.publisher == eduRoom.getLocalUser().userInfo) {
+                                io.agora.rte.RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
                                 Log.e("CMDDispatch", "join成功，把新添加的本地流回调出去")
-                                eduRoom.localUser.eventListener?.onLocalStreamAdded(element)
+                                eduRoom.getLocalUser().eventListener?.onLocalStreamAdded(element)
                                 iterable.remove()
                             }
                         }
@@ -182,11 +184,11 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         val iterable = validModifyStreams.iterator()
                         while (iterable.hasNext()) {
                             val element = iterable.next()
-                            if (element.modifiedStream.publisher == eduRoom.localUser.userInfo) {
-                                RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
+                            if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
+                                io.agora.rte.RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
                                         element.modifiedStream.hasVideo)
                                 Log.e("CMDDispatch", "join成功，把发生改变的本地流回调出去")
-                                cmdCallbackManager.onLocalStreamUpdated(element, eduRoom.localUser)
+                                cmdCallbackManager.onLocalStreamUpdated(element, eduRoom.getLocalUser())
                                 iterable.remove()
                             }
                         }
@@ -204,10 +206,10 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         val iterable = validRemoveStreams.iterator()
                         while (iterable.hasNext()) {
                             val element = iterable.next()
-                            if (element.modifiedStream.publisher == eduRoom.localUser.userInfo) {
-                                RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
+                            if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
+                                io.agora.rte.RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
                                         element.modifiedStream.hasVideo)
-                                eduRoom.localUser.eventListener?.onLocalStreamRemoved(element)
+                                eduRoom.getLocalUser().eventListener?.onLocalStreamRemoved(element)
                                 iterable.remove()
                             }
                         }

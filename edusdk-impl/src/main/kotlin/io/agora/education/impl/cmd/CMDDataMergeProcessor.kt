@@ -2,7 +2,7 @@ package io.agora.education.impl.cmd
 
 import android.util.Log
 import com.google.gson.Gson
-import io.agora.Convert
+import io.agora.education.impl.util.Convert
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.room.data.RoomStatusEvent
@@ -17,10 +17,7 @@ import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.EduRoomInfoImpl
-import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
 import io.agora.education.impl.room.data.response.EduSnapshotRes
-import io.agora.education.impl.room.data.response.EduUserRes
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 
