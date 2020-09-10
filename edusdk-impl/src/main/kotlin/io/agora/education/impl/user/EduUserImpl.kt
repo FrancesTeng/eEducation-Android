@@ -50,11 +50,11 @@ internal open class EduUserImpl(
 
     override fun initOrUpdateLocalStream(options: LocalStreamInitOptions, callback: EduCallback<EduStreamInfo>) {
         Log.e("EduUserImpl", "开始初始化和更新本地流")
-        io.agora.rte.RteEngineImpl.setVideoEncoderConfiguration(
+        RteEngineImpl.setVideoEncoderConfiguration(
                 Convert.convertVideoEncoderConfig(videoEncoderConfig))
-        io.agora.rte.RteEngineImpl.enableVideo()
+        RteEngineImpl.enableVideo()
         /**enableCamera和enableMicrophone控制是否打开摄像头和麦克风*/
-        io.agora.rte.RteEngineImpl.enableLocalMedia(options.enableMicrophone, options.enableCamera)
+        RteEngineImpl.enableLocalMedia(options.enableMicrophone, options.enableCamera)
 
         /**根据当前配置生成一个流信息*/
         val streamInfo = EduStreamInfoImpl(options.streamUuid, options.streamName, VideoSourceType.CAMERA,
@@ -63,7 +63,7 @@ internal open class EduUserImpl(
     }
 
     override fun switchCamera() {
-        io.agora.rte.RteEngineImpl.switchCamera()
+        RteEngineImpl.switchCamera()
     }
 
     override fun subscribeStream(stream: EduStreamInfo, options: StreamSubscribeOptions) {
@@ -171,10 +171,10 @@ internal open class EduUserImpl(
                         streamInfo.streamUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        io.agora.rte.RteEngineImpl.muteLocalStream(muteAudio = true, muteVideo = true)
-                        io.agora.rte.RteEngineImpl.unpublish(eduRoom.getRoomInfo().roomUuid)
+                        RteEngineImpl.muteLocalStream(muteAudio = true, muteVideo = true)
+                        RteEngineImpl.unpublish(eduRoom.getRoomInfo().roomUuid)
                         /**设置角色*/
-                        io.agora.rte.RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_AUDIENCE)
+                        RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_AUDIENCE)
                         callback.onSuccess(true)
                     }
 

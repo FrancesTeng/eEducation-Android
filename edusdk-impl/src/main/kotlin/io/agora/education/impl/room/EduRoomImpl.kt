@@ -40,9 +40,7 @@ import io.agora.education.impl.user.network.UserService
 import io.agora.education.impl.util.CommonUtil
 import io.agora.rtc.Constants.*
 import io.agora.rtc.models.ChannelMediaOptions
-import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rte.RteEngineImpl
-import io.agora.rte.data.RteChannelMediaOptions
 import io.agora.rtm.*
 
 internal class EduRoomImpl(
@@ -50,11 +48,12 @@ internal class EduRoomImpl(
         roomStatus: EduRoomStatus
 ) : EduRoom(roomInfo, roomStatus), io.agora.rte.listener.RteChannelEventListener {
 
+    private val TAG = "EduRoomImpl"
     internal var syncSession: RoomSyncSession
     internal var cmdDispatch: CMDDispatch
 
     init {
-        io.agora.rte.RteEngineImpl.createChannel(roomInfo.roomUuid, this)
+        RteEngineImpl.createChannel(roomInfo.roomUuid, this)
         syncSession = RoomSyncHelper(this, roomInfo, roomStatus, 3)
         record = EduRecordImpl()
         board = EduBoardImpl()
@@ -95,27 +94,6 @@ internal class EduRoomImpl(
 
     internal fun getCurStreamList(): MutableList<EduStreamInfo> {
         return syncSession.eduStreamInfoList
-    }
-
-    override fun allocateGroup(roomUuid: String, userUuid: String, callback: EduCallback<EduRoomInfo>) {
-        RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .allocateGroup(APPID, roomUuid, userUuid)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduRoomInfoRes>> {
-                    override fun onSuccess(res: ResponseBody<EduRoomInfoRes>?) {
-                        val roomInfoRes = res?.data
-                        roomInfoRes?.let {
-                            callback.onSuccess(EduRoomInfo(roomInfoRes.roomUuid, roomInfoRes.roomName))
-                        }
-                    }
-
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        error = error ?: BusinessException(throwable?.message)
-                        joinFailed(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message
-                                        ?: throwable?.message, callback as EduCallback<EduUser>)
-                    }
-                }))
     }
 
     /**上课过程中，学生的角色目前不发生改变;
@@ -207,9 +185,9 @@ internal class EduRoomImpl(
 
     private fun joinRte(rtcToken: String, rtcUid: Long, channelMediaOptions: ChannelMediaOptions,
                         @NonNull callback: ResultCallback<Void>) {
-        io.agora.rte.RteEngineImpl.setClientRole(getRoomInfo().roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
+        RteEngineImpl.setClientRole(getRoomInfo().roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
         val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(this)
-        io.agora.rte.RteEngineImpl[getRoomInfo().roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
+        RteEngineImpl[getRoomInfo().roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
     }
 
     private fun initOrUpdateLocalStream(classRoomEntryRes: EduEntryRes, roomMediaOptions: RoomMediaOptions,
@@ -231,11 +209,11 @@ internal class EduRoomImpl(
                     callback.onSuccess(Unit)
                 } else {
                     /**大班课场景下为audience,小班课一对一都是broadcaster*/
-                    io.agora.rte.RteEngineImpl.setClientRole(getRoomInfo().roomUuid, if (getCurRoomType() !=
+                    RteEngineImpl.setClientRole(getRoomInfo().roomUuid, if (getCurRoomType() !=
                             RoomType.LARGE_CLASS) CLIENT_ROLE_BROADCASTER else CLIENT_ROLE_AUDIENCE)
                     if (mediaOptions.isAutoPublish()) {
-                        val code = io.agora.rte.RteEngineImpl.publish(getRoomInfo().roomUuid)
-                        Log.e("EduRoomImpl", "publish: $code")
+                        val code = RteEngineImpl.publish(getRoomInfo().roomUuid)
+                        Log.e(TAG, "publish: $code")
                     }
                     callback.onSuccess(Unit)
                 }
@@ -252,7 +230,7 @@ internal class EduRoomImpl(
         if (joining) {
             joining = false
             synchronized(joinSuccess) {
-                Log.e("EduStudentImpl", "加入房间成功")
+                Log.e(TAG, "加入房间成功:${getRoomInfo().roomUuid}")
                 /**维护本地存储的在线人数*/
                 getRoomStatus().onlineUsersCount = getCurUserList().size
                 callback.onSuccess(eduUser as EduStudent)
@@ -269,8 +247,8 @@ internal class EduRoomImpl(
                         /**本地流维护在本地用户信息中和全局集合中*/
                         syncSession.localUser.userInfo.streams.add(element)
                         /**根据流信息，更新本地媒体状态*/
-                        io.agora.rte.RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
-                        Log.e("EduRoomImpl", "join成功，把添加的本地流回调出去")
+                        RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                        Log.e(TAG, "join成功，把添加的本地流回调出去")
                         syncSession.localUser.eventListener?.onLocalStreamAdded(element)
                         /**把本地流*/
                         addedStreamsIterable.remove()
@@ -385,10 +363,10 @@ internal class EduRoomImpl(
     override fun leave() {
         clearData()
         if (!leaveRoom) {
-            io.agora.rte.RteEngineImpl[getRoomInfo().roomUuid]?.leave()
+            RteEngineImpl[getRoomInfo().roomUuid]?.leave()
             leaveRoom = true
         }
-        io.agora.rte.RteEngineImpl[getRoomInfo().roomUuid]?.release()
+        RteEngineImpl[getRoomInfo().roomUuid]?.release()
         eventListener = null
         syncSession.localUser.eventListener = null
         /**移除掉当前room*/

@@ -98,7 +98,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     private EduRoom mainEduRoom;
     private EduStreamInfo localCameraStream, localScreenStream;
     protected BoardBean mainBoardBean;
-    private RecordBean mainRecordBean;
+    protected RecordBean mainRecordBean;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -162,6 +162,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         eduRoom.joinClassroom(options, new EduCallback<EduStudent>() {
             @Override
             public void onSuccess(@Nullable EduStudent res) {
+                /**设置全局的userToken(注意同一个user在不同的room内，token不一样)*/
+                RetrofitManager.instance().addHeader("token",
+                        getMainEduRoom().getLocalUser().getUserInfo().getUserToken());
                 joinSuccess = true;
                 isJoining = false;
                 if (needUserListener) {
@@ -197,23 +200,21 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
      * 禁止本地音频
      */
     public final void muteLocalAudio(boolean isMute) {
-        switchLocalVideoAudio(localCameraStream.getHasVideo(), !isMute);
-//        classContext.muteLocalAudio(isMute);
+        switchLocalVideoAudio(getMyMediaRoom(), localCameraStream.getHasVideo(), !isMute);
     }
 
     public final void muteLocalVideo(boolean isMute) {
-        switchLocalVideoAudio(!isMute, localCameraStream.getHasAudio());
-//        classContext.muteLocalVideo(isMute);
+        switchLocalVideoAudio(getMyMediaRoom(), !isMute, localCameraStream.getHasAudio());
     }
 
-    private void switchLocalVideoAudio(boolean openVideo, boolean openAudio) {
+    private void switchLocalVideoAudio(EduRoom room, boolean openVideo, boolean openAudio) {
         /**先更新本地流信息和rte状态*/
-        mainEduRoom.getLocalUser().initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
+        room.getLocalUser().initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
                 openVideo, openAudio), new EduCallback<EduStreamInfo>() {
             @Override
             public void onSuccess(@Nullable EduStreamInfo res) {
                 /**把更新后的流信息同步至服务器*/
-                mainEduRoom.getLocalUser().publishStream(res, new EduCallback<Boolean>() {
+                room.getLocalUser().publishStream(res, new EduCallback<Boolean>() {
                     @Override
                     public void onSuccess(@Nullable Boolean res) {
                     }
@@ -234,12 +235,16 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return mainEduRoom;
     }
 
-    public final EduUser getLocalUser() {
-        return mainEduRoom.getLocalUser();
+    protected EduRoom getMyMediaRoom() {
+        return mainEduRoom;
     }
 
-    protected final EduUserInfo getLocalUserInfo() {
-        return mainEduRoom.getLocalUser().getUserInfo();
+    public EduUser getLocalUser() {
+        return getMainEduRoom().getLocalUser();
+    }
+
+    protected EduUserInfo getLocalUserInfo() {
+        return getMainEduRoom().getLocalUser().getUserInfo();
     }
 
     public EduStreamInfo getLocalCameraStream() {
@@ -251,15 +256,15 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     public final void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
-        mainEduRoom.getLocalUser().sendRoomChatMessage(msg, callback);
+        getMainEduRoom().getLocalUser().sendRoomChatMessage(msg, callback);
     }
 
     protected List<EduStreamInfo> getCurFullStream() {
-        return (mainEduRoom != null) ? mainEduRoom.getFullStreamList() : null;
+        return (getMyMediaRoom() != null) ? getMyMediaRoom().getFullStreamList() : null;
     }
 
     protected List<EduUserInfo> getCurFullUser() {
-        return (mainEduRoom != null) ? mainEduRoom.getFullUserList() : null;
+        return (getMyMediaRoom() != null) ? getMyMediaRoom().getFullUserList() : null;
     }
 
     protected EduStreamInfo getTeacherStream() {
@@ -303,8 +308,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         ConfirmDialog.normal(getString(R.string.confirm_leave_room_content), confirm -> {
             if (confirm) {
                 /**退出activity之前离开eduRoom*/
-                if (mainEduRoom != null) {
-                    mainEduRoom.leave();
+                if (getMainEduRoom() != null) {
+                    getMainEduRoom().leave();
                     BaseClassActivity.this.finish();
                 }
             }
@@ -312,7 +317,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     private EduRoomInfo getRoomInfo() {
-        return mainEduRoom.getRoomInfo();
+        return getMyMediaRoom().getRoomInfo();
     }
 
     public final String getRoomUuid() {
@@ -327,7 +332,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
      * 为流(主要是视频流)设置一个渲染区域
      */
     public final void renderStream(EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
-        runOnUiThread(() -> mainEduRoom.getLocalUser().setStreamView(eduStreamInfo, getRoomUuid(), viewGroup));
+        runOnUiThread(() -> getMyMediaRoom().getLocalUser().setStreamView(eduStreamInfo, getRoomUuid(), viewGroup));
     }
 
     protected String getProperty(Map<String, Object> properties, String key) {
@@ -344,7 +349,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     /**
      * 当前白板是否开启跟随模式
      */
-    private boolean whiteBoardIsFollowMode(BoardState state) {
+    protected boolean whiteBoardIsFollowMode(BoardState state) {
         if (state == null) {
             return false;
         }
@@ -354,7 +359,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     /**
      * 当前本地用户是否得到白板授权
      */
-    private boolean whiteBoardIsGranted(BoardState state) {
+    protected boolean whiteBoardIsGranted(BoardState state) {
         if (state != null) {
             if (state.getGrantUsers() != null) {
                 for (String uuid : state.getGrantUsers()) {
@@ -367,24 +372,28 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return false;
     }
 
+    protected void requestBoardInfo(String userToken, String appId, String roomUuid) {
+        RetrofitManager.instance().getService(API_BASE_URL, BoardService.class)
+                .getBoardInfo(userToken, appId, roomUuid)
+                .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<BoardBean>>() {
+                    @Override
+                    public void onFailure(@androidx.annotation.Nullable Throwable throwable) {
+                    }
+
+                    @Override
+                    public void onSuccess(@androidx.annotation.Nullable ResponseBody<BoardBean> res) {
+                    }
+                }));
+    }
+
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         Map<String, Object> roomProperties = classRoom.getRoomProperties();
         /**判断roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
         String boardJson = getProperty(roomProperties, BOARD);
         if (TextUtils.isEmpty(boardJson)) {
-            RetrofitManager.instance().getService(API_BASE_URL, BoardService.class)
-                    .getBoardInfo((mainEduRoom.getLocalUser().getUserInfo()).getUserToken(),
-                            getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid())
-                    .enqueue(new RetrofitManager.Callback(0, new ThrowableCallback<ResponseBody<BoardBean>>() {
-                        @Override
-                        public void onFailure(@androidx.annotation.Nullable Throwable throwable) {
-                        }
-
-                        @Override
-                        public void onSuccess(@androidx.annotation.Nullable ResponseBody<BoardBean> res) {
-                        }
-                    }));
+            requestBoardInfo((getMainEduRoom().getLocalUser().getUserInfo()).getUserToken(),
+                    getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid());
         } else {
             mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
             BoardInfo info = mainBoardBean.getInfo();

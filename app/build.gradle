@@ -75,7 +75,7 @@ dependencies {
     implementation project(':log')
     implementation project(':timeline')
     implementation project(':whiteboard')
-    implementation project(':edusdk-api')
+//    implementation project(':edusdk-api')
     implementation project(':edusdk-impl')
 
     testImplementation "junit:junit:${extGet('dependencies', 'junit:junit')}"

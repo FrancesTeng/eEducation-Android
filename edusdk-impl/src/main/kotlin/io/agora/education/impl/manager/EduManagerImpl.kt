@@ -140,7 +140,7 @@ internal class EduManagerImpl(
     }
 
     override fun release() {
-        io.agora.rte.RteEngineImpl.logoutRtm()
+        RteEngineImpl.logoutRtm()
         eduRooms.clear()
     }
 

@@ -31,7 +31,7 @@ class RoomCreateOptions(
         val roomType: Int,
         val createRemoteClassroom: Boolean
 ) {
-    val roomProperties: MutableList<Property> = mutableListOf()
+    val roomProperties: MutableSet<Property> = mutableSetOf()
 
     init {
 
@@ -39,6 +39,7 @@ class RoomCreateOptions(
             RoomType.ONE_ON_ONE.value -> "1"
             RoomType.SMALL_CLASS.value -> "1"
             RoomType.LARGE_CLASS.value -> "1"
+            RoomType.BREAKOUT_CLASS.value -> "1"
             /**-1表示不做限制*/
             else -> "-1"
         }))
@@ -46,6 +47,7 @@ class RoomCreateOptions(
             RoomType.ONE_ON_ONE.value -> "1"
             RoomType.SMALL_CLASS.value -> "16"
             RoomType.LARGE_CLASS.value -> "-1"
+            RoomType.BREAKOUT_CLASS.value -> "-1"
             else -> "-1"
         }))
         roomProperties.add(Property(Property.KEY_ASSISTANT_LIMIT, when (roomType) {
@@ -53,7 +55,7 @@ class RoomCreateOptions(
             RoomType.SMALL_CLASS.value -> "0"
             RoomType.LARGE_CLASS.value -> "0"
             RoomType.BREAKOUT_CLASS.value -> "1"
-            else-> "1"
+            else -> "1"
         }))
     }
 }

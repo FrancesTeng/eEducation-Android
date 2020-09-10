@@ -45,7 +45,7 @@ android {
 }
 
 dependencies {
-    implementation project(':edusdk-api')
+    api project(':edusdk-api')
     implementation project(':base')
     implementation project(':log')
 

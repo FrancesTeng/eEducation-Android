@@ -133,6 +133,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 }
             }
             CMDId.UserPropertiedChanged.value -> {
+                Log.e("CMDDispatch", "收到userProperty改变的通知:${text}")
                 val cmdUserPropertyRes = Gson().fromJson<CMDResponseBody<CMDUserPropertyRes>>(text, object :
                         TypeToken<CMDResponseBody<CMDUserPropertyRes>>() {}.type).data
                 val updatedUserInfo = CMDDataMergeProcessor.updateUserPropertyWithChange(cmdUserPropertyRes,

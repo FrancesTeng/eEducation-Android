@@ -1,7 +1,7 @@
 package io.agora.education.impl.room.data.request
 
 
-class RoomCreateOptionsReq constructor() {
+internal class RoomCreateOptionsReq constructor() {
     lateinit var roomName: String
     lateinit var roleConfig: RoleConfig
 
@@ -11,7 +11,7 @@ class RoomCreateOptionsReq constructor() {
     }
 }
 
-class RoleConfig constructor() {
+internal class RoleConfig constructor() {
     lateinit var host: LimitConfig
     lateinit var broadcaster: LimitConfig
     lateinit var audience: LimitConfig
@@ -22,7 +22,7 @@ class RoleConfig constructor() {
     }
 }
 
-class LimitConfig constructor(val limit: Int) {
+internal class LimitConfig constructor(val limit: Int) {
     var verifyType = VerifyType.Allow.value
 
     constructor(limit: Int, verifyType: Int) : this(limit) {
@@ -31,7 +31,7 @@ class LimitConfig constructor(val limit: Int) {
 }
 
 /**验证类型, 0: 允许匿名, 1: 不允许匿名 */
-enum class VerifyType(var value: Int) {
+internal enum class VerifyType(var value: Int) {
     Allow(0),
     NotAllow(1)
 }

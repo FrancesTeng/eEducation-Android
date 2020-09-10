@@ -30,6 +30,7 @@ import io.agora.education.base.BaseActivity;
 import io.agora.education.base.BaseCallback;
 import io.agora.education.broadcast.DownloadReceiver;
 import io.agora.education.classroom.BaseClassActivity;
+import io.agora.education.classroom.BreakoutClassActivity;
 import io.agora.education.classroom.LargeClassActivity;
 import io.agora.education.classroom.OneToOneClassActivity;
 import io.agora.education.classroom.SmallClassActivity;
@@ -233,7 +234,13 @@ public class MainActivity extends BaseActivity {
         /**userUuid和roomUuid需用户自己指定，并保证唯一性*/
         int roomType = getClassType(roomTypeStr);
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
-        String roomUuid = roomNameStr + roomType;
+        String roomUuid;
+        if (roomType != RoomType.BREAKOUT_CLASS.getValue()) {
+            roomUuid = roomNameStr + roomType;
+        } else {
+            /**超小中的大班的roomUuid*/
+            roomUuid = roomNameStr + RoomType.LARGE_CLASS.getValue();
+        }
         createRoom(yourNameStr, userUuid, roomNameStr, roomUuid, roomType);
     }
 
@@ -292,8 +299,10 @@ public class MainActivity extends BaseActivity {
             intent.setClass(this, OneToOneClassActivity.class);
         } else if (roomType == RoomType.SMALL_CLASS.getValue()) {
             intent.setClass(this, SmallClassActivity.class);
-        } else {
+        } else if (roomType == RoomType.LARGE_CLASS.getValue()) {
             intent.setClass(this, LargeClassActivity.class);
+        } else {
+            intent.setClass(this, BreakoutClassActivity.class);
         }
         intent.putExtra(BaseClassActivity.ROOMENTRY, roomEntry);
         return intent;

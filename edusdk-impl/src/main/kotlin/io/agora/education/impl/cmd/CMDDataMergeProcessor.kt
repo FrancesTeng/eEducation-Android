@@ -117,7 +117,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
         fun updateUserPropertyWithChange(cmdUsrPropertyRes: CMDUserPropertyRes,
                                          eduUserInfos: MutableList<EduUserInfo>): EduUserInfo? {
             for (element in eduUserInfos) {
-                if (cmdUsrPropertyRes.fromUserRes.userUuid == element.userUuid) {
+                if (cmdUsrPropertyRes.fromUser.userUuid == element.userUuid) {
                     element.userProperties = cmdUsrPropertyRes.userProperties
                     return element
                 }
@@ -378,7 +378,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             val validRemovedStreamList = mutableListOf<Any>()
 
             val eduUserList = (eduRoom as EduRoomImpl).getCurUserList()
-            val eduStreamList = (eduRoom as EduRoomImpl).getCurStreamList()
+            val eduStreamList = eduRoom.getCurStreamList()
             userStreamRes.list?.let {
 
                 for ((index, element) in userStreamRes.list.withIndex()) {

@@ -65,8 +65,9 @@ internal class Convert {
             if (roomCreateOptions.roomType == RoomType.LARGE_CLASS.value) {
                 roleConfig.audience = LimitConfig(studentLimit)
             } else if (roomCreateOptions.roomType == RoomType.BREAKOUT_CLASS.value) {
-                /** TODO 此处需要有字段来判断当前class是Main还是Sub并以此依据来设置audience或broadcaster，
-                 * 此字段可能会放在roomCreateOptions；记得处理()*/
+                /**目前，超级小班课情况下，移动端只可能创建大房间，小房间由服务端创建，所以此处学生的角色是audience
+                 * */
+                roleConfig.audience = LimitConfig(studentLimit)
                 roleConfig.assistant = LimitConfig(assistantLimit)
             } else {
                 roleConfig.broadcaster = LimitConfig(studentLimit)

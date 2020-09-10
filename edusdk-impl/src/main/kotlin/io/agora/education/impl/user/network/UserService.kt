@@ -14,10 +14,10 @@ internal interface UserService {
     /**加入房间*/
     @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/entry")
     fun joinClassroom(
-            @Path("appId")  appId: String,
+            @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Path("userUuid") userUuid: String,
-            @Body                 eduJoinClassroomReq: EduJoinClassroomReq
+            @Body eduJoinClassroomReq: EduJoinClassroomReq
     ): Call<ResponseBody<EduEntryRes>>
 
     /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
@@ -25,11 +25,11 @@ internal interface UserService {
      * @param count 返回条数	*/
     @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/users")
     fun getUserList(
-            @Path("appId")       appId: String,
-            @Path("roomUuid")      roomUuid: String,
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
 //            @Query("role")       role: String?,
-            @Query("nextId")     nextId: String?,
-            @Query("count")      count: Int,
+            @Query("nextId") nextId: String?,
+            @Query("count") count: Int,
             @Query("updateTimeOffset") updateTimeOffset: Long?,
             @Query("includeOffline") includeOffline: Int?
     ): Call<ResponseBody<EduUserListRes>>
@@ -39,11 +39,11 @@ internal interface UserService {
      * @param count 返回条数	*/
     @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/streams")
     fun getStreamList(
-            @Path("appId")       appId: String,
-            @Path("roomUuid")      roomUuid: String,
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
 //            @Query("role")       role: String?,
-            @Query("nextId")     nextId: String?,
-            @Query("count")      count: Int,
+            @Query("nextId") nextId: String?,
+            @Query("count") count: Int,
             @Query("updateTimeOffset") updateTimeOffset: Long?,
             @Query("includeOffline") includeOffline: Int?
     ): Call<ResponseBody<EduStreamListRes>>
@@ -53,9 +53,9 @@ internal interface UserService {
      * @param mute 可否聊天 1可 0否*/
     @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}")
     fun updateUserMuteState(
-            @Path("appId")  appId: String,
+            @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
-            @Path("userUuid")  userUuid: String,
+            @Path("userUuid") userUuid: String,
             @Body eduUserStatusReq: EduUserStatusReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
@@ -64,9 +64,9 @@ internal interface UserService {
      * 此处的返回值没有写错，确实只返回code 和 msg*/
     @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/exit")
     fun leaveClassroom(
-            @Path("appId")       appId: String,
-            @Path("roomUuid")      roomUuid: String,
-            @Path("userUuid")      userUuid: String
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Path("userUuid") userUuid: String
     ): Call<io.agora.base.network.ResponseBody<String>>
 
 

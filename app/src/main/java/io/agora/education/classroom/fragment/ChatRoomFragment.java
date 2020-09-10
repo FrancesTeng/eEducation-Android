@@ -110,9 +110,8 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
             if (object instanceof RecordMsg) {
                 RecordMsg msg = (RecordMsg) object;
                 if (context instanceof BaseClassActivity) {
-                    fetchRecordList(((BaseClassActivity) context).getLocalUser().getUserInfo()
-                                    .getUserToken(), EduApplication.getAppId(),
-                            msg.getRoomUuid(), nextId, new EduCallback<RecordRes.RecordDetail>() {
+                    fetchRecordList(EduApplication.getAppId(), msg.getRoomUuid(), nextId,
+                            new EduCallback<RecordRes.RecordDetail>() {
                                 @Override
                                 public void onSuccess(@Nullable RecordRes.RecordDetail recordDetail) {
                                     if (recordDetail.isFinished()) {
@@ -144,15 +143,15 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
     private int nextId = 0, total = 0;
     private List<RecordRes.RecordDetail> recordDetails = new ArrayList<>();
 
-    private void fetchRecordList(String userToken, String appId, String roomId, int next, EduCallback<RecordRes.RecordDetail> callback) {
+    private void fetchRecordList(String appId, String roomId, int next, EduCallback<RecordRes.RecordDetail> callback) {
         RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, RecordService.class)
-                .record(userToken, appId, roomId, next)
+                .record(appId, roomId, next)
                 .enqueue(new BaseCallback<>(data -> {
                     total = data.total;
                     nextId = data.nextId;
                     recordDetails.addAll(data.list);
                     if (recordDetails.size() < total) {
-                        fetchRecordList(userToken, appId, roomId, nextId, callback);
+                        fetchRecordList(appId, roomId, nextId, callback);
                     } else {
                         nextId = total = 0;
                         long max = 0;

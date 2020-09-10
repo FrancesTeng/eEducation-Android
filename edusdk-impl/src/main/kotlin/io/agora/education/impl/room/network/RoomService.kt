@@ -4,7 +4,6 @@ import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.data.request.EduSyncRoomReq
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.data.response.*
-import io.agora.education.impl.room.data.response.EduRoomInfoRes
 import io.agora.education.impl.room.data.response.EduSequenceListRes
 import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
 import io.agora.education.impl.user.data.request.*
@@ -138,11 +137,4 @@ internal interface RoomService {
             @Path("roomUuid") roomUuid: String
     ): Call<ResponseBody<EduSequenceSnapshotRes>>
 
-    /**分配小组:请求服务端分配一个小教室*/
-    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/groups")
-    fun allocateGroup(
-            @Path("appId") appId: String,
-            @Path("roomUuid") roomUuid: String,
-            @Path("userUuid") userUuid: String
-    ): Call<ResponseBody<EduRoomInfoRes>>
 }

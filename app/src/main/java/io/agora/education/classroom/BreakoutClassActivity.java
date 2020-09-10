@@ -1,6 +1,7 @@
 package io.agora.education.classroom;
 
 import android.graphics.Rect;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,27 +13,29 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.tabs.TabLayout;
+import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.OnClick;
+import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.RetrofitManager;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
+import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
 import io.agora.education.api.room.data.EduRoomInfo;
 import io.agora.education.api.room.data.EduRoomState;
 import io.agora.education.api.room.data.EduRoomStatus;
 import io.agora.education.api.room.data.RoomCreateOptions;
-import io.agora.education.api.room.data.RoomJoinOptions;
-import io.agora.education.api.room.data.RoomMediaOptions;
 import io.agora.education.api.room.data.RoomStatusEvent;
 import io.agora.education.api.room.data.RoomType;
 import io.agora.education.api.statistics.ConnectionState;
@@ -40,18 +43,30 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.api.stream.data.StreamSubscribeOptions;
-import io.agora.education.api.stream.data.VideoStreamType;
 import io.agora.education.api.user.EduStudent;
+import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
-import io.agora.education.classroom.BaseClassActivity;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
+import io.agora.education.classroom.bean.board.BoardBean;
+import io.agora.education.classroom.bean.board.BoardInfo;
+import io.agora.education.classroom.bean.board.BoardState;
 import io.agora.education.classroom.bean.channel.Room;
+import io.agora.education.classroom.bean.record.RecordBean;
+import io.agora.education.classroom.bean.record.RecordMsg;
 import io.agora.education.classroom.fragment.UserListFragment;
 import io.agora.education.classroom.widget.RtcVideoView;
+import io.agora.education.service.CommonService;
+import io.agora.education.service.bean.ResponseBody;
+import io.agora.education.service.bean.request.AllocateGroupReq;
+import io.agora.education.service.bean.response.EduRoomInfoRes;
+
+import static io.agora.education.BuildConfig.API_BASE_URL;
+import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
+import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
+import static io.agora.education.classroom.bean.record.RecordState.END;
 
 
 public class BreakoutClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
@@ -97,6 +112,27 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         classVideoAdapter = new ClassVideoAdapter();
     }
 
+
+    private void allocateGroup(String roomUuid, String userUuid, EduCallback<EduRoomInfo> callback) {
+        AllocateGroupReq req = new AllocateGroupReq();
+        RetrofitManager.instance().getService(API_BASE_URL, CommonService.class)
+                .allocateGroup(getString(R.string.agora_app_id), roomUuid, req)
+                .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<EduRoomInfoRes>>() {
+                    @Override
+                    public void onFailure(@Nullable Throwable throwable) {
+                        Log.e(TAG, "申请小班信息失败:" + throwable.getMessage());
+                    }
+
+                    @Override
+                    public void onSuccess(@Nullable ResponseBody<EduRoomInfoRes> res) {
+                        if (res != null && res.data != null) {
+                            EduRoomInfo info = res.data;
+                            callback.onSuccess(new EduRoomInfo(info.getRoomUuid(), info.getRoomName()));
+                        }
+                    }
+                }));
+    }
+
     /**
      * 根据主教室的信息去请求服务端分配一个小教室
      *
@@ -104,16 +140,19 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
      * @param userUuid 学生uuid
      */
     private void joinSubEduRoom(EduRoom mainRoom, String userUuid, String userName) {
-        mainRoom.allocateGroup(mainRoom.getRoomInfo().getRoomUuid(), userUuid, new EduCallback<EduRoomInfo>() {
+        allocateGroup(mainRoom.getRoomInfo().getRoomUuid(), userUuid, new EduCallback<EduRoomInfo>() {
             @Override
             public void onSuccess(@Nullable EduRoomInfo res) {
                 if (res != null) {
                     RoomCreateOptions createOptions = new RoomCreateOptions(res.getRoomUuid(),
-                            res.getRoomUuid(), RoomType.BREAKOUT_CLASS.getValue(), true);
+                            res.getRoomName(), RoomType.BREAKOUT_CLASS.getValue(), true);
                     subEduRoom = buildEduRoom(createOptions, mainRoom.getRoomInfo().getRoomUuid());
-                    joinRoom(getMainEduRoom(), userName, userUuid, true, false, false, new EduCallback<EduStudent>() {
+                    joinRoom(subEduRoom, userName, userUuid, true, true, true, new EduCallback<EduStudent>() {
                         @Override
                         public void onSuccess(@Nullable EduStudent res) {
+                            /**设置全局的userToken(注意同一个user在不同的room内，token不一样)*/
+                            RetrofitManager.instance().addHeader("token",
+                                    subEduRoom.getLocalUser().getUserInfo().getUserToken());
                             runOnUiThread(() -> showFragmentWithJoinSuccess());
                         }
 
@@ -127,6 +166,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
             @Override
             public void onFailure(int code, @Nullable String reason) {
+                Log.e(TAG, "进入下班失败->code:" + code + ", reason:" + reason);
             }
         });
     }
@@ -166,11 +206,35 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         return Room.Type.BREAKOUT;
     }
 
+    @Override
+    protected EduRoom getMyMediaRoom() {
+        return subEduRoom;
+    }
+
+    @Override
+    public EduUser getLocalUser() {
+        return subEduRoom.getLocalUser();
+    }
+
+    @Override
+    protected EduUserInfo getLocalUserInfo() {
+        return subEduRoom.getLocalUser().getUserInfo();
+    }
+
     @OnClick(R.id.iv_float)
     public void onClick(View view) {
         boolean isSelected = view.isSelected();
         view.setSelected(!isSelected);
         layout_im.setVisibility(isSelected ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(getMyMediaRoom() != null) {
+            getMyMediaRoom().leave();
+            subEduRoom = null;
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -197,8 +261,32 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
-        super.onRemoteUsersInitialized(users, classRoom);
         if (classRoom.equals(subEduRoom)) {
+            Map<String, Object> roomProperties = classRoom.getRoomProperties();
+            /**判断roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
+            String boardJson = getProperty(roomProperties, BOARD);
+            if (TextUtils.isEmpty(boardJson)) {
+                requestBoardInfo((subEduRoom.getLocalUser().getUserInfo()).getUserToken(),
+                        getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid());
+            } else {
+                mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
+                BoardInfo info = mainBoardBean.getInfo();
+                BoardState state = mainBoardBean.getState();
+                Log.e(TAG, "白板信息已存在->" + boardJson);
+                runOnUiThread(() -> {
+                    whiteboardFragment.initBoardWithRoomToken(info.getBoardId(),
+                            info.getBoardToken(), getLocalUserInfo().getUserUuid());
+                    boolean follow = whiteBoardIsFollowMode(state);
+                    whiteboardFragment.disableCameraTransform(follow);
+                    boolean granted = whiteBoardIsGranted((state));
+                    whiteboardFragment.disableDeviceInputs(!granted);
+                    if (follow) {
+                        layout_whiteboard.setVisibility(View.VISIBLE);
+                        layout_share_video.setVisibility(View.GONE);
+                    }
+                });
+            }
+
             userListFragment.setUserList(getCurFullUser());
             title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
         }
@@ -431,8 +519,40 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     @Override
     public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
-        super.onRoomPropertyChanged(classRoom);
         if (classRoom.equals(subEduRoom)) {
+            Log.e(TAG, "收到小房间的roomProperty改变的数据");
+            Map<String, Object> roomProperties = classRoom.getRoomProperties();
+            String boardJson = getProperty(roomProperties, BOARD);
+            if (!TextUtils.isEmpty(boardJson) && mainBoardBean == null) {
+                Log.e(TAG, "首次获取到小房间的白板信息->" + boardJson);
+                /**首次获取到白板信息*/
+                mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
+                runOnUiThread(() -> {
+                    whiteboardFragment.initBoardWithRoomToken(mainBoardBean.getInfo().getBoardId(),
+                            mainBoardBean.getInfo().getBoardToken(), getLocalUserInfo().getUserUuid());
+                    boolean follow = whiteBoardIsFollowMode(mainBoardBean.getState());
+                    whiteboardFragment.disableCameraTransform(follow);
+                    boolean granted = whiteBoardIsGranted((mainBoardBean.getState()));
+                    whiteboardFragment.disableDeviceInputs(!granted);
+                    if (follow) {
+                        layout_whiteboard.setVisibility(View.VISIBLE);
+                        layout_share_video.setVisibility(View.GONE);
+                    }
+                });
+            }
+            String recordJson = getProperty(roomProperties, RECORD);
+            if (!TextUtils.isEmpty(recordJson)) {
+                RecordBean tmp = RecordBean.fromJson(recordJson, RecordBean.class);
+                if (mainRecordBean == null || tmp.getState() != mainRecordBean.getState()) {
+                    mainRecordBean = tmp;
+                    if (mainRecordBean.getState() == END) {
+                        RecordMsg recordMsg = new RecordMsg(getRoomUuid(), getLocalUserInfo(), getString(R.string.replay_link),
+                                System.currentTimeMillis(), EduChatMsgType.Text.getValue());
+                        recordMsg.isMe = true;
+                        chatRoomFragment.addMessage(recordMsg);
+                    }
+                }
+            }
         }
     }
 

@@ -1,4 +1,4 @@
-package io.agora.education.impl.room.data.response
+package io.agora.education.service.bean.response
 
 import io.agora.education.api.room.data.EduRoomInfo
 

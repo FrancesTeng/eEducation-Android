@@ -13,7 +13,7 @@ import java.io.File
 object RteEngineImpl : IRteEngine {
     internal lateinit var rtmClient: RtmClient
     internal lateinit var rtcEngine: RtcEngine
-    private val channelMap = mutableMapOf<String, io.agora.rte.IRteChannel>()
+    private val channelMap = mutableMapOf<String, IRteChannel>()
 
     var eventListener: io.agora.rte.listener.RteEngineEventListener? = null
 

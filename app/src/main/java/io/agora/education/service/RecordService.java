@@ -12,7 +12,6 @@ public interface RecordService {
 
     @GET("/recording/apps/{appId}/v1/rooms/{roomId}/records")
     Call<ResponseBody<RecordRes>> record(
-            @Header("token") String userToken,
             @Path("appId") String appId,
             @Path("roomId") String roomId,
             @Query("nextId") int nextId

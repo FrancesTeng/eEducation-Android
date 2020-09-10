@@ -5,7 +5,7 @@ import io.agora.education.api.user.data.EduBaseUserInfo
 import io.agora.education.impl.room.data.response.EduFromUserRes
 
 class CMDUserPropertyRes(
-        val fromUserRes: EduBaseUserInfo,
-        val userProperties: Map<String, String>
+        val fromUser: EduBaseUserInfo,
+        val userProperties: Map<String, Any>
 ) {
 }

@@ -30,8 +30,6 @@ abstract class EduRoom(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus) {
 
     var eventListener: EduRoomEventListener? = null
 
-    abstract fun allocateGroup(roomUuid: String, userUuid: String, callback: EduCallback<EduRoomInfo>)
-
     abstract fun joinClassroom(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
 
     abstract fun getLocalUser(): EduUser

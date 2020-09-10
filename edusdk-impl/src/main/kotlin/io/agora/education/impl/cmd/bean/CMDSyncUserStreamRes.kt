@@ -20,7 +20,7 @@ class CMDSyncUserRes(
         val userUuid: String,
         val role: String,
         val muteChat: Int,
-        val userProperties: Map<String, String>,
+        val userProperties: Map<String, Any>,
         val updateTime: Long,
         /**标识此用户是新下线用户还是新上线用户(ValidState)*/
         val state: Int,
