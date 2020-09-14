@@ -92,7 +92,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
             CMDId.UserJoinOrLeave.value -> {
                 val rtmInOutMsg = Gson().fromJson<CMDResponseBody<RtmUserInOutMsg>>(text, object :
                         TypeToken<CMDResponseBody<RtmUserInOutMsg>>() {}.type).data
-                Log.e("CMDDispatch", "收到用户进入或离开的通知:${text}")
+                Log.e("CMDDispatch", "收到用户进入或离开的通知->${eduRoom.getRoomInfo().roomUuid}:${text}")
                 /**根据回调数据，维护本地存储的流列表，并返回有效数据*/
                 val validOnlineUsers = CMDDataMergeProcessor.addUserWithOnline(rtmInOutMsg.onlineUsers,
                         (eduRoom as EduRoomImpl).getCurUserList(), eduRoom.getCurRoomType())

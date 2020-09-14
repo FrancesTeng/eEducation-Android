@@ -41,3 +41,9 @@ data class RoomJoinOptions(
         mediaOptions.autoPublish = false
     }
 }
+
+enum class AutoPublishItem(val value: Int) {
+    NoOperation(0),
+    AutoPublish(1),
+    NoAutoPublish(2)
+}

@@ -69,6 +69,7 @@ import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.widget.ConfirmDialog;
 
 import static io.agora.education.BuildConfig.API_BASE_URL;
+import static io.agora.education.EduApplication.getManager;
 import static io.agora.education.MainActivity.CODE;
 import static io.agora.education.MainActivity.REASON;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
@@ -108,7 +109,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     protected void initData() {
-        EduApplication.getManager().setEduManagerEventListener(this);
+        getManager().setEduManagerEventListener(this);
         roomEntry = getIntent().getParcelableExtra(ROOMENTRY);
         RoomCreateOptions createOptions = new RoomCreateOptions(roomEntry.getRoomUuid(),
                 roomEntry.getRoomName(), roomEntry.getRoomType(), true);
@@ -255,7 +256,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         this.localCameraStream = streamInfo;
     }
 
-    public final void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
+    public void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
         getMainEduRoom().getLocalUser().sendRoomChatMessage(msg, callback);
     }
 
@@ -296,6 +297,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         /**退出activity之前释放eduRoom资源*/
         mainEduRoom = null;
         whiteboardFragment.releaseBoard();
+        /**退出RTM*/
+        getManager().logout();
         super.onDestroy();
     }
 

@@ -115,7 +115,8 @@ internal class EduRoomImpl(
         /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
         val role = Convert.convertUserRole(localUserInfo.role, getCurRoomType(), curClassType)
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
-                mediaOptions.primaryStreamId.toString(), if (mediaOptions.isAutoPublish()) 1 else 0)
+                mediaOptions.primaryStreamId.toString(), if (mediaOptions.isAutoPublish())
+            AutoPublishItem.AutoPublish.value else AutoPublishItem.NoAutoPublish.value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .joinClassroom(APPID, getRoomInfo().roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {

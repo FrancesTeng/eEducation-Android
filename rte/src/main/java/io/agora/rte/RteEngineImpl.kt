@@ -96,14 +96,14 @@ object RteEngineImpl : IRteEngine {
 
     override fun publish(channelId: String): Int {
         if (channelMap.isNotEmpty()) {
-            return (channelMap[channelId] as io.agora.rte.RteChannelImpl).rtcChannel.publish()
+            return (channelMap[channelId] as RteChannelImpl).rtcChannel.publish()
         }
         return -1
     }
 
     override fun unpublish(channelId: String): Int {
         if (channelMap.isNotEmpty()) {
-            return (channelMap[channelId] as io.agora.rte.RteChannelImpl).rtcChannel.unpublish()
+            return (channelMap[channelId] as RteChannelImpl).rtcChannel.unpublish()
         }
         return -1
     }

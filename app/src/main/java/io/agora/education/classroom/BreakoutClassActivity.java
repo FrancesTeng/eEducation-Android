@@ -54,6 +54,7 @@ import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.board.BoardInfo;
 import io.agora.education.classroom.bean.board.BoardState;
 import io.agora.education.classroom.bean.channel.Room;
+import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.bean.record.RecordBean;
 import io.agora.education.classroom.bean.record.RecordMsg;
 import io.agora.education.classroom.fragment.UserListFragment;
@@ -221,6 +222,14 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         return subEduRoom.getLocalUser().getUserInfo();
     }
 
+    @Override
+    public void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
+        /**调用super方法把消息发送到大房间中去*/
+        super.sendRoomChatMsg(msg, callback);
+        /**把消息发送到小房间去*/
+        subEduRoom.getLocalUser().sendRoomChatMessage(msg, callback);
+    }
+
     @OnClick(R.id.iv_float)
     public void onClick(View view) {
         boolean isSelected = view.isSelected();
@@ -230,7 +239,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     @Override
     protected void onDestroy() {
-        if(getMyMediaRoom() != null) {
+        if (getMyMediaRoom() != null) {
             getMyMediaRoom().leave();
             subEduRoom = null;
         }
@@ -333,9 +342,15 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
-        super.onRoomChatMessageReceived(eduChatMsg, classRoom);
-        if (classRoom.equals(subEduRoom)) {
-        }
+//        super.onRoomChatMessageReceived(eduChatMsg, classRoom);
+//        if (classRoom.equals(subEduRoom)) {
+//        }
+        /**收到群聊消息，进行处理并展示*/
+        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
+                eduChatMsg.getTimeStamp(), eduChatMsg.getType());
+        chatMsg.isMe = chatMsg.getFromUser().equals(classRoom.getLocalUser().getUserInfo());
+        chatRoomFragment.addMessage(chatMsg);
+        Log.e(TAG, "成功添加一条聊天消息");
     }
 
     @Override

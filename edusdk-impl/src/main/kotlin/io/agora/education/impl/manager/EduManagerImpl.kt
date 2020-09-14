@@ -139,8 +139,11 @@ internal class EduManagerImpl(
                 }))
     }
 
-    override fun release() {
+    override fun logout() {
         RteEngineImpl.logoutRtm()
+    }
+
+    override fun release() {
         eduRooms.clear()
     }
 

@@ -33,6 +33,8 @@ abstract class EduManager(
     /**登录rtm*/
     abstract fun login(loginOptions: EduLoginOptions, callback: EduCallback<Unit>)
 
+    abstract fun logout()
+
     abstract fun release()
 
     abstract fun logMessage(message: String, level: LogLevel): AgoraError

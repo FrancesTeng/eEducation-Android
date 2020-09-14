@@ -89,7 +89,7 @@ internal open class EduUserImpl(
      * */
     override fun publishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
         /**设置角色*/
-        io.agora.rte.RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
+        RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
         /**改变流状态的参数*/
         val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
@@ -108,8 +108,8 @@ internal open class EduUserImpl(
                                 /**更新流信息的更新时间*/
                                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
 //                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
-                                io.agora.rte.RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                                io.agora.rte.RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
+                                RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
+                                RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
                                 callback.onSuccess(true)
                             }
 
@@ -123,8 +123,8 @@ internal open class EduUserImpl(
                 /**mute*/
                 Log.e("EduUserImpl", "开始初始化和更新本地流-mute")
                 Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
-                io.agora.rte.RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                io.agora.rte.RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
+                RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
+                RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
                 RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
                         .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
                                 streamInfo.streamUuid, eduStreamStatusReq)
@@ -150,8 +150,8 @@ internal open class EduUserImpl(
                     .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                         override fun onSuccess(res: ResponseBody<String>?) {
                             Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
-                            io.agora.rte.RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                            io.agora.rte.RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
+                            RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
+                            RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
                             callback.onSuccess(true)
                         }
 
