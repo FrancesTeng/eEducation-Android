@@ -72,8 +72,8 @@ public class ClassVideoAdapter extends BaseQuickAdapter<EduStreamInfo, ClassVide
     @Override
     protected void convert(@NonNull ViewHolder viewHolder, EduStreamInfo item) {
         viewHolder.convert(item);
-        ((BaseClassActivity) viewHolder.view.getContext()).renderStream(item,
-                viewHolder.view.getVideoLayout());
+        BaseClassActivity activity = ((BaseClassActivity) viewHolder.view.getContext());
+        activity.renderStream(activity.getMyMediaRoom(), item, viewHolder.view.getVideoLayout());
     }
 
     public void setNewList(@Nullable List<EduStreamInfo> data) {

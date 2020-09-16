@@ -186,7 +186,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         while (iterable.hasNext()) {
                             val element = iterable.next()
                             if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
-                                io.agora.rte.RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
+                                RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
                                         element.modifiedStream.hasVideo)
                                 Log.e("CMDDispatch", "join成功，把发生改变的本地流回调出去")
                                 cmdCallbackManager.onLocalStreamUpdated(element, eduRoom.getLocalUser())

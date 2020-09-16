@@ -234,13 +234,7 @@ public class MainActivity extends BaseActivity {
         /**userUuid和roomUuid需用户自己指定，并保证唯一性*/
         int roomType = getClassType(roomTypeStr);
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
-        String roomUuid;
-        if (roomType != RoomType.BREAKOUT_CLASS.getValue()) {
-            roomUuid = roomNameStr + roomType;
-        } else {
-            /**超小中的大班的roomUuid*/
-            roomUuid = roomNameStr + RoomType.LARGE_CLASS.getValue();
-        }
+        String roomUuid = roomNameStr + roomType;
         createRoom(yourNameStr, userUuid, roomNameStr, roomUuid, roomType);
     }
 

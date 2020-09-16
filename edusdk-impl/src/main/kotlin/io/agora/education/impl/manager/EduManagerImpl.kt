@@ -46,6 +46,8 @@ internal class EduManagerImpl(
 ) : EduManager(options), io.agora.rte.listener.RteEngineEventListener {
 
     companion object {
+        private const val TAG = "EduManagerImpl"
+
         /**管理所有EduRoom示例的集合*/
         private val eduRooms = mutableListOf<EduRoom>()
 
@@ -62,14 +64,17 @@ internal class EduManagerImpl(
     private val rtmConnectState = RtmConnectState()
 
     init {
+        LogManager.init(options.logFileDir!!, "AgoraEducation")
+        AgoraLog = LogManager("SDK")
+        logMessage("${TAG}: 初始化LogManager,log路径为${options.logFileDir}", LogLevel.INFO)
+        logMessage("${TAG}: 初始化EduManagerImpl", LogLevel.INFO)
         options.logFileDir?.let {
             options.logFileDir = options.context.cacheDir.toString().plus(File.separatorChar).plus(LOGS_DIR_NAME)
         }
-        LogManager.init(options.logFileDir!!, "AgoraEducation")
-        AgoraLog = LogManager("SDK")
-        io.agora.rte.RteEngineImpl.init(options.context, options.appId, options.logFileDir!!)
+        logMessage("${TAG}: 初始化RteEngineImpl", LogLevel.INFO)
+        RteEngineImpl.init(options.context, options.appId, options.logFileDir!!)
         /**为RteEngine设置eventListener*/
-        io.agora.rte.RteEngineImpl.eventListener = this
+        RteEngineImpl.eventListener = this
         APPID = options.appId
         val auth = Base64.encodeToString("${options.customerId}:${options.customerCertificate}"
                 .toByteArray(Charsets.UTF_8), Base64.DEFAULT).replace("\n", "").trim()
@@ -80,16 +85,18 @@ internal class EduManagerImpl(
                 logMessage(message, LogLevel.INFO)
             }
         })
+        logMessage("${TAG}: 初始化EduManagerImpl完成", LogLevel.INFO)
     }
 
     override fun scheduleClass(config: RoomCreateOptions, callback: EduCallback<Unit>) {
+        logMessage("${TAG}: 调用scheduleClass函数", LogLevel.INFO)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .createClassroom(APPID, config.roomUuid, Convert.convertRoomCreateOptions(config))
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<
                         io.agora.base.network.ResponseBody<String>> {
                     /**接口返回Int类型的roomId*/
                     override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
-//                        createSuccess(config, callback)
+                        logMessage("${TAG}: 调用scheduleClass函数成功", LogLevel.INFO)
                         callback.onSuccess(Unit)
                     }
 
@@ -97,8 +104,9 @@ internal class EduManagerImpl(
                         var error = throwable as? BusinessException
                         error = error ?: BusinessException(throwable?.message)
                         error?.code?.let {
+                            logMessage("${TAG}: 调用scheduleClass函数失败->${error?.code}, reason:${error?.message
+                                    ?: throwable?.message}", LogLevel.ERROR)
                             if (error?.code == AgoraError.ROOM_ALREADY_EXISTS.value) {
-//                                createSuccess(config, callback)
                                 callback.onSuccess(Unit)
                             } else {
                                 callback.onFailure(error?.code, error?.message
@@ -110,19 +118,23 @@ internal class EduManagerImpl(
     }
 
     override fun login(loginOptions: EduLoginOptions, callback: EduCallback<Unit>) {
+        logMessage("${TAG}: 调用login接口", LogLevel.INFO)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .login(APPID, loginOptions.userUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduLoginRes>> {
                     override fun onSuccess(res: ResponseBody<EduLoginRes>?) {
+                        logMessage("${TAG}: 成功调用login接口->${Gson().toJson(res)}", LogLevel.INFO)
                         val loginRes = res?.data
                         loginRes?.let {
                             RteEngineImpl.loginRtm(loginRes.userUuid, loginRes.rtmToken,
                                     object : RteCallback<Unit> {
                                         override fun onSuccess(res: Unit?) {
+                                            logMessage("${TAG}: 成功登录RTM", LogLevel.INFO)
                                             callback.onSuccess(res)
                                         }
 
                                         override fun onFailure(code: Int, reason: String?) {
+                                            logMessage("${TAG}: 登录RTM失败->code:$code,reason:$reason", LogLevel.ERROR)
                                             callback.onFailure(code, reason)
                                         }
                                     })
@@ -133,6 +145,8 @@ internal class EduManagerImpl(
                         var error = throwable as? BusinessException
                         error = error ?: BusinessException(throwable?.message)
                         error?.code?.let {
+                            logMessage("${TAG}: 调用login接口失败->code:${error?.code}, reason:${error?.message
+                                    ?: throwable?.message}", LogLevel.ERROR)
                             callback.onFailure(error?.code, error?.message ?: throwable?.message)
                         }
                     }
@@ -140,10 +154,12 @@ internal class EduManagerImpl(
     }
 
     override fun logout() {
+        logMessage("${TAG}: 调用logout函数退出RTM", LogLevel.INFO)
         RteEngineImpl.logoutRtm()
     }
 
     override fun release() {
+        logMessage("${TAG}: 调用release函数释放数据", LogLevel.INFO)
         eduRooms.clear()
     }
 
@@ -168,11 +184,12 @@ internal class EduManagerImpl(
     override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError {
         val uploadParam = UploadManager.UploadParam(APPID, BuildConfig.VERSION_NAME, Build.DEVICE,
                 Build.VERSION.SDK, "ZIP", "Android", null)
+        logMessage("${TAG}: 调用uploadDebugItem函数上传日志，参数->${Gson().toJson(uploadParam)}", LogLevel.INFO)
         UploadManager.upload(options.context, LOG_APPSECRET, API_BASE_URL, options.logFileDir!!, uploadParam,
                 object : ThrowableCallback<String> {
                     override fun onSuccess(res: String?) {
                         res?.let {
-                            logMessage("日志上传成功->$res", LogLevel.INFO)
+                            logMessage("${TAG}: 日志上传成功->$res", LogLevel.INFO)
                             callback.onSuccess(res)
                         }
                     }
@@ -181,7 +198,7 @@ internal class EduManagerImpl(
                         var error = throwable as? BusinessException
                         error = error ?: BusinessException(throwable?.message)
                         error?.code?.let {
-                            logMessage("日志上传错误->code:${error?.code}, reason:${error?.message
+                            logMessage("${TAG}: 日志上传错误->code:${error?.code}, reason:${error?.message
                                     ?: throwable?.message}", LogLevel.ERROR)
                             callback.onFailure(error?.code, error?.message ?: throwable?.message)
                         }
@@ -193,10 +210,12 @@ internal class EduManagerImpl(
 
     /***/
     override fun onConnectionStateChanged(p0: Int, p1: Int) {
+        logMessage("${TAG}: RTM连接状态发生改变->state:$p0,reason:$p1", LogLevel.INFO)
         /**断线重连之后，同步每一个教室的信息*/
         eduRooms?.forEach {
             if (rtmConnectState.isReconnecting() &&
                     p0 == RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED) {
+                logMessage("${TAG}: RTM断线重连，请求教室${it.getRoomInfo().roomUuid}内丢失的消息", LogLevel.INFO)
                 (it as EduRoomImpl).syncSession.fetchLostSequence(object : EduCallback<Unit> {
                     override fun onSuccess(res: Unit?) {
                     }
@@ -215,6 +234,7 @@ internal class EduManagerImpl(
     }
 
     override fun onPeerMsgReceived(p0: RtmMessage?, p1: String?) {
+        logMessage("${TAG}: 收到点对点消息->${Gson().toJson(p0)}", LogLevel.INFO)
         /**RTM保证peerMsg能到达,不用走同步检查(seq衔接性检查)*/
         p0?.text?.let {
             val cmdResponseBody = Gson().fromJson<CMDResponseBody<RtmMsg>>(p0.text, object :

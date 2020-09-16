@@ -95,6 +95,7 @@ internal interface RoomService {
     /**发送课堂内群聊消息*/
     @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/chat/channel")
     fun sendRoomChatMsg(
+            @Header("token") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Body eduRoomChatMsgReq: EduRoomChatMsgReq

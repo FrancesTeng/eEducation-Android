@@ -69,17 +69,14 @@ internal open class EduUserImpl(
     override fun subscribeStream(stream: EduStreamInfo, options: StreamSubscribeOptions) {
         /**订阅远端流*/
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-//        (RteEngineImpl[eduRoom.getRoomInfo().roomUuid] as RteChannelImpl).rtcChannel.muteRemoteAudioStream(
-//                uid, !options.subscribeAudio)
-//        (RteEngineImpl[eduRoom.getRoomInfo().roomUuid] as RteChannelImpl).rtcChannel.muteRemoteVideoStream(
-//                uid, !options.subscribeVideo)
         RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, muteAudio = false,
                 muteVideo = false)
     }
 
     override fun unSubscribeStream(stream: EduStreamInfo) {
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, muteAudio = true, muteVideo = true)
+        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, muteAudio = true,
+                muteVideo = true)
     }
 
     /**
@@ -192,7 +189,7 @@ internal open class EduUserImpl(
                 .sendChannelCustomMessage(APPID, eduRoom.getRoomInfo().roomUuid, roomMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
+                        val textMessage = EduMsg(userInfo, message)
                         callback.onSuccess(textMessage)
                     }
 
@@ -210,7 +207,7 @@ internal open class EduUserImpl(
                 .sendPeerCustomMessage(APPID, eduRoom.getRoomInfo().roomUuid, remoteUser.userUuid, userMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
+                        val textMessage = EduMsg(userInfo, message)
                         callback.onSuccess(textMessage)
                     }
 
@@ -225,11 +222,11 @@ internal open class EduUserImpl(
     override fun sendRoomChatMessage(message: String, callback: EduCallback<EduChatMsg>) {
         val roomChatMsgReq = EduRoomChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .sendRoomChatMsg(APPID, eduRoom.getRoomInfo().roomUuid, roomChatMsgReq)
+                .sendRoomChatMsg(eduRoom.getLocalUser().userInfo.userToken!!, APPID,
+                        eduRoom.getRoomInfo().roomUuid, roomChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduChatMsg(userInfo, message, System.currentTimeMillis(),
-                                EduChatMsgType.Text.value)
+                        val textMessage = EduChatMsg(userInfo, message, EduChatMsgType.Text.value)
                         callback.onSuccess(textMessage)
                     }
 
@@ -247,8 +244,7 @@ internal open class EduUserImpl(
                 .sendPeerChatMsg(APPID, eduRoom.getRoomInfo().roomUuid, remoteUser.userUuid, userChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduChatMsg(userInfo, message, System.currentTimeMillis(),
-                                EduChatMsgType.Text.value)
+                        val textMessage = EduChatMsg(userInfo, message, EduChatMsgType.Text.value)
                         callback.onSuccess(textMessage)
                     }
 

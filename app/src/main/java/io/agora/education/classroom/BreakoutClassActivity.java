@@ -44,7 +44,6 @@ import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.user.EduStudent;
-import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
@@ -71,7 +70,7 @@ import static io.agora.education.classroom.bean.record.RecordState.END;
 
 
 public class BreakoutClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
-    private static final String TAG = "SmallClassActivity";
+    private static final String TAG = "BreakoutClassActivity";
 
     @BindView(R.id.rcv_videos)
     protected RecyclerView rcv_videos;
@@ -172,6 +171,11 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         });
     }
 
+    private void renderTeacherStream(EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
+        /**老师是只加大班级，所以需要通过mainEduRoom对象来操作*/
+        runOnUiThread(() -> getMainEduRoom().getLocalUser().setStreamView(eduStreamInfo, getMediaRoomUuid(), viewGroup));
+    }
+
     @Override
     protected void initView() {
         super.initView();
@@ -208,13 +212,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    protected EduRoom getMyMediaRoom() {
+    public EduRoom getMyMediaRoom() {
         return subEduRoom;
-    }
-
-    @Override
-    public EduUser getLocalUser() {
-        return subEduRoom.getLocalUser();
     }
 
     @Override
@@ -224,10 +223,13 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     @Override
     public void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
+        /**消息需要添加roomUuid*/
         /**调用super方法把消息发送到大房间中去*/
-        super.sendRoomChatMsg(msg, callback);
+        super.sendRoomChatMsg(new ChannelMsg.BreakoutChatMsgContent(msg, getMainEduRoom().getRoomInfo()
+                .getRoomUuid()).toJsonString(), callback);
         /**把消息发送到小房间去*/
-        subEduRoom.getLocalUser().sendRoomChatMessage(msg, callback);
+        subEduRoom.getLocalUser().sendRoomChatMessage(new ChannelMsg.BreakoutChatMsgContent(msg,
+                subEduRoom.getRoomInfo().getRoomUuid()).toJsonString(), callback);
     }
 
     @OnClick(R.id.iv_float)
@@ -297,7 +299,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             }
 
             userListFragment.setUserList(getCurFullUser());
-            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         }
     }
 
@@ -306,7 +308,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         super.onRemoteUsersJoined(users, classRoom);
         if (classRoom.equals(subEduRoom)) {
             userListFragment.setUserList(getCurFullUser());
-            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         }
     }
 
@@ -315,7 +317,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         super.onRemoteUsersLeft(userEvents, classRoom);
         if (classRoom.equals(subEduRoom)) {
             userListFragment.setUserList(getCurFullUser());
-            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         }
     }
 
@@ -342,15 +344,22 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
-//        super.onRoomChatMessageReceived(eduChatMsg, classRoom);
-//        if (classRoom.equals(subEduRoom)) {
-//        }
         /**收到群聊消息，进行处理并展示*/
-        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
-                eduChatMsg.getTimeStamp(), eduChatMsg.getType());
-        chatMsg.isMe = chatMsg.getFromUser().equals(classRoom.getLocalUser().getUserInfo());
-        chatRoomFragment.addMessage(chatMsg);
-        Log.e(TAG, "成功添加一条聊天消息");
+        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(),
+                eduChatMsg.getMessage(), eduChatMsg.getType());
+        EduUserInfo fromUser = chatMsg.getFromUser();
+        chatMsg.isMe = fromUser.equals(classRoom.getLocalUser().getUserInfo());
+        ChannelMsg.BreakoutChatMsgContent msgContent = new Gson().fromJson(chatMsg.getMessage(),
+                ChannelMsg.BreakoutChatMsgContent.class);
+        chatMsg.setMessage(msgContent.getContent());
+        boolean isTeacherMsg = classRoom.equals(getMainEduRoom()) && fromUser.getRole()
+                .equals(EduUserRole.TEACHER);
+        boolean isGroupMsg = classRoom.equals(subEduRoom) && fromUser.getRole()
+                .equals(EduUserRole.STUDENT);
+        if (isTeacherMsg || isGroupMsg) {
+            chatRoomFragment.addMessage(chatMsg);
+            Log.e(TAG, "成功添加一条聊天消息");
+        }
     }
 
     @Override
@@ -373,7 +382,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     switch (streamInfo.getVideoSourceType()) {
                         case CAMERA:
                             video_teacher.setName(publisher.getUserName());
-                            renderStream(streamInfo, video_teacher.getVideoLayout());
+                            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                             video_teacher.muteVideo(!streamInfo.getHasVideo());
                             video_teacher.muteAudio(!streamInfo.getHasAudio());
                             break;
@@ -381,7 +390,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                             layout_whiteboard.setVisibility(View.GONE);
                             layout_share_video.setVisibility(View.VISIBLE);
                             layout_share_video.removeAllViews();
-                            renderStream(streamInfo, layout_share_video);
+                            renderStream(getMainEduRoom(), streamInfo, layout_share_video);
                             break;
                         default:
                             break;
@@ -420,7 +429,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                         case CAMERA:
                             /**老师的远端流*/
                             video_teacher.setName(userInfo.getUserName());
-                            renderStream(streamInfo, video_teacher.getVideoLayout());
+                            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                             video_teacher.muteVideo(!streamInfo.getHasVideo());
                             video_teacher.muteAudio(!streamInfo.getHasAudio());
                             break;
@@ -461,7 +470,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     switch (streamInfo.getVideoSourceType()) {
                         case CAMERA:
                             video_teacher.setName(userInfo.getUserName());
-                            renderStream(streamInfo, video_teacher.getVideoLayout());
+                            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                             video_teacher.muteVideo(!streamInfo.getHasVideo());
                             video_teacher.muteAudio(!streamInfo.getHasAudio());
                             break;
@@ -501,7 +510,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     switch (streamInfo.getVideoSourceType()) {
                         case CAMERA:
                             video_teacher.setName(streamInfo.getPublisher().getUserName());
-                            renderStream(streamInfo, null);
+                            renderStream(getMainEduRoom(), streamInfo, null);
                             video_teacher.muteVideo(!streamInfo.getHasVideo());
                             video_teacher.muteAudio(!streamInfo.getHasAudio());
                             break;
@@ -561,8 +570,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 if (mainRecordBean == null || tmp.getState() != mainRecordBean.getState()) {
                     mainRecordBean = tmp;
                     if (mainRecordBean.getState() == END) {
-                        RecordMsg recordMsg = new RecordMsg(getRoomUuid(), getLocalUserInfo(), getString(R.string.replay_link),
-                                System.currentTimeMillis(), EduChatMsgType.Text.getValue());
+                        RecordMsg recordMsg = new RecordMsg(getMediaRoomUuid(), getLocalUserInfo(),
+                                getString(R.string.replay_link), EduChatMsgType.Text.getValue());
                         recordMsg.isMe = true;
                         chatRoomFragment.addMessage(recordMsg);
                     }

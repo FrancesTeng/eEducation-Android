@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.annotation.NonNull
 import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcChannelEventHandler
+import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rtm.*

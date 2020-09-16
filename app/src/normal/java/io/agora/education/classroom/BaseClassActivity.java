@@ -21,7 +21,6 @@ import java.util.Map;
 import butterknife.BindView;
 import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.RetrofitManager;
-import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.RoomEntry;
 import io.agora.education.api.EduCallback;
@@ -47,7 +46,6 @@ import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
-import io.agora.education.api.user.data.EduLocalUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
@@ -121,7 +119,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     protected void showFragmentWithJoinSuccess() {
-        title_view.setTitle(getRoomName());
+        title_view.setTitle(getMediaRoomName());
         getSupportFragmentManager().beginTransaction()
                 .remove(whiteboardFragment)
                 .remove(chatRoomFragment)
@@ -232,11 +230,11 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         });
     }
 
-    protected EduRoom getMainEduRoom() {
+    public EduRoom getMainEduRoom() {
         return mainEduRoom;
     }
 
-    protected EduRoom getMyMediaRoom() {
+    public EduRoom getMyMediaRoom() {
         return mainEduRoom;
     }
 
@@ -319,23 +317,24 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         }).show(getSupportFragmentManager(), null);
     }
 
-    private EduRoomInfo getRoomInfo() {
+    private EduRoomInfo getMediaRoomInfo() {
         return getMyMediaRoom().getRoomInfo();
     }
 
-    public final String getRoomUuid() {
-        return getRoomInfo().getRoomUuid();
+    public final String getMediaRoomUuid() {
+        return getMediaRoomInfo().getRoomUuid();
     }
 
-    public final String getRoomName() {
-        return getRoomInfo().getRoomName();
+    public final String getMediaRoomName() {
+        return getMediaRoomInfo().getRoomName();
     }
 
     /**
      * 为流(主要是视频流)设置一个渲染区域
      */
-    public final void renderStream(EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
-        runOnUiThread(() -> getMyMediaRoom().getLocalUser().setStreamView(eduStreamInfo, getRoomUuid(), viewGroup));
+    public final void renderStream(EduRoom room, EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
+        runOnUiThread(() -> room.getLocalUser().setStreamView(eduStreamInfo,
+                room.getRoomInfo().getRoomUuid(), viewGroup));
     }
 
     protected String getProperty(Map<String, Object> properties, String key) {
@@ -440,8 +439,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
         /**收到群聊消息，进行处理并展示*/
-        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(), eduChatMsg.getMessage(),
-                eduChatMsg.getTimeStamp(), eduChatMsg.getType());
+        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(),
+                eduChatMsg.getMessage(), eduChatMsg.getType());
         chatMsg.isMe = chatMsg.getFromUser().equals(classRoom.getLocalUser().getUserInfo());
         chatRoomFragment.addMessage(chatMsg);
         Log.e(TAG, "成功添加一条聊天消息");
@@ -463,7 +462,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                     layout_whiteboard.setVisibility(View.GONE);
                     layout_share_video.setVisibility(View.VISIBLE);
                     layout_share_video.removeAllViews();
-                    renderStream(streamInfo, layout_share_video);
+                    renderStream(getMainEduRoom(), streamInfo, layout_share_video);
                 });
                 break;
             }
@@ -481,7 +480,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                     layout_whiteboard.setVisibility(View.GONE);
                     layout_share_video.setVisibility(View.VISIBLE);
                     layout_share_video.removeAllViews();
-                    renderStream(streamInfo, layout_share_video);
+                    renderStream(getMainEduRoom(), streamInfo, layout_share_video);
                 });
                 break;
             }
@@ -500,7 +499,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                     layout_whiteboard.setVisibility(View.VISIBLE);
                     layout_share_video.setVisibility(View.GONE);
                     layout_share_video.removeAllViews();
-                    renderStream(streamInfo, null);
+                    renderStream(getMainEduRoom(), streamInfo, null);
                 });
                 break;
             }
@@ -551,8 +550,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             if (mainRecordBean == null || tmp.getState() != mainRecordBean.getState()) {
                 mainRecordBean = tmp;
                 if (mainRecordBean.getState() == END) {
-                    RecordMsg recordMsg = new RecordMsg(getRoomUuid(), getLocalUserInfo(), getString(R.string.replay_link),
-                            System.currentTimeMillis(), EduChatMsgType.Text.getValue());
+                    RecordMsg recordMsg = new RecordMsg(getMediaRoomUuid(), getLocalUserInfo(),
+                            getString(R.string.replay_link), EduChatMsgType.Text.getValue());
                     recordMsg.isMe = true;
                     chatRoomFragment.addMessage(recordMsg);
                 }

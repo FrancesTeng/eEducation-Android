@@ -36,7 +36,6 @@ import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
 import io.agora.education.classroom.bean.channel.Room;
-import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.fragment.UserListFragment;
 
 public class SmallClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
@@ -136,21 +135,21 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
         userListFragment.setUserList(getCurFullUser());
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
         userListFragment.setUserList(getCurFullUser());
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
     }
 
     @Override
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         super.onRemoteUsersLeft(userEvents, classRoom);
         userListFragment.setUserList(getCurFullUser());
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
     }
 
     @Override

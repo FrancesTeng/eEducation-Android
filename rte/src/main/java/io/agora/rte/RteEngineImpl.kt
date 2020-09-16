@@ -71,7 +71,7 @@ object RteEngineImpl : IRteEngine {
     }
 
     override fun createChannel(channelId: String, eventListener: io.agora.rte.listener.RteChannelEventListener): io.agora.rte.IRteChannel {
-        val rteChannel = io.agora.rte.RteChannelImpl(channelId, eventListener)
+        val rteChannel = RteChannelImpl(channelId, eventListener)
         channelMap[channelId] = rteChannel
         return rteChannel
     }

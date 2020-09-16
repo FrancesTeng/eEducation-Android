@@ -41,12 +41,10 @@ import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.stream.data.VideoStreamType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduBaseUserInfo;
-import io.agora.education.api.user.data.EduChatState;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.classroom.bean.channel.Room;
-import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.bean.msg.PeerMsg;
 import io.agora.education.classroom.widget.RtcVideoView;
 
@@ -104,7 +102,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     protected void initData() {
         super.initData();
-        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, true, true,
+        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, false, true,
                 new EduCallback<EduStudent>() {
                     @Override
                     public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
@@ -249,14 +247,12 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 @Override
                 public void onSuccess(@Nullable EduStreamInfo res) {
                     localCoVideoStatus = DisCoVideo;
-                    runOnUiThread(() -> {
-                        resetHandState();
-                        video_student.setName(getLocalUserInfo().getUserName());
-                        renderStream(getLocalCameraStream(), null);
-                        video_student.muteVideo(!getLocalCameraStream().getHasVideo());
-                        video_student.muteAudio(!getLocalCameraStream().getHasAudio());
-                        video_student.setViewVisibility(View.GONE);
-                    });
+                    resetHandState();
+                    video_student.setName(getLocalUserInfo().getUserName());
+                    renderStream(getMainEduRoom(), getLocalCameraStream(), null);
+                    video_student.muteVideo(!getLocalCameraStream().getHasVideo());
+                    video_student.muteAudio(!getLocalCameraStream().getHasAudio());
+                    video_student.setViewVisibility(View.GONE);
                     getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
                     getLocalUser().unPublishStream(res, new EduCallback<Boolean>() {
                         @Override
@@ -314,7 +310,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     @Override
                     public void onSuccess(@Nullable EduStreamInfo res) {
                         video_student.setName(getLocalUserInfo().getUserName());
-                        renderStream(getLocalCameraStream(), null);
+                        renderStream(getMainEduRoom(), getLocalCameraStream(), null);
                         video_student.muteVideo(!getLocalCameraStream().getHasVideo());
                         video_student.muteAudio(!getLocalCameraStream().getHasAudio());
                         video_student.setViewVisibility(View.GONE);
@@ -345,7 +341,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     setLocalCameraStream(streamInfo);
                     video_student.setViewVisibility(View.VISIBLE);
                     video_student.setName(getLocalUserInfo().getUserName());
-                    renderStream(getLocalCameraStream(), video_student.getVideoLayout());
+                    renderStream(getMainEduRoom(), getLocalCameraStream(), video_student.getVideoLayout());
                     video_student.muteVideo(!getLocalCameraStream().getHasVideo());
                     video_student.muteAudio(!getLocalCameraStream().getHasAudio());
                 }
@@ -409,7 +405,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         /**老师不在的时候不能举手*/
         resetHandState();
     }
@@ -417,7 +413,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         /**老师不在的时候不能举手*/
         resetHandState();
 
@@ -426,7 +422,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         super.onRemoteUsersLeft(userEvents, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         /**老师不在的时候不能举手*/
         resetHandState();
     }
@@ -456,7 +452,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 switch (streamInfo.getVideoSourceType()) {
                     case CAMERA:
                         video_teacher.setName(publisher.getUserName());
-                        renderStream(streamInfo, video_teacher.getVideoLayout());
+                        renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
@@ -464,7 +460,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                         layout_whiteboard.setVisibility(View.GONE);
                         layout_share_video.setVisibility(View.VISIBLE);
                         layout_share_video.removeAllViews();
-                        renderStream(streamInfo, layout_share_video);
+                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
                         break;
                     default:
                         break;
@@ -473,9 +469,9 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 Log.e(TAG, "发现有远端连麦流,立即渲染");
                 video_student.setViewVisibility(View.VISIBLE);
                 video_student.setName(streamInfo.getPublisher().getUserName());
-                renderStream(streamInfo, video_student.getVideoLayout());
-                StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
-                getLocalUser().subscribeStream(streamInfo, options);
+                renderStream(getMainEduRoom(), streamInfo, video_student.getVideoLayout());
+//                StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
+//                getLocalUser().subscribeStream(streamInfo, options);
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 curLinkedUser = streamInfo.getPublisher();
@@ -495,7 +491,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     case CAMERA:
                         /**老师的远端流*/
                         video_teacher.setName(userInfo.getUserName());
-                        renderStream(streamInfo, video_teacher.getVideoLayout());
+                        renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
@@ -506,7 +502,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 /**远端用户连麦时的流*/
                 video_student.setViewVisibility(View.VISIBLE);
                 video_student.setName(streamInfo.getPublisher().getUserName());
-                renderStream(streamInfo, video_student.getVideoLayout());
+                renderStream(getMainEduRoom(), streamInfo, video_student.getVideoLayout());
                 StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
                 getLocalUser().subscribeStream(streamInfo, options);
                 video_student.muteVideo(!streamInfo.getHasVideo());
@@ -528,7 +524,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 switch (streamInfo.getVideoSourceType()) {
                     case CAMERA:
                         video_teacher.setName(userInfo.getUserName());
-                        renderStream(streamInfo, video_teacher.getVideoLayout());
+                        renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
@@ -538,7 +534,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             } else {
                 video_student.setViewVisibility(View.VISIBLE);
                 video_student.setName(streamInfo.getPublisher().getUserName());
-                renderStream(streamInfo, video_student.getVideoLayout());
+                renderStream(getMainEduRoom(), streamInfo, video_student.getVideoLayout());
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 curLinkedUser = streamInfo.getPublisher();
@@ -557,7 +553,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 switch (streamInfo.getVideoSourceType()) {
                     case CAMERA:
                         video_teacher.setName(streamInfo.getPublisher().getUserName());
-                        renderStream(streamInfo, null);
+                        renderStream(getMainEduRoom(), streamInfo, null);
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
@@ -566,7 +562,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 }
             } else {
                 video_student.setName(streamInfo.getPublisher().getUserName());
-                renderStream(streamInfo, null);
+                renderStream(getMainEduRoom(), streamInfo, null);
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 video_student.setViewVisibility(View.GONE);
@@ -632,7 +628,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             /**本地流(连麦的Camera流)被修改*/
             video_student.setViewVisibility(View.VISIBLE);
             video_student.setName(getLocalUserInfo().getUserName());
-            renderStream(getLocalCameraStream(), video_student.getVideoLayout());
+            renderStream(getMainEduRoom(), getLocalCameraStream(), video_student.getVideoLayout());
             video_student.muteVideo(!getLocalCameraStream().getHasVideo());
             video_student.muteAudio(!getLocalCameraStream().getHasAudio());
         }

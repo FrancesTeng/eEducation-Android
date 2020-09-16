@@ -9,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -18,9 +17,6 @@ import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
-import io.agora.education.api.room.data.EduRoomState;
-import io.agora.education.api.room.data.EduRoomStatus;
-import io.agora.education.api.room.data.Property;
 import io.agora.education.api.room.data.RoomStatusEvent;
 import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.ConnectionStateChangeReason;
@@ -30,9 +26,7 @@ import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
-import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.channel.Room;
-import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.widget.RtcVideoView;
 
 
@@ -92,7 +86,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         runOnUiThread(() -> {
             /**小班课，默认学生可以针对白板进行输入*/
             whiteboardFragment.disableCameraTransform(false);
@@ -103,13 +97,13 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
     }
 
     @Override
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         super.onRemoteUsersLeft(userEvents, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
     }
 
     @Override
@@ -158,7 +152,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
         Log.e(TAG, "老师的流信息:" + new Gson().toJson(streamInfo));
         if (streamInfo != null) {
             video_teacher.setName(streamInfo.getPublisher().getUserName());
-            renderStream(streamInfo, video_teacher.getVideoLayout());
+            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
             video_teacher.muteVideo(!streamInfo.getHasVideo());
             video_teacher.muteAudio(!streamInfo.getHasAudio());
         }
@@ -173,7 +167,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
             switch (streamInfo.getVideoSourceType()) {
                 case CAMERA:
                     video_teacher.setName(streamInfo.getPublisher().getUserName());
-                    renderStream(streamInfo, video_teacher.getVideoLayout());
+                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
                     video_teacher.muteAudio(!streamInfo.getHasAudio());
                     break;
@@ -183,7 +177,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
 //                        layout_whiteboard.setVisibility(View.GONE);
 //                        layout_share_video.setVisibility(View.VISIBLE);
 //                        layout_share_video.removeAllViews();
-//                        renderStream(streamInfo, layout_share_video);
+//                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
 //                    });
 //                    break;
                 default:
@@ -201,7 +195,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
                 case CAMERA:
                     /**一对一场景下，远端流就是老师的流*/
                     video_teacher.setName(streamInfo.getPublisher().getUserName());
-                    renderStream(streamInfo, video_teacher.getVideoLayout());
+                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
                     video_teacher.muteAudio(!streamInfo.getHasAudio());
                     break;
@@ -210,7 +204,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
 //                        layout_whiteboard.setVisibility(View.GONE);
 //                        layout_share_video.setVisibility(View.VISIBLE);
 //                        layout_share_video.removeAllViews();
-//                        renderStream(streamInfo, layout_share_video);
+//                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
 //                    });
 //                    break;
                 default:
@@ -228,7 +222,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
             switch (streamInfo.getVideoSourceType()) {
                 case CAMERA:
                     video_teacher.setName(streamInfo.getPublisher().getUserName());
-                    renderStream(streamInfo, null);
+                    renderStream(getMainEduRoom(), streamInfo, null);
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
                     video_teacher.muteAudio(!streamInfo.getHasAudio());
                     break;
@@ -238,7 +232,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
 //                        layout_whiteboard.setVisibility(View.VISIBLE);
 //                        layout_share_video.setVisibility(View.GONE);
 //                        layout_share_video.removeAllViews();
-//                        renderStream(streamInfo, null);
+//                        renderStream(getMainEduRoom(), streamInfo, null);
 //                    });
 //                    break;
                 default:
@@ -295,7 +289,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
         EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-        renderStream(streamInfo, video_student.getVideoLayout());
+        renderStream(getMainEduRoom(), streamInfo, video_student.getVideoLayout());
         video_student.muteVideo(!streamInfo.getHasVideo());
         video_student.muteAudio(!streamInfo.getHasAudio());
         Log.e(TAG, "本地流被添加：" + getLocalCameraStream().getHasAudio() + "," + streamInfo.getHasVideo());
@@ -315,7 +309,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
         super.onLocalStreamRemoved(streamEvent);
         /**一对一场景下，此回调被调用就说明classroom结束，人员退出；所以此回调可以不处理*/
         EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-        renderStream(streamInfo, null);
+        renderStream(getMainEduRoom(), streamInfo, null);
         video_student.muteVideo(true);
         video_student.muteAudio(true);
         Log.e(TAG, "本地流被移除");

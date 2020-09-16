@@ -27,9 +27,9 @@ internal object CMDUtil {
         }
         Log.e("CMDDispatch", "构造buildEduMsg")
         return if (rtmMsg.type != null) {
-            EduChatMsg(fromUser, rtmMsg.message, cmdResponseBody.timestamp, rtmMsg.type)
+            EduChatMsg(fromUser, rtmMsg.message, rtmMsg.type)
         } else {
-            EduMsg(fromUser, rtmMsg.message, cmdResponseBody.timestamp)
+            EduMsg(fromUser, rtmMsg.message)
         }
     }
 }
