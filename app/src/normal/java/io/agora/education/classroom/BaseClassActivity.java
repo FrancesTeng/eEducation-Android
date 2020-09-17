@@ -332,7 +332,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     /**
      * 为流(主要是视频流)设置一个渲染区域
      */
-    public final void renderStream(EduRoom room, EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
+    public void renderStream(EduRoom room, EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
         runOnUiThread(() -> room.getLocalUser().setStreamView(eduStreamInfo,
                 room.getRoomInfo().getRoomUuid(), viewGroup));
     }

@@ -5,7 +5,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentTransaction;
@@ -18,6 +17,7 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,6 +43,7 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
@@ -57,7 +58,6 @@ import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.bean.record.RecordBean;
 import io.agora.education.classroom.bean.record.RecordMsg;
 import io.agora.education.classroom.fragment.UserListFragment;
-import io.agora.education.classroom.widget.RtcVideoView;
 import io.agora.education.service.CommonService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.service.bean.request.AllocateGroupReq;
@@ -78,10 +78,6 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     protected View layout_im;
     @BindView(R.id.layout_tab)
     protected TabLayout layout_tab;
-    @BindView(R.id.layout_video_teacher)
-    FrameLayout layout_video_teacher;
-
-    RtcVideoView video_teacher;
 
     private ClassVideoAdapter classVideoAdapter;
     private UserListFragment userListFragment;
@@ -111,7 +107,6 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 });
         classVideoAdapter = new ClassVideoAdapter();
     }
-
 
     private void allocateGroup(String roomUuid, String userUuid, EduCallback<EduRoomInfo> callback) {
         AllocateGroupReq req = new AllocateGroupReq();
@@ -171,20 +166,9 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         });
     }
 
-    private void renderTeacherStream(EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
-        /**老师是只加大班级，所以需要通过mainEduRoom对象来操作*/
-        runOnUiThread(() -> getMainEduRoom().getLocalUser().setStreamView(eduStreamInfo, getMediaRoomUuid(), viewGroup));
-    }
-
     @Override
     protected void initView() {
         super.initView();
-        if (video_teacher == null) {
-            video_teacher = new RtcVideoView(this);
-            video_teacher.init(R.layout.layout_video_large_class, false);
-        }
-        removeFromParent(video_teacher);
-        layout_video_teacher.addView(video_teacher, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         rcv_videos.setLayoutManager(layoutManager);
@@ -218,7 +202,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     @Override
     protected EduUserInfo getLocalUserInfo() {
-        return subEduRoom.getLocalUser().getUserInfo();
+//        return subEduRoom.getLocalUser().getUserInfo();
+        return getMainEduRoom().getLocalUser().getUserInfo();
     }
 
     @Override
@@ -230,6 +215,42 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         /**把消息发送到小房间去*/
         subEduRoom.getLocalUser().sendRoomChatMessage(new ChannelMsg.BreakoutChatMsgContent(msg,
                 subEduRoom.getRoomInfo().getRoomUuid()).toJsonString(), callback);
+    }
+
+    @Override
+    public void renderStream(EduRoom room, EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
+        /**判断发流者的角色:
+         * TEACHER->mainEduRoom
+         * STUDENT->subEduRoom*/
+        EduBaseUserInfo publish = eduStreamInfo.getPublisher();
+        if (publish.getRole().equals(EduUserRole.STUDENT)) {
+            room = subEduRoom;
+        }
+        super.renderStream(room, eduStreamInfo, viewGroup);
+    }
+
+    private List<EduUserInfo> getCurAllStudent() {
+        return subEduRoom.getFullUserList();
+    }
+
+    @Override
+    protected List<EduUserInfo> getCurFullUser() {
+        List<EduUserInfo> list = new ArrayList<>();
+        List<EduUserInfo> mainUsers = getMainEduRoom().getFullUserList();
+        List<EduUserInfo> subUsers = subEduRoom.getFullUserList();
+        list.addAll(mainUsers);
+        list.addAll(subUsers);
+        return list;
+    }
+
+    @Override
+    protected List<EduStreamInfo> getCurFullStream() {
+        List<EduStreamInfo> list = new ArrayList<>();
+        List<EduStreamInfo> mainStreams = getMainEduRoom().getFullStreamList();
+        List<EduStreamInfo> subStreams = subEduRoom.getFullStreamList();
+        list.addAll(mainStreams);
+        list.addAll(subStreams);
+        return list;
     }
 
     @OnClick(R.id.iv_float)
@@ -273,17 +294,14 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         if (classRoom.equals(subEduRoom)) {
-            Map<String, Object> roomProperties = classRoom.getRoomProperties();
-            /**判断roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
-            String boardJson = getProperty(roomProperties, BOARD);
-            if (TextUtils.isEmpty(boardJson)) {
-                requestBoardInfo((subEduRoom.getLocalUser().getUserInfo()).getUserToken(),
+            /**判断大班级中的roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
+            if (mainBoardBean == null) {
+                Log.e(TAG, "请求大房间的白板信息");
+                requestBoardInfo((getMainEduRoom().getLocalUser().getUserInfo()).getUserToken(),
                         getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid());
             } else {
-                mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
                 BoardInfo info = mainBoardBean.getInfo();
                 BoardState state = mainBoardBean.getState();
-                Log.e(TAG, "白板信息已存在->" + boardJson);
                 runOnUiThread(() -> {
                     whiteboardFragment.initBoardWithRoomToken(info.getBoardId(),
                             info.getBoardToken(), getLocalUserInfo().getUserUuid());
@@ -298,8 +316,15 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 });
             }
 
-            userListFragment.setUserList(getCurFullUser());
+            userListFragment.setUserList(getCurAllStudent());
             title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        } else {
+            Map<String, Object> roomProperties = classRoom.getRoomProperties();
+            String boardJson = getProperty(roomProperties, BOARD);
+            if (!TextUtils.isEmpty(boardJson)) {
+                Log.e(TAG, "大班级的白板信息已存在->" + boardJson);
+                mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
+            }
         }
     }
 
@@ -307,7 +332,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurFullUser());
+            userListFragment.setUserList(getCurAllStudent());
             title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         }
     }
@@ -316,7 +341,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         super.onRemoteUsersLeft(userEvents, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurFullUser());
+            userListFragment.setUserList(getCurAllStudent());
             title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         }
     }
@@ -376,149 +401,100 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             userListFragment.setLocalUserUuid(classRoom.getLocalUser().getUserInfo().getUserUuid());
             classVideoAdapter.setNewList(getCurFullStream());
         } else {
+            boolean notify = false;
             for (EduStreamInfo streamInfo : streams) {
                 EduBaseUserInfo publisher = streamInfo.getPublisher();
-                if (publisher.getRole().equals(EduUserRole.TEACHER)) {
+                if (publisher.equals(EduUserRole.TEACHER)) {
                     switch (streamInfo.getVideoSourceType()) {
                         case CAMERA:
-                            video_teacher.setName(publisher.getUserName());
-                            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                            video_teacher.muteVideo(!streamInfo.getHasVideo());
-                            video_teacher.muteAudio(!streamInfo.getHasAudio());
+                            notify = true;
                             break;
                         case SCREEN:
-                            layout_whiteboard.setVisibility(View.GONE);
-                            layout_share_video.setVisibility(View.VISIBLE);
-                            layout_share_video.removeAllViews();
-                            renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                            /**老师打开了屏幕分享，此时把这个流渲染出来*/
+                            runOnUiThread(() -> {
+                                layout_whiteboard.setVisibility(View.GONE);
+                                layout_share_video.setVisibility(View.VISIBLE);
+                                layout_share_video.removeAllViews();
+                                renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                            });
                             break;
                         default:
                             break;
                     }
                 }
+            }
+            if (notify) {
+                classVideoAdapter.setNewList(getCurFullStream());
             }
         }
     }
 
     @Override
     public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        /**老师的屏幕分享流在super方法中处理*/
         super.onRemoteStreamsAdded(streamEvents, classRoom);
-        if (classRoom.equals(subEduRoom)) {
-            boolean notify = false;
-            for (EduStreamEvent streamEvent : streamEvents) {
-                EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-                switch (streamInfo.getVideoSourceType()) {
-                    case CAMERA:
-                        notify = true;
-                        break;
-                    default:
-                        break;
-                }
+        /**处理摄像头流*/
+        boolean notify = false;
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    notify = true;
+                    break;
+                default:
+                    break;
             }
-            /**有远端Camera流添加，刷新视频列表*/
-            if (notify) {
-                Log.e(TAG, "有远端Camera流添加，刷新视频列表");
-                classVideoAdapter.setNewList(getCurFullStream());
-            }
-        } else {
-            for (EduStreamEvent streamEvent : streamEvents) {
-                EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-                EduBaseUserInfo userInfo = streamInfo.getPublisher();
-                if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                    switch (streamInfo.getVideoSourceType()) {
-                        case CAMERA:
-                            /**老师的远端流*/
-                            video_teacher.setName(userInfo.getUserName());
-                            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                            video_teacher.muteVideo(!streamInfo.getHasVideo());
-                            video_teacher.muteAudio(!streamInfo.getHasAudio());
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
+        }
+        /**有远端Camera流添加，刷新视频列表*/
+        if (notify) {
+            Log.e(TAG, "有远端Camera流添加，刷新视频列表");
+            classVideoAdapter.setNewList(getCurFullStream());
         }
     }
 
     @Override
     public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        /**老师的屏幕分享流在super方法中处理*/
         super.onRemoteStreamsUpdated(streamEvents, classRoom);
-        if (classRoom.equals(subEduRoom)) {
-            boolean notify = false;
-            for (EduStreamEvent streamEvent : streamEvents) {
-                EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-                switch (streamInfo.getVideoSourceType()) {
-                    case CAMERA:
-                        notify = true;
-                        break;
-                    default:
-                        break;
-                }
+        /**处理摄像头流*/
+        boolean notify = false;
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    notify = true;
+                    break;
+                default:
+                    break;
             }
-            /**有远端Camera流添加，刷新视频列表*/
-            if (notify) {
-                Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
-                classVideoAdapter.setNewList(getCurFullStream());
-            }
-        } else {
-            /**老师的屏幕分享流只有新建和移除，不会有修改行为，所以此处的流都是Camera类型的*/
-            for (EduStreamEvent streamEvent : streamEvents) {
-                EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-                EduBaseUserInfo userInfo = streamInfo.getPublisher();
-                if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                    switch (streamInfo.getVideoSourceType()) {
-                        case CAMERA:
-                            video_teacher.setName(userInfo.getUserName());
-                            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                            video_teacher.muteVideo(!streamInfo.getHasVideo());
-                            video_teacher.muteAudio(!streamInfo.getHasAudio());
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
+        }
+        /**有远端Camera流添加，刷新视频列表*/
+        if (notify) {
+            Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
+            classVideoAdapter.setNewList(getCurFullStream());
         }
     }
 
     @Override
     public void onRemoteStreamsRemoved(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        /**老师的屏幕分享流在super方法中处理*/
         super.onRemoteStreamsRemoved(streamEvents, classRoom);
-        if (classRoom.equals(subEduRoom)) {
-            boolean notify = false;
-            for (EduStreamEvent streamEvent : streamEvents) {
-                EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-                switch (streamInfo.getVideoSourceType()) {
-                    case CAMERA:
-                        notify = true;
-                        break;
-                    default:
-                        break;
-                }
+        /**处理摄像头流*/
+        boolean notify = false;
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    notify = true;
+                    break;
+                default:
+                    break;
             }
-            /**有远端Camera流被移除，刷新视频列表*/
-            if (notify) {
-                Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
-                classVideoAdapter.setNewList(getCurFullStream());
-            }
-        } else {
-            for (EduStreamEvent streamEvent : streamEvents) {
-                EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-                EduBaseUserInfo userInfo = streamInfo.getPublisher();
-                if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                    switch (streamInfo.getVideoSourceType()) {
-                        case CAMERA:
-                            video_teacher.setName(streamInfo.getPublisher().getUserName());
-                            renderStream(getMainEduRoom(), streamInfo, null);
-                            video_teacher.muteVideo(!streamInfo.getHasVideo());
-                            video_teacher.muteAudio(!streamInfo.getHasAudio());
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
+        }
+        /**有远端Camera流被移除，刷新视频列表*/
+        if (notify) {
+            Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
+            classVideoAdapter.setNewList(getCurFullStream());
         }
     }
 
@@ -543,12 +519,12 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     @Override
     public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
-        if (classRoom.equals(subEduRoom)) {
-            Log.e(TAG, "收到小房间的roomProperty改变的数据");
+        if (!classRoom.equals(subEduRoom)) {
+            Log.e(TAG, "收到大房间的roomProperty改变的数据");
             Map<String, Object> roomProperties = classRoom.getRoomProperties();
             String boardJson = getProperty(roomProperties, BOARD);
             if (!TextUtils.isEmpty(boardJson) && mainBoardBean == null) {
-                Log.e(TAG, "首次获取到小房间的白板信息->" + boardJson);
+                Log.e(TAG, "首次获取到大房间的白板信息->" + boardJson);
                 /**首次获取到白板信息*/
                 mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
                 runOnUiThread(() -> {
@@ -570,8 +546,9 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 if (mainRecordBean == null || tmp.getState() != mainRecordBean.getState()) {
                     mainRecordBean = tmp;
                     if (mainRecordBean.getState() == END) {
-                        RecordMsg recordMsg = new RecordMsg(getMediaRoomUuid(), getLocalUserInfo(),
-                                getString(R.string.replay_link), EduChatMsgType.Text.getValue());
+                        RecordMsg recordMsg = new RecordMsg(getMainEduRoom().getRoomInfo().getRoomUuid(),
+                                getLocalUserInfo(), getString(R.string.replay_link),
+                                EduChatMsgType.Text.getValue());
                         recordMsg.isMe = true;
                         chatRoomFragment.addMessage(recordMsg);
                     }

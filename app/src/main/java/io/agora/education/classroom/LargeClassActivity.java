@@ -178,7 +178,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     public void onClick(View view) {
         boolean status = localCoVideoStatus == DisCoVideo;
         if (!status) {
-            /**取消举手(包括在老师处理前主动取消和老师同意后主动退出)*/
+            /*取消举手(包括在老师处理前主动取消和老师同意后主动退出)*/
             cancelCoVideo(new EduCallback<EduMsg>() {
                 @Override
                 public void onSuccess(@Nullable EduMsg res) {
@@ -191,7 +191,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 }
             });
         } else {
-            /**举手*/
+            /*举手*/
             applyCoVideo(new EduCallback<EduMsg>() {
                 @Override
                 public void onSuccess(@Nullable EduMsg res) {
@@ -235,7 +235,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 getLocalUser().getUserInfo().getUserName());
         PeerMsg peerMsg = new PeerMsg(PeerMsg.Cmd.CO_VIDEO, coVideoMsg);
         if (localCoVideoStatus == CoVideoing) {
-            /**连麦过程中取消
+            /*连麦过程中取消
              * 1：关闭本地流
              * 2：更新流信息到服务器
              * 3：发送取消的点对点消息给老师
@@ -273,7 +273,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 }
             });
         } else {
-            /**举手过程中取消(老师还未处理)；直接发送取消的点对点消息给老师即可*/
+            /*举手过程中取消(老师还未处理)；直接发送取消的点对点消息给老师即可*/
             getLocalUser().sendUserMessage(peerMsg.toJsonString(), getTeacher(), callback);
             localCoVideoStatus = DisCoVideo;
             runOnUiThread(() -> {
@@ -281,15 +281,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             });
         }
     }
-
-//    @Override
-//    public void onTeacherMediaChanged(@Nullable User user) {
-//        if (user == null) return;
-//        video_teacher.setName(user.userName);
-//        video_teacher.showRemote(user.uid);
-//        video_teacher.muteVideo(!user.isVideoEnable());
-//        video_teacher.muteAudio(!user.isAudioEnable());
-//    }
 
     /**
      * 本地用户(举手、连麦)被老师同意/(拒绝、打断)
