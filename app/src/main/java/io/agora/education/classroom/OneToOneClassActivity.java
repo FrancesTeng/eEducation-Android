@@ -148,13 +148,35 @@ public class OneToOneClassActivity extends BaseClassActivity {
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
         Log.e(TAG, "onRemoteStreamsInitialized");
-        EduStreamInfo streamInfo = getTeacherStream();
-        Log.e(TAG, "老师的流信息:" + new Gson().toJson(streamInfo));
-        if (streamInfo != null) {
-            video_teacher.setName(streamInfo.getPublisher().getUserName());
-            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-            video_teacher.muteVideo(!streamInfo.getHasVideo());
-            video_teacher.muteAudio(!streamInfo.getHasAudio());
+//        EduStreamInfo streamInfo = getTeacherStream();
+//        Log.e(TAG, "老师的流信息:" + new Gson().toJson(streamInfo));
+//        if (streamInfo != null) {
+//            video_teacher.setName(streamInfo.getPublisher().getUserName());
+//            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+//            video_teacher.muteVideo(!streamInfo.getHasVideo());
+//            video_teacher.muteAudio(!streamInfo.getHasAudio());
+//        }
+        for (EduStreamInfo streamInfo : streams) {
+            /**一对一场景下，远端流就是老师的流*/
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    video_teacher.setName(streamInfo.getPublisher().getUserName());
+                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+                    video_teacher.muteVideo(!streamInfo.getHasVideo());
+                    video_teacher.muteAudio(!streamInfo.getHasAudio());
+                    break;
+                case SCREEN:
+                    /**有屏幕分享的流进入，说明是老师打开了屏幕分享，此时把这个流渲染出来*/
+                    runOnUiThread(() -> {
+                        layout_whiteboard.setVisibility(View.GONE);
+                        layout_share_video.setVisibility(View.VISIBLE);
+                        layout_share_video.removeAllViews();
+                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                    });
+                    break;
+                default:
+                    break;
+            }
         }
     }
 

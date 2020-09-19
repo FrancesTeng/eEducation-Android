@@ -208,7 +208,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         while (iterable.hasNext()) {
                             val element = iterable.next()
                             if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
-                                io.agora.rte.RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
+                                RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
                                         element.modifiedStream.hasVideo)
                                 eduRoom.getLocalUser().eventListener?.onLocalStreamRemoved(element)
                                 iterable.remove()

@@ -69,8 +69,8 @@ internal open class EduUserImpl(
     override fun subscribeStream(stream: EduStreamInfo, options: StreamSubscribeOptions) {
         /**订阅远端流*/
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, muteAudio = false,
-                muteVideo = false)
+        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, options.subscribeAudio,
+                options.subscribeVideo)
     }
 
     override fun unSubscribeStream(stream: EduStreamInfo) {

@@ -125,6 +125,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         }
         removeFromParent(video_teacher);
         layout_video_teacher.addView(video_teacher, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        video_teacher.setVisibility(View.VISIBLE);
 
         if (video_student == null) {
             video_student = new RtcVideoView(this);
@@ -482,6 +483,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     case CAMERA:
                         /**老师的远端流*/
                         video_teacher.setName(userInfo.getUserName());
+                        StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
+                        getLocalUser().subscribeStream(streamInfo, options);
                         renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());

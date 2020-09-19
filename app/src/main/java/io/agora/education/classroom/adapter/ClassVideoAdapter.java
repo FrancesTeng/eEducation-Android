@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.DiffUtil;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.viewholder.BaseViewHolder;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -78,14 +80,16 @@ public class ClassVideoAdapter extends BaseQuickAdapter<EduStreamInfo, ClassVide
 
     public void setNewList(@Nullable List<EduStreamInfo> data) {
         ((Activity) getContext()).runOnUiThread(() -> {
+            List<EduStreamInfo> list = new ArrayList<>();
+            list.addAll(data);
             /**过滤掉非Camera的流*/
-            Iterator<EduStreamInfo> streamInfoIterator = data.iterator();
+            Iterator<EduStreamInfo> streamInfoIterator = list.iterator();
             while (streamInfoIterator.hasNext()) {
                 if (!streamInfoIterator.next().getVideoSourceType().equals(VideoSourceType.CAMERA)) {
                     streamInfoIterator.remove();
                 }
             }
-            setDiffNewData(data);
+            setDiffNewData(list);
             notifyDataSetChanged();
         });
     }

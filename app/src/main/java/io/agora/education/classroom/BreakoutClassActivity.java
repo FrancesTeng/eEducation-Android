@@ -404,7 +404,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             boolean notify = false;
             for (EduStreamInfo streamInfo : streams) {
                 EduBaseUserInfo publisher = streamInfo.getPublisher();
-                if (publisher.equals(EduUserRole.TEACHER)) {
+                if (publisher.getRole().equals(EduUserRole.TEACHER)) {
                     switch (streamInfo.getVideoSourceType()) {
                         case CAMERA:
                             notify = true;
@@ -424,7 +424,9 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 }
             }
             if (notify) {
-                classVideoAdapter.setNewList(getCurFullStream());
+                /*此时小组房间可能还没有加入成功，所以只刷新大房间的流*/
+                List<EduStreamInfo> list = getMainEduRoom().getFullStreamList();
+                classVideoAdapter.setNewList(list);
             }
         }
     }
