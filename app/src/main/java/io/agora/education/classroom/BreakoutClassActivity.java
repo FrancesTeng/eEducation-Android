@@ -38,6 +38,7 @@ import io.agora.education.api.room.data.EduRoomStatus;
 import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.room.data.RoomStatusEvent;
 import io.agora.education.api.room.data.RoomType;
+import io.agora.education.api.statistics.AgoraError;
 import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
@@ -116,6 +117,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     @Override
                     public void onFailure(@Nullable Throwable throwable) {
                         Log.e(TAG, "申请小班信息失败:" + throwable.getMessage());
+                        getMainEduRoom().leave();
+                        joinFailed(AgoraError.INTERNAL_ERROR.getValue(), throwable.getMessage());
                     }
 
                     @Override
@@ -236,9 +239,9 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     protected List<EduUserInfo> getCurFullUser() {
         List<EduUserInfo> list = new ArrayList<>();
-        List<EduUserInfo> mainUsers = getMainEduRoom().getFullUserList();
+//        List<EduUserInfo> mainUsers = getMainEduRoom().getFullUserList();
         List<EduUserInfo> subUsers = subEduRoom.getFullUserList();
-        list.addAll(mainUsers);
+//        list.addAll(mainUsers);
         list.addAll(subUsers);
         return list;
     }

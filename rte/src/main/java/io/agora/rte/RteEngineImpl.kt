@@ -7,6 +7,7 @@ import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtc.video.VideoEncoderConfiguration
+import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rtm.*
 import java.io.File
 
@@ -70,7 +71,7 @@ object RteEngineImpl : IRteEngine {
         })
     }
 
-    override fun createChannel(channelId: String, eventListener: io.agora.rte.listener.RteChannelEventListener): io.agora.rte.IRteChannel {
+    override fun createChannel(channelId: String, eventListener: RteChannelEventListener): IRteChannel {
         val rteChannel = RteChannelImpl(channelId, eventListener)
         channelMap[channelId] = rteChannel
         return rteChannel
@@ -199,10 +200,10 @@ object RteEngineImpl : IRteEngine {
             Log.e("RteEngineImpl", "onUserJoined->$uid")
         }
 
-        override fun onSubscribeVideoStateChanged(channel: String?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
-            super.onSubscribeVideoStateChanged(channel, uid, oldState, newState, elapseSinceLastState)
-            Log.e("RteEngineImpl", "onSubscribeVideoStateChanged->$uid, oldState->$oldState, newState->$newState")
-        }
+//        override fun onSubscribeVideoStateChanged(channel: String?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
+//            super.onSubscribeVideoStateChanged(channel, uid, oldState, newState, elapseSinceLastState)
+//            Log.e("RteEngineImpl", "onSubscribeVideoStateChanged->$uid, oldState->$oldState, newState->$newState")
+//        }
 
         override fun onRemoteVideoStateChanged(uid: Int, state: Int, reason: Int, elapsed: Int) {
             super.onRemoteVideoStateChanged(uid, state, reason, elapsed)

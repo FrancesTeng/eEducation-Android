@@ -199,7 +199,8 @@ internal class EduRoomImpl(
         syncSession.localUser.initOrUpdateLocalStream(localStreamInitOptions, object : EduCallback<EduStreamInfo> {
             override fun onSuccess(streamInfo: EduStreamInfo?) {
                 /**判断是否需要更新本地的流信息(因为当前流信息在本地可能已经存在)*/
-                val pos = streamExistsInLocal(streamInfo)
+//                val pos = streamExistsInLocal(streamInfo)
+                val pos = Convert.streamExistsInList(streamInfo!!, getCurStreamList())
                 if (pos > -1) {
                     getCurStreamList()[pos] = streamInfo!!
                 }
@@ -290,7 +291,7 @@ internal class EduRoomImpl(
         var pos = -1
         streamInfo?.let {
             for ((index, element) in getCurStreamList().withIndex()) {
-                if (element == it) {
+                if (element.same(it)) {
                     pos = index
                     break
                 }
@@ -370,6 +371,7 @@ internal class EduRoomImpl(
         RteEngineImpl[getRoomInfo().roomUuid]?.release()
         eventListener = null
         syncSession.localUser.eventListener = null
+        (getLocalUser() as EduUserImpl).removeAllSurfaceView()
         /**移除掉当前room*/
         EduManagerImpl.removeRoom(this)
     }

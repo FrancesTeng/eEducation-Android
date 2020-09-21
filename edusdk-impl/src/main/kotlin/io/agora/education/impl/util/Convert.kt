@@ -390,6 +390,19 @@ internal class Convert {
             return EduUserInfoImpl(userInfo.userUuid, userInfo.userName, userInfo.role,
                     userInfo.isChatAllowed ?: false, (userInfo as EduLocalUserInfoImpl).updateTime)
         }
+
+        fun streamExistsInList(streamInfo: EduStreamInfo, list: MutableList<EduStreamInfo>): Int {
+            var pos = -1
+            streamInfo?.let {
+                for ((index, element) in list.withIndex()) {
+                    if (element.same(it)) {
+                        pos = index
+                        break
+                    }
+                }
+            }
+            return pos
+        }
     }
 }
 

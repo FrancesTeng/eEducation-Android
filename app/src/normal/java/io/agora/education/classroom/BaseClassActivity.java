@@ -297,6 +297,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         whiteboardFragment.releaseBoard();
         /**退出RTM*/
         getManager().logout();
+        getManager().setEduManagerEventListener(null);
         super.onDestroy();
     }
 

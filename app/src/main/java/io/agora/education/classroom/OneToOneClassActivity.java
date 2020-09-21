@@ -28,6 +28,7 @@ import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.widget.RtcVideoView;
+import io.agora.rte.RteEngineImpl;
 
 
 public class OneToOneClassActivity extends BaseClassActivity {

@@ -38,7 +38,7 @@ enum class AgoraError(var value: Int) {
     RESOURCE_EXHAUSTED(9),
 
     //
-    SEQUENCE_NOT_EXISTS(404),
+    SEQUENCE_NOT_EXISTS(20404101),
 
-    ROOM_ALREADY_EXISTS(409),
+    ROOM_ALREADY_EXISTS(20409100),
 }

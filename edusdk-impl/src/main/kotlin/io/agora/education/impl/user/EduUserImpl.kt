@@ -91,7 +91,8 @@ internal open class EduUserImpl(
         val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
                 if (streamInfo.hasAudio) 1 else 0)
-        var pos = eduRoom.streamExistsInLocal(streamInfo)
+//        var pos = eduRoom.streamExistsInLocal(streamInfo)
+        var pos = Convert.streamExistsInList(streamInfo, eduRoom.getCurStreamList())
         if (pos > -1) {
             /**流信息存在于本地，说明是更新*/
             if (eduRoom.getCurStreamList()[pos].hasAudio || eduRoom.getCurStreamList()[pos].hasVideo) {
@@ -276,7 +277,8 @@ internal open class EduUserImpl(
             checkAndRemoveSurfaceView(stream.hashCode())?.let {
                 viewGroup.removeView(it)
             }
-            val surfaceView = RtcEngine.CreateRendererView(viewGroup.context)
+            val appContext = viewGroup.context.applicationContext
+            val surfaceView = RtcEngine.CreateRendererView(appContext)
             surfaceView.tag = stream.hashCode()
             surfaceView.setZOrderMediaOverlay(true)
             val layoutParams = ViewGroup.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
@@ -301,6 +303,17 @@ internal open class EduUserImpl(
 
     override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?) {
         setStreamView(stream, channelId, viewGroup, VideoRenderConfig(RenderMode.HIDDEN))
+    }
+
+    internal fun removeAllSurfaceView() {
+        if (surfaceViewList.size > 0) {
+            surfaceViewList.forEach {
+                val parent = it.parent;
+                if (parent != null && parent is ViewGroup) {
+                    parent.removeView(it)
+                }
+            }
+        }
     }
 
     private fun checkAndRemoveSurfaceView(tag: Int): SurfaceView? {

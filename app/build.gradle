@@ -20,8 +20,8 @@ android {
         applicationId "io.agora.education"
         minSdkVersion rootProject.ext.android.minSdkVersion
         targetSdkVersion rootProject.ext.android.targetSdkVersion
-        versionCode 7
-        versionName "5.4.0"
+        versionCode 8
+        versionName "6.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -89,4 +89,7 @@ dependencies {
 
     implementation "com.jakewharton:butterknife:${extGet('dependencies', 'com.jakewharton:butterknife')}"
     annotationProcessor "com.jakewharton:butterknife-compiler:${extGet('dependencies', 'com.jakewharton:butterknife-compiler')}"
+
+
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
 }

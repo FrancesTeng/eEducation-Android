@@ -28,22 +28,33 @@ public class ClassVideoAdapter extends BaseQuickAdapter<EduStreamInfo, ClassVide
         setDiffCallback(new DiffUtil.ItemCallback<EduStreamInfo>() {
             @Override
             public boolean areItemsTheSame(@NonNull EduStreamInfo oldItem, @NonNull EduStreamInfo newItem) {
-                return oldItem == newItem;
+                return oldItem.getHasVideo() == newItem.getHasVideo()
+                        && oldItem.getHasAudio() == newItem.getHasAudio()
+                        && oldItem.getStreamUuid().equals(newItem.getStreamUuid())
+                        && oldItem.getStreamName().equals(newItem.getStreamName())
+                        && oldItem.getPublisher().equals(newItem.getPublisher())
+                        && oldItem.getVideoSourceType().equals(newItem.getVideoSourceType());
             }
 
             @Override
             public boolean areContentsTheSame(@NonNull EduStreamInfo oldItem, @NonNull EduStreamInfo newItem) {
                 return oldItem.getHasVideo() == newItem.getHasVideo()
                         && oldItem.getHasAudio() == newItem.getHasAudio()
-                        && oldItem.getStreamUuid().equals(newItem.getStreamUuid());
+                        && oldItem.getStreamUuid().equals(newItem.getStreamUuid())
+                        && oldItem.getStreamName().equals(newItem.getStreamName())
+                        && oldItem.getPublisher().equals(newItem.getPublisher())
+                        && oldItem.getVideoSourceType().equals(newItem.getVideoSourceType());
             }
 
             @Nullable
             @Override
             public Object getChangePayload(@NonNull EduStreamInfo oldItem, @NonNull EduStreamInfo newItem) {
                 if (oldItem.getHasVideo() == newItem.getHasVideo()
-                        || oldItem.getHasAudio() == newItem.getHasAudio()
-                        || oldItem.getStreamUuid().equals(newItem.getStreamUuid())) {
+                        && oldItem.getHasAudio() == newItem.getHasAudio()
+                        && oldItem.getStreamUuid().equals(newItem.getStreamUuid())
+                        && oldItem.getStreamName().equals(newItem.getStreamName())
+                        && oldItem.getPublisher().equals(newItem.getPublisher())
+                        && oldItem.getVideoSourceType().equals(newItem.getVideoSourceType())) {
                     return true;
                 } else {
                     return null;

@@ -137,8 +137,10 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                         val streamInfo = EduStreamInfoImpl(it.streamUuid, it.streamName, videoSourceType,
                                 it.videoState == EduVideoState.Open.value, it.audioState == EduAudioState.Open.value,
                                 publisher, it.updateTime)
-                        if (streamInfoList.contains(streamInfo)) {
-                            val index = streamInfoList.indexOf(streamInfo)
+//                        if (streamInfoList.contains(streamInfo)) {
+                        val index = Convert.streamExistsInList(streamInfo, streamInfoList)
+                        Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
+                        if (index > -1) {
                             /**更新本地缓存为最新数据;因为offlineUserList经过了有效判断，所以此处不再比较updateTime，直接remove*/
                             streamInfoList[index] = streamInfo
 //                            validStreamList.add(EduStreamEvent(streamInfo, null))
@@ -165,9 +167,11 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                         val streamInfo = EduStreamInfoImpl(it.streamUuid, it.streamName, videoSourceType,
                                 it.audioState == EduAudioState.Open.value, it.videoState == EduVideoState.Open.value,
                                 publisher, it.updateTime)
-                        if (streamInfoList.contains(streamInfo)) {
+//                        if (streamInfoList.contains(streamInfo)) {
+                        val index = Convert.streamExistsInList(streamInfo, streamInfoList);
+                        if (index > -1) {
                             /**更新本地缓存为最新数据;因为offlineUserList经过了有效判断，所以此处不再比较updateTime，直接remove*/
-                            streamInfoList.remove(streamInfo)
+                            streamInfoList.removeAt(index)
                             validStreamList.add(EduStreamEvent(streamInfo, operator))
                         }
                     }
@@ -203,9 +207,10 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
             synchronized(streamInfoList) {
                 for (element in streamInfos) {
-                    if (streamInfoList.contains(element)) {
-                        val index = streamInfoList.indexOf(element)
-
+//                    if (streamInfoList.contains(element)) {
+                    val index = Convert.streamExistsInList(element, streamInfoList)
+                    Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
+                    if (index > -1) {
                         /**获取已存在于集合中的用户*/
                         val userInfo2 = streamInfoList[index]
                         if (compareStreamInfoTime(element, userInfo2) > 0) {
@@ -237,9 +242,10 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             Log.e(TAG, "本地流缓存:" + Gson().toJson(streamInfoList))
             synchronized(streamInfoList) {
                 for (element in streamInfos) {
-                    if (streamInfoList.contains(element)) {
-                        val index = streamInfoList.indexOf(element)
-
+//                    if (streamInfoList.contains(element)) {
+                    val index = Convert.streamExistsInList(element, streamInfoList)
+                    Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
+                    if (index > -1) {
                         /**获取已存在于集合中的用户*/
                         val userInfo2 = streamInfoList[index]
                         if (compareStreamInfoTime(element, userInfo2) > 0) {
@@ -272,8 +278,10 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
             synchronized(streamInfoList) {
                 for (element in streamInfos) {
-                    if (streamInfoList.contains(element)) {
-                        val index = streamInfoList.indexOf(element)
+//                    if (streamInfoList.contains(element)) {
+                    val index = Convert.streamExistsInList(element, streamInfoList)
+                    Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
+                    if (index > -1) {
                         /**更新用户的数据为最新数据*/
                         streamInfoList.removeAt(index)
                         /**构造userEvent并返回*/

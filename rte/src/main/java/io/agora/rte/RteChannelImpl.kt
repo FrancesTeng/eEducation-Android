@@ -21,6 +21,7 @@ internal class RteChannelImpl(
 
         /**收到频道内消息(包括频道内的群聊消息和各种房间配置、人员信息、流信息等)*/
         override fun onMessageReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
+            Log.e("测试测试", p0?.text)
             eventListener?.onChannelMsgReceived(p0, p1)
         }
 
@@ -105,6 +106,7 @@ internal class RteChannelImpl(
             }
         })
         rtcChannel.leaveChannel()
+        eventListener = null
     }
 
     override fun release() {

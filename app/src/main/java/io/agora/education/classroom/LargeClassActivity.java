@@ -445,6 +445,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     case CAMERA:
                         video_teacher.setName(publisher.getUserName());
                         renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+                        StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
+                        getLocalUser().subscribeStream(streamInfo, options);
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;

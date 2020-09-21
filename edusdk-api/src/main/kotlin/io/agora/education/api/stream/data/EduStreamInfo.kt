@@ -14,18 +14,31 @@ enum class AudioSourceType(var value: Int) {
 
 open class EduStreamInfo(
         val streamUuid: String,
-        val streamName: String?,
+        var streamName: String?,
         var videoSourceType: VideoSourceType,
         var hasVideo: Boolean,
         var hasAudio: Boolean,
         val publisher: EduBaseUserInfo
 ) {
+    init {
+        if (streamName == null) {
+            streamName = streamUuid.plus("-")
+        }
+    }
+
+    /**是否是同一个流*/
+    fun same(streamInfo: EduStreamInfo): Boolean {
+        return this.streamUuid == streamInfo.streamUuid
+    }
+
+    /**是否是同一个对象*/
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is EduStreamInfo) {
             return false
         }
         return (other.streamUuid == this.streamUuid && other.streamName == this.streamName &&
-                other.publisher == this.publisher)
+                other.publisher == this.publisher) && other.hasAudio == this.hasAudio &&
+                other.hasVideo == this.hasVideo && other.videoSourceType == this.videoSourceType
     }
 
     override fun hashCode(): Int {
