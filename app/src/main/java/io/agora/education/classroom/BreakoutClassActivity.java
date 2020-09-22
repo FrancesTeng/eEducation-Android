@@ -413,7 +413,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                             notify = true;
                             break;
                         case SCREEN:
-                            /**老师打开了屏幕分享，此时把这个流渲染出来*/
+                            /*老师打开了屏幕分享，此时把这个流渲染出来*/
                             runOnUiThread(() -> {
                                 layout_whiteboard.setVisibility(View.GONE);
                                 layout_share_video.setVisibility(View.VISIBLE);

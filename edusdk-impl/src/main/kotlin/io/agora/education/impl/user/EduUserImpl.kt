@@ -40,6 +40,8 @@ import io.agora.rte.RteEngineImpl
 internal open class EduUserImpl(
         override var userInfo: EduLocalUserInfo
 ) : EduUser {
+    val TAG = EduUserImpl::class.java.simpleName
+
     override var videoEncoderConfig = VideoEncoderConfig()
 
     override var eventListener: EduUserEventListener? = null
@@ -69,8 +71,9 @@ internal open class EduUserImpl(
     override fun subscribeStream(stream: EduStreamInfo, options: StreamSubscribeOptions) {
         /**订阅远端流*/
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, options.subscribeAudio,
-                options.subscribeVideo)
+        Log.e(TAG, "muteRemoteStream->audio:${options.subscribeAudio},video:${options.subscribeVideo}")
+        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, !options.subscribeAudio,
+                !options.subscribeVideo)
     }
 
     override fun unSubscribeStream(stream: EduStreamInfo) {

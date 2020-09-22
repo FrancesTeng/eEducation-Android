@@ -449,6 +449,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
+        Log.e(TAG, "onRemoteStreamsInitialized");
     }
 
     @Override

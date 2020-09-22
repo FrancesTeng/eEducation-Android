@@ -200,10 +200,10 @@ object RteEngineImpl : IRteEngine {
             Log.e("RteEngineImpl", "onUserJoined->$uid")
         }
 
-//        override fun onSubscribeVideoStateChanged(channel: String?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
-//            super.onSubscribeVideoStateChanged(channel, uid, oldState, newState, elapseSinceLastState)
-//            Log.e("RteEngineImpl", "onSubscribeVideoStateChanged->$uid, oldState->$oldState, newState->$newState")
-//        }
+        override fun onSubscribeVideoStateChanged(channel: String?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
+            super.onSubscribeVideoStateChanged(channel, uid, oldState, newState, elapseSinceLastState)
+            Log.e("RteEngineImpl", "onSubscribeVideoStateChanged->$uid, oldState->$oldState, newState->$newState")
+        }
 
         override fun onRemoteVideoStateChanged(uid: Int, state: Int, reason: Int, elapsed: Int) {
             super.onRemoteVideoStateChanged(uid, state, reason, elapsed)

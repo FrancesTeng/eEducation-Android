@@ -445,8 +445,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     case CAMERA:
                         video_teacher.setName(publisher.getUserName());
                         renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                        StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
-                        getLocalUser().subscribeStream(streamInfo, options);
+//                        StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
+//                        getLocalUser().subscribeStream(streamInfo, options);
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
@@ -485,8 +485,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     case CAMERA:
                         /**老师的远端流*/
                         video_teacher.setName(userInfo.getUserName());
-                        StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
-                        getLocalUser().subscribeStream(streamInfo, options);
                         renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
