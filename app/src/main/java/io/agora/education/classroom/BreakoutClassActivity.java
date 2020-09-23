@@ -248,7 +248,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     protected List<EduStreamInfo> getCurFullStream() {
         List<EduStreamInfo> list = new ArrayList<>();
         List<EduStreamInfo> mainStreams = getMainEduRoom().getFullStreamList();
-        List<EduStreamInfo> subStreams = subEduRoom.getFullStreamList();
+        List<EduStreamInfo> subStreams = new ArrayList<>();
+        if (subEduRoom != null) {
+            subStreams = subEduRoom.getFullStreamList();
+        }
         list.addAll(mainStreams);
         list.addAll(subStreams);
         return list;

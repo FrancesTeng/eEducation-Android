@@ -1,7 +1,6 @@
 package io.agora.education.api.manager
 
 import android.util.Base64
-import io.agora.education.R
 import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel

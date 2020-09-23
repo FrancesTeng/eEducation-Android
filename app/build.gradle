@@ -34,11 +34,13 @@ android {
     buildTypes {
         debug {
             minifyEnabled false
-            applicationIdSuffix ".debug"
+//            applicationIdSuffix ".debug"
         }
         release {
-            minifyEnabled true
-            shrinkResources true
+//            minifyEnabled true
+//            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -91,5 +93,5 @@ dependencies {
     annotationProcessor "com.jakewharton:butterknife-compiler:${extGet('dependencies', 'com.jakewharton:butterknife-compiler')}"
 
 
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
+//    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
 }

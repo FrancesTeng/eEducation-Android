@@ -80,11 +80,11 @@ internal class RteChannelImpl(
 //                    "receivedBitrate->${stats?.receivedBitrate}")
         }
 
-        override fun onSubscribeVideoStateChanged(rtcChannel: RtcChannel?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
-            super.onSubscribeVideoStateChanged(rtcChannel, uid, oldState, newState, elapseSinceLastState)
-            Log.e("RteChannelImpl", "onSubscribeVideoStateChanged->$${rtcChannel?.channelId()}, " +
-                    "uid->$uid, oldState->$oldState, newState->$newState")
-        }
+//        override fun onSubscribeVideoStateChanged(rtcChannel: RtcChannel?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
+//            super.onSubscribeVideoStateChanged(rtcChannel, uid, oldState, newState, elapseSinceLastState)
+//            Log.e("RteChannelImpl", "onSubscribeVideoStateChanged->$${rtcChannel?.channelId()}, " +
+//                    "uid->$uid, oldState->$oldState, newState->$newState")
+//        }
     }
 
     private val rtmChannel = RteEngineImpl.rtmClient.createChannel(channelId, rtmChannelListener)

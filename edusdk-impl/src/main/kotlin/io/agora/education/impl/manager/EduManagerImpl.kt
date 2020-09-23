@@ -12,7 +12,7 @@ import io.agora.Constants.Companion.LOG_APPSECRET
 import io.agora.education.impl.util.Convert
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
-import io.agora.education.BuildConfig
+import io.agora.education.api.BuildConfig
 import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
