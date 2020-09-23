@@ -1,6 +1,7 @@
 package io.agora.education.classroom;
 
 import android.content.res.Configuration;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,6 +48,7 @@ import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.bean.msg.PeerMsg;
 import io.agora.education.classroom.widget.RtcVideoView;
+import io.agora.rte.RteEngineImpl;
 
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Status.Applying;
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Status.CoVideoing;
@@ -445,8 +447,9 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     case CAMERA:
                         video_teacher.setName(publisher.getUserName());
                         renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-//                        StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
-//                        getLocalUser().subscribeStream(streamInfo, options);
+//                        RteEngineImpl.INSTANCE.publish(getMediaRoomUuid());
+//                        new Handler(getMainLooper()).postDelayed(() ->
+//                                RteEngineImpl.INSTANCE.unpublish(getMediaRoomUuid()), 300);
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
@@ -464,8 +467,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 video_student.setViewVisibility(View.VISIBLE);
                 video_student.setName(streamInfo.getPublisher().getUserName());
                 renderStream(getMainEduRoom(), streamInfo, video_student.getVideoLayout());
-//                StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
-//                getLocalUser().subscribeStream(streamInfo, options);
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 curLinkedUser = streamInfo.getPublisher();
@@ -486,6 +487,9 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                         /**老师的远端流*/
                         video_teacher.setName(userInfo.getUserName());
                         renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+//                        RteEngineImpl.INSTANCE.publish(getMediaRoomUuid());
+//                        new Handler(getMainLooper()).postDelayed(() ->
+//                                RteEngineImpl.INSTANCE.unpublish(getMediaRoomUuid()), 300);
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
@@ -497,8 +501,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 video_student.setViewVisibility(View.VISIBLE);
                 video_student.setName(streamInfo.getPublisher().getUserName());
                 renderStream(getMainEduRoom(), streamInfo, video_student.getVideoLayout());
-                StreamSubscribeOptions options = new StreamSubscribeOptions(true, true, VideoStreamType.HIGH);
-                getLocalUser().subscribeStream(streamInfo, options);
                 video_student.muteVideo(!streamInfo.getHasVideo());
                 video_student.muteAudio(!streamInfo.getHasAudio());
                 curLinkedUser = streamInfo.getPublisher();

@@ -53,6 +53,7 @@ public class MainActivity extends BaseActivity {
     public final static int REQUEST_CODE_RTE = 909;
     public static final String CODE = "code";
     public static final String REASON = "reason";
+    private final int EDULOGINTAG = 999;
 
     @BindView(R.id.et_room_name)
     protected EditText et_room_name;
@@ -270,7 +271,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void login(String yourUuid, Intent intent) {
-        EduLoginOptions loginOptions = new EduLoginOptions(yourUuid);
+        EduLoginOptions loginOptions = new EduLoginOptions(yourUuid, EDULOGINTAG);
         getManager().login(loginOptions, new EduCallback<Unit>() {
             @Override
             public void onSuccess(@Nullable Unit res) {

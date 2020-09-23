@@ -39,6 +39,16 @@ internal class RteChannelImpl(
     }
 
     private val rtcChannelEventHandler = object : IRtcChannelEventHandler() {
+        override fun onChannelError(rtcChannel: RtcChannel?, err: Int) {
+            super.onChannelError(rtcChannel, err)
+            Log.e("RteChannelImpl", "onChannelError->" + rtcChannel?.channelId() + ",err->" + err)
+        }
+
+        override fun onChannelWarning(rtcChannel: RtcChannel?, warn: Int) {
+            super.onChannelWarning(rtcChannel, warn)
+            Log.e("RteChannelImpl", "onChannelWarning->" + rtcChannel?.channelId() + ",warn->" + warn)
+        }
+
         override fun onNetworkQuality(rtcChannel: RtcChannel?, uid: Int, txQuality: Int, rxQuality: Int) {
             super.onNetworkQuality(rtcChannel, uid, txQuality, rxQuality)
             eventListener?.onNetworkQuality(uid, txQuality, rxQuality)
@@ -51,7 +61,7 @@ internal class RteChannelImpl(
 
         override fun onJoinChannelSuccess(rtcChannel: RtcChannel?, uid: Int, elapsed: Int) {
             super.onJoinChannelSuccess(rtcChannel, uid, elapsed)
-            Log.e("RteChannelImpl", String.format("onJoinChannelSuccess channel %s uid %d", rtcChannel, uid));
+            Log.e("RteChannelImpl", String.format("onJoinChannelSuccess channel $rtcChannel uid $uid"))
         }
 
         override fun onUserJoined(rtcChannel: RtcChannel?, uid: Int, elapsed: Int) {
@@ -62,6 +72,18 @@ internal class RteChannelImpl(
         override fun onRemoteVideoStateChanged(rtcChannel: RtcChannel?, uid: Int, state: Int, reason: Int, elapsed: Int) {
             super.onRemoteVideoStateChanged(rtcChannel, uid, state, reason, elapsed)
             Log.e("RteChannelImpl", "onRemoteVideoStateChanged->$uid, state->$state, reason->$reason")
+        }
+
+        override fun onRemoteVideoStats(rtcChannel: RtcChannel?, stats: IRtcEngineEventHandler.RemoteVideoStats?) {
+            super.onRemoteVideoStats(rtcChannel, stats)
+//            Log.e("RteChannelImpl", "onRemoteVideoStats->${rtcChannel?.channelId()}, " +
+//                    "receivedBitrate->${stats?.receivedBitrate}")
+        }
+
+        override fun onSubscribeVideoStateChanged(rtcChannel: RtcChannel?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
+            super.onSubscribeVideoStateChanged(rtcChannel, uid, oldState, newState, elapseSinceLastState)
+            Log.e("RteChannelImpl", "onSubscribeVideoStateChanged->$${rtcChannel?.channelId()}, " +
+                    "uid->$uid, oldState->$oldState, newState->$newState")
         }
     }
 

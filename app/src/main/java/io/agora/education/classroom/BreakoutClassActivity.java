@@ -44,7 +44,6 @@ import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
@@ -68,7 +67,6 @@ import static io.agora.education.BuildConfig.API_BASE_URL;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
 import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
 import static io.agora.education.classroom.bean.record.RecordState.END;
-
 
 public class BreakoutClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
     private static final String TAG = "BreakoutClassActivity";
@@ -322,6 +320,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             userListFragment.setUserList(getCurAllStudent());
             title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         } else {
+            EduRoomStatus roomStatus = getMainEduRoom().getRoomStatus();
+            title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
+                    System.currentTimeMillis() - roomStatus.getStartTime());
+            /**处理roomProperties*/
             Map<String, Object> roomProperties = classRoom.getRoomProperties();
             String boardJson = getProperty(roomProperties, BOARD);
             if (!TextUtils.isEmpty(boardJson)) {
@@ -506,7 +508,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
         /**不调用父类中的super方法*/
-        if (classRoom.equals(subEduRoom)) {
+        if (classRoom.equals(getMainEduRoom())) {
             EduRoomStatus roomStatus = classRoom.getRoomStatus();
             switch (event) {
                 case COURSE_STATE:

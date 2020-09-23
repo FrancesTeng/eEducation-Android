@@ -65,7 +65,7 @@ internal class EduRoomImpl(
     lateinit var rtcToken: String
 
     /**用户监听学生join是否成功的回调*/
-    private lateinit var studentJoinCallback: EduCallback<EduStudent>
+    private var studentJoinCallback: EduCallback<EduStudent>? = null
     private lateinit var roomEntryRes: EduEntryRes
     lateinit var mediaOptions: RoomMediaOptions
 
@@ -92,8 +92,28 @@ internal class EduRoomImpl(
         return syncSession.eduUserInfoList
     }
 
+    internal fun getCurRemoteUserList(): MutableList<EduUserInfo> {
+        val list = mutableListOf<EduUserInfo>()
+        syncSession.eduUserInfoList?.forEach {
+            if (it != getLocalUser().userInfo) {
+                list.add(it)
+            }
+        }
+        return list
+    }
+
     internal fun getCurStreamList(): MutableList<EduStreamInfo> {
         return syncSession.eduStreamInfoList
+    }
+
+    internal fun getCurRemoteStreamList(): MutableList<EduStreamInfo> {
+        val list = mutableListOf<EduStreamInfo>()
+        syncSession.eduStreamInfoList?.forEach {
+            if (it.publisher != getLocalUser().userInfo) {
+                list.add(it)
+            }
+        }
+        return list
     }
 
     /**上课过程中，学生的角色目前不发生改变;
@@ -186,7 +206,7 @@ internal class EduRoomImpl(
 
     private fun joinRte(rtcToken: String, rtcUid: Long, channelMediaOptions: ChannelMediaOptions,
                         @NonNull callback: ResultCallback<Void>) {
-        RteEngineImpl.setClientRole(getRoomInfo().roomUuid, CHANNEL_PROFILE_LIVE_BROADCASTING)
+        RteEngineImpl.setClientRole(getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
         val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(this)
         RteEngineImpl[getRoomInfo().roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
     }
@@ -236,8 +256,8 @@ internal class EduRoomImpl(
                 /**维护本地存储的在线人数*/
                 getRoomStatus().onlineUsersCount = getCurUserList().size
                 callback.onSuccess(eduUser as EduStudent)
-                eventListener?.onRemoteUsersInitialized(getCurUserList(), this@EduRoomImpl)
-                eventListener?.onRemoteStreamsInitialized(getCurStreamList(), this@EduRoomImpl)
+                eventListener?.onRemoteUsersInitialized(getCurRemoteUserList(), this@EduRoomImpl)
+                eventListener?.onRemoteStreamsInitialized(getCurRemoteStreamList(), this@EduRoomImpl)
                 joinSuccess = true
                 /**检查是否有默认流信息(直接处理数据)*/
                 val addedStreamsIterable = defaultStreams.iterator()
@@ -282,22 +302,6 @@ internal class EduRoomImpl(
                 callback.onFailure(code, reason)
             }
         }
-    }
-
-    /**判断流信息在本地是否存在
-     * @param streamInfo 需要判断的流
-     * @return >= 0 存在，并返回下标   < 0 不存在*/
-    fun streamExistsInLocal(streamInfo: EduStreamInfo?): Int {
-        var pos = -1
-        streamInfo?.let {
-            for ((index, element) in getCurStreamList().withIndex()) {
-                if (element.same(it)) {
-                    pos = index
-                    break
-                }
-            }
-        }
-        return pos
     }
 
     /**清楚本地缓存，离开RTM的当前频道；退出RTM*/
@@ -371,6 +375,7 @@ internal class EduRoomImpl(
         RteEngineImpl[getRoomInfo().roomUuid]?.release()
         eventListener = null
         syncSession.localUser.eventListener = null
+        studentJoinCallback = null
         (getLocalUser() as EduUserImpl).removeAllSurfaceView()
         /**移除掉当前room*/
         EduManagerImpl.removeRoom(this)

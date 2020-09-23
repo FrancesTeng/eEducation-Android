@@ -2,6 +2,7 @@ package io.agora.rte
 
 import android.content.Context
 import android.util.Log
+import io.agora.rtc.Constants.CHANNEL_PROFILE_LIVE_BROADCASTING
 import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcEngine
@@ -27,6 +28,7 @@ object RteEngineImpl : IRteEngine {
         var code = rtmClient.setLogFile(path)
         path = logFileDir.plus(File.separatorChar).plus("agorasdk.log")
         rtcEngine = RtcEngine.create(context, appId, rtcEngineEventHandler)
+        rtcEngine.setChannelProfile(CHANNEL_PROFILE_LIVE_BROADCASTING)
         code = rtcEngine.setLogFile(path)
         Log.e("RteEngineImpl", "init")
 //        rtcEngine.setParameters("{\"rtc.log_filter\": 65535}")

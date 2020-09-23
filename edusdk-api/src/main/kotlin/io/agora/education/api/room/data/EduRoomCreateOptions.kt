@@ -62,5 +62,6 @@ class RoomCreateOptions(
 
 
 class EduLoginOptions(
-        val userUuid: String
+        val userUuid: String,
+        val tag: Int
 )

@@ -292,6 +292,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     protected void onDestroy() {
+        /**尝试主动释放TimeView中的handle*/
+        title_view.setTimeState(false, 0);
         /**退出activity之前释放eduRoom资源*/
         mainEduRoom = null;
         whiteboardFragment.releaseBoard();
@@ -391,6 +393,10 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
+        EduRoomStatus roomStatus = getMyMediaRoom().getRoomStatus();
+        title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
+                System.currentTimeMillis() - roomStatus.getStartTime());
+        /**处理roomProperties*/
         Map<String, Object> roomProperties = classRoom.getRoomProperties();
         /**判断roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
         String boardJson = getProperty(roomProperties, BOARD);

@@ -3,6 +3,7 @@ package io.agora.education.impl.user
 import android.util.Log
 import android.view.SurfaceView
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.LinearLayout
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID

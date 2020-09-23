@@ -376,88 +376,88 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
          * 第二阶段（根据ts增量），如果中间断连，可根据ts续传
          * 第二阶段是增量数据，所以我们需要校验updateTime
          * @return 第二阶段的有效增量数据*/
-        fun syncUserStreamListToEduRoomWithSecond(userStreamRes: CMDSyncUserStreamRes, eduRoom: EduRoom)
-                : Array<MutableList<Any>> {
-            val validOnlineUserList = mutableListOf<Any>()
-            val validModifiedUserList = mutableListOf<Any>()
-            val validOfflineUserList = mutableListOf<Any>()
-            val validAddedStreamList = mutableListOf<Any>()
-            val validModifiedStreamList = mutableListOf<Any>()
-            val validRemovedStreamList = mutableListOf<Any>()
-
-            val eduUserList = (eduRoom as EduRoomImpl).getCurUserList()
-            val eduStreamList = eduRoom.getCurStreamList()
-            userStreamRes.list?.let {
-
-                for ((index, element) in userStreamRes.list.withIndex()) {
-                    val role = Convert.convertUserRole(element.role, (eduRoom as EduRoomImpl).getCurRoomType())
-                    val eduUserInfo: EduUserInfo = EduUserInfoImpl(element.userUuid, element.userName, role,
-                            element.muteChat == EduChatState.Allow.value, element.updateTime)
-                    /**更新用户自定义数据*/
-                    eduUserInfo.userProperties = element.userProperties
-                    if (element.state == CMDUserState.Online.value) {
-                        if (eduUserList.contains(eduUserInfo)) {
-                            /**本地包含此用户，比较数据得更新时间*/
-                            if (compareUserInfoTime(eduUserInfo, eduUserList[index]) > 0) {
-                                /**本地包含此用户，说明是用户数据更新;*/
-                                val pos = eduUserList.indexOf(eduUserInfo)
-                                eduUserList[pos] = eduUserInfo
-                                validModifiedUserList.add(EduUserEvent(eduUserInfo, null))
-                                /**还需判断所属流是否存在于本地*/
-                                element.streams?.let {
-                                    for ((pos, streamRes) in element.streams.withIndex()) {
-                                        val eduStreamInfo: EduStreamInfo = Convert.convertStreamInfo(
-                                                streamRes, eduUserInfo)
-                                        /**存在则为更新，不存在则为添加*/
-                                        if (eduStreamList.contains(eduStreamInfo)) {
-                                            eduStreamList[pos] = eduStreamInfo
-                                            validModifiedStreamList.add(EduStreamEvent(eduStreamInfo, null))
-                                        } else {
-                                            eduStreamList.add(eduStreamInfo)
-                                            validAddedStreamList.add(EduStreamEvent(eduStreamInfo, null))
-                                        }
-                                    }
-                                }
-                            } else {
-                                /**用户数据得更新时间比较晚，则不处理用户数据和流数据*/
-                            }
-                        } else {
-                            /**本地不包含此用户，说明是新增的人，那么对应的流也是新增的*/
-                            eduUserList.add(eduUserInfo)
-                            validOnlineUserList.add(eduUserInfo)
-                            element.streams?.let {
-                                for (addedStream in element.streams) {
-                                    val eduStreamInfo: EduStreamInfo = Convert.convertStreamInfo(
-                                            addedStream, eduUserInfo)
-                                    eduStreamList.add(eduStreamInfo)
-                                    validAddedStreamList.add(EduStreamEvent(eduStreamInfo, null))
-                                }
-                            }
-                        }
-                    } else if (element.state == CMDUserState.Offline.value) {
-                        /**下线用户不存在与本地缓存中，那么就不是有效数据*/
-                        if (eduUserList.contains(eduUserInfo)) {
-                            /**判断更新时间,获取最新数据；更新本地缓存数据*/
-                            if (compareUserInfoTime(eduUserInfo, eduUserList[index]) > 0) {
-                                eduUserList.removeAt(index)
-                                validOfflineUserList.add(EduUserEvent(eduUserInfo, null))
-                                /**用户所属的流判定为remove;更新本地缓存数据*/
-                                element.streams?.let {
-                                    for (removedStream in element.streams) {
-                                        val eduStreamInfo: EduStreamInfo = Convert.convertStreamInfo(
-                                                removedStream, eduUserInfo)
-                                        eduStreamList.remove(eduStreamInfo)
-                                        validRemovedStreamList.add(EduStreamEvent(eduStreamInfo, null))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return arrayOf(validOnlineUserList, validModifiedUserList, validOfflineUserList,
-                    validAddedStreamList, validModifiedStreamList, validRemovedStreamList)
-        }
+//        fun syncUserStreamListToEduRoomWithSecond(userStreamRes: CMDSyncUserStreamRes, eduRoom: EduRoom)
+//                : Array<MutableList<Any>> {
+//            val validOnlineUserList = mutableListOf<Any>()
+//            val validModifiedUserList = mutableListOf<Any>()
+//            val validOfflineUserList = mutableListOf<Any>()
+//            val validAddedStreamList = mutableListOf<Any>()
+//            val validModifiedStreamList = mutableListOf<Any>()
+//            val validRemovedStreamList = mutableListOf<Any>()
+//
+//            val eduUserList = (eduRoom as EduRoomImpl).getCurUserList()
+//            val eduStreamList = eduRoom.getCurStreamList()
+//            userStreamRes.list?.let {
+//
+//                for ((index, element) in userStreamRes.list.withIndex()) {
+//                    val role = Convert.convertUserRole(element.role, (eduRoom as EduRoomImpl).getCurRoomType())
+//                    val eduUserInfo: EduUserInfo = EduUserInfoImpl(element.userUuid, element.userName, role,
+//                            element.muteChat == EduChatState.Allow.value, element.updateTime)
+//                    /**更新用户自定义数据*/
+//                    eduUserInfo.userProperties = element.userProperties
+//                    if (element.state == CMDUserState.Online.value) {
+//                        if (eduUserList.contains(eduUserInfo)) {
+//                            /**本地包含此用户，比较数据得更新时间*/
+//                            if (compareUserInfoTime(eduUserInfo, eduUserList[index]) > 0) {
+//                                /**本地包含此用户，说明是用户数据更新;*/
+//                                val pos = eduUserList.indexOf(eduUserInfo)
+//                                eduUserList[pos] = eduUserInfo
+//                                validModifiedUserList.add(EduUserEvent(eduUserInfo, null))
+//                                /**还需判断所属流是否存在于本地*/
+//                                element.streams?.let {
+//                                    for ((pos, streamRes) in element.streams.withIndex()) {
+//                                        val eduStreamInfo: EduStreamInfo = Convert.convertStreamInfo(
+//                                                streamRes, eduUserInfo)
+//                                        /**存在则为更新，不存在则为添加*/
+//                                        if (eduStreamList.contains(eduStreamInfo)) {
+//                                            eduStreamList[pos] = eduStreamInfo
+//                                            validModifiedStreamList.add(EduStreamEvent(eduStreamInfo, null))
+//                                        } else {
+//                                            eduStreamList.add(eduStreamInfo)
+//                                            validAddedStreamList.add(EduStreamEvent(eduStreamInfo, null))
+//                                        }
+//                                    }
+//                                }
+//                            } else {
+//                                /**用户数据得更新时间比较晚，则不处理用户数据和流数据*/
+//                            }
+//                        } else {
+//                            /**本地不包含此用户，说明是新增的人，那么对应的流也是新增的*/
+//                            eduUserList.add(eduUserInfo)
+//                            validOnlineUserList.add(eduUserInfo)
+//                            element.streams?.let {
+//                                for (addedStream in element.streams) {
+//                                    val eduStreamInfo: EduStreamInfo = Convert.convertStreamInfo(
+//                                            addedStream, eduUserInfo)
+//                                    eduStreamList.add(eduStreamInfo)
+//                                    validAddedStreamList.add(EduStreamEvent(eduStreamInfo, null))
+//                                }
+//                            }
+//                        }
+//                    } else if (element.state == CMDUserState.Offline.value) {
+//                        /**下线用户不存在与本地缓存中，那么就不是有效数据*/
+//                        if (eduUserList.contains(eduUserInfo)) {
+//                            /**判断更新时间,获取最新数据；更新本地缓存数据*/
+//                            if (compareUserInfoTime(eduUserInfo, eduUserList[index]) > 0) {
+//                                eduUserList.removeAt(index)
+//                                validOfflineUserList.add(EduUserEvent(eduUserInfo, null))
+//                                /**用户所属的流判定为remove;更新本地缓存数据*/
+//                                element.streams?.let {
+//                                    for (removedStream in element.streams) {
+//                                        val eduStreamInfo: EduStreamInfo = Convert.convertStreamInfo(
+//                                                removedStream, eduUserInfo)
+//                                        eduStreamList.remove(eduStreamInfo)
+//                                        validRemovedStreamList.add(EduStreamEvent(eduStreamInfo, null))
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            return arrayOf(validOnlineUserList, validModifiedUserList, validOfflineUserList,
+//                    validAddedStreamList, validModifiedStreamList, validRemovedStreamList)
+//        }
 
 
         /**同步房间的快照信息*/
