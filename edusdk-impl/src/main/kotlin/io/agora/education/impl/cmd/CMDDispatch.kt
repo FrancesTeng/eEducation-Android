@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.agora.education.impl.util.Convert
 import io.agora.education.api.manager.listener.EduManagerEventListener
+import io.agora.education.api.message.EduActionMessage
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomStatusEvent
@@ -236,6 +237,11 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 /**点对点的聊天消息*/
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom) as EduChatMsg
                 cmdCallbackManager.onUserChatMessageReceived(eduMsg, listener)
+            }
+            CMDId.ActionMsgReceived.value -> {
+                /**邀请申请动作消息*/
+                val actionMsg = Convert.convertEduActionMsg(text)
+                cmdCallbackManager.onUserActionMessageReceived(actionMsg, listener)
             }
             CMDId.PeerCustomMsgReceived.value -> {
                 /**点对点的自定义消息(可以是用户自定义的信令)*/

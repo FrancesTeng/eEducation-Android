@@ -25,10 +25,12 @@ import io.agora.education.R;
 import io.agora.education.RoomEntry;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.manager.listener.EduManagerEventListener;
+import io.agora.education.api.message.EduActionMessage;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
+import io.agora.education.api.room.data.AutoPublishItem;
 import io.agora.education.api.room.data.EduRoomInfo;
 import io.agora.education.api.room.data.EduRoomState;
 import io.agora.education.api.room.data.EduRoomStatus;
@@ -110,7 +112,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         getManager().setEduManagerEventListener(this);
         roomEntry = getIntent().getParcelableExtra(ROOMENTRY);
         RoomCreateOptions createOptions = new RoomCreateOptions(roomEntry.getRoomUuid(),
-                roomEntry.getRoomName(), roomEntry.getRoomType(), true);
+                roomEntry.getRoomName(), roomEntry.getRoomType());
         mainEduRoom = buildEduRoom(createOptions, null);
     }
 
@@ -151,13 +153,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     protected void joinRoom(EduRoom eduRoom, String yourNameStr, String yourUuid, boolean autoSubscribe,
-                            boolean autoPublish, boolean needUserListener, EduCallback<EduStudent> callback) {
+                            AutoPublishItem publishType, boolean needUserListener, EduCallback<EduStudent> callback) {
         if (isJoining) {
             return;
         }
         isJoining = true;
         RoomJoinOptions options = new RoomJoinOptions(yourUuid, yourNameStr, EduUserRole.STUDENT,
-                new RoomMediaOptions(autoSubscribe, autoPublish));
+                new RoomMediaOptions(autoSubscribe, publishType));
         eduRoom.joinClassroom(options, new EduCallback<EduStudent>() {
             @Override
             public void onSuccess(@Nullable EduStudent res) {
@@ -645,6 +647,11 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg) {
+
+    }
+
+    @Override
+    public void onUserActionMessageReceived(@NotNull EduActionMessage actionMessage) {
 
     }
 

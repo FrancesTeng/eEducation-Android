@@ -81,4 +81,20 @@ internal interface UserService {
             @Path("key") key: String,
             @Field("value") value: String
     ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**开启 邀请/申请流程*/
+    @POST("/scene/apps/{appId}/v1/process/{processUuid}/start")
+    fun startAction(
+            @Path("appId") appId: String,
+            @Path("processUuid") processUuid: String,
+            @Body startActionReq: EduStartActionReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
+
+    /**开启 邀请/申请流程*/
+    @POST("/scene/apps/{appId}/v1/process/{processUuid}/stop")
+    fun stopAction(
+            @Path("appId") appId: String,
+            @Path("processUuid") processUuid: String,
+            @Body stopActionReq: EduStopActionReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
 }

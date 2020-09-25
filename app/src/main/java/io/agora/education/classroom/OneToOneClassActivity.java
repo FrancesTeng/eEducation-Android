@@ -6,17 +6,26 @@ import android.view.View;
 import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.OnClick;
+import io.agora.base.network.ResponseBody;
+import io.agora.base.network.RetrofitManager;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.message.EduActionMessage;
+import io.agora.education.api.message.EduActionType;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
+import io.agora.education.api.room.data.AutoPublishItem;
 import io.agora.education.api.room.data.RoomStatusEvent;
 import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.ConnectionStateChangeReason;
@@ -24,11 +33,16 @@ import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.user.EduStudent;
+import io.agora.education.api.user.data.EduBaseUserInfo;
+import io.agora.education.api.user.data.EduStartActionConfig;
+import io.agora.education.api.user.data.EduStopActionConfig;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
+import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.widget.RtcVideoView;
 import io.agora.rte.RteEngineImpl;
+import kotlin.Unit;
 
 
 public class OneToOneClassActivity extends BaseClassActivity {
@@ -49,7 +63,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     protected void initData() {
         super.initData();
-        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, true, true,
+        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true,
+                AutoPublishItem.AutoPublish, true,
                 new EduCallback<EduStudent>() {
                     @Override
                     public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {

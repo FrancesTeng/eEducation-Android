@@ -10,19 +10,26 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.tabs.TabLayout;
+import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.OnClick;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.message.EduActionMessage;
+import io.agora.education.api.message.EduActionType;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
+import io.agora.education.api.room.data.AutoPublishItem;
 import io.agora.education.api.room.data.EduRoomState;
 import io.agora.education.api.room.data.EduRoomStatus;
 import io.agora.education.api.room.data.RoomStatusEvent;
@@ -32,11 +39,16 @@ import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.user.EduStudent;
+import io.agora.education.api.user.data.EduBaseUserInfo;
+import io.agora.education.api.user.data.EduStartActionConfig;
+import io.agora.education.api.user.data.EduStopActionConfig;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
+import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.fragment.UserListFragment;
+import kotlin.Unit;
 
 public class SmallClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
     private static final String TAG = "SmallClassActivity";
@@ -59,7 +71,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     protected void initData() {
         super.initData();
-        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, true, true,
+        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true,
+                AutoPublishItem.AutoPublish, true,
                 new EduCallback<EduStudent>() {
                     @Override
                     public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
@@ -95,6 +108,41 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
                 .add(R.id.layout_chat_room, userListFragment)
                 .show(userListFragment)
                 .commitNow();
+
+        findViewById(R.id.send1).setOnClickListener((v) -> {
+            Map<String, String> map = new HashMap<>(1);
+            map.put("name", "tom");
+            EduBaseUserInfo userInfo = new EduBaseUserInfo("1012", "101", EduUserRole.STUDENT);
+            EduStartActionConfig config = new EduStartActionConfig("444",
+                    EduActionType.EduActionTypeApply, userInfo, 1000, map);
+            getLocalUser().startActionWithConfig(config, new EduCallback<Unit>() {
+                @Override
+                public void onSuccess(@Nullable Unit res) {
+                    Log.e(TAG, "成功1");
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+                    Log.e(TAG, "失败1");
+                }
+            });
+        });
+        findViewById(R.id.send2).setOnClickListener((v) -> {
+            Map<String, String> map = new HashMap<>(1);
+            map.put("name", "jerry");
+            EduStopActionConfig config = new EduStopActionConfig("444", EduActionType.EduActionTypeAccept, map);
+            getLocalUser().stopActionWithConfig(config, new EduCallback<Unit>() {
+                @Override
+                public void onSuccess(@Nullable Unit res) {
+                    Log.e(TAG, "成功2");
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+                    Log.e(TAG, "失败2");
+                }
+            });
+        });
     }
 
     @Override
@@ -329,5 +377,11 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamRemoved(streamEvent);
         /**小班课场景下，此回调被调用就说明classroom结束，人员退出；所以此回调可以不处理*/
+    }
+
+    @Override
+    public void onUserActionMessageReceived(@NotNull EduActionMessage actionMessage) {
+        super.onUserActionMessageReceived(actionMessage);
+        Log.e(TAG, "action->" + new Gson().toJson(actionMessage));
     }
 }

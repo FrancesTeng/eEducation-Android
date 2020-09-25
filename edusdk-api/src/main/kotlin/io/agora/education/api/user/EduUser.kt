@@ -7,6 +7,8 @@ import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.data.Property
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduLocalUserInfo
+import io.agora.education.api.user.data.EduStartActionConfig
+import io.agora.education.api.user.data.EduStopActionConfig
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 
@@ -39,6 +41,11 @@ interface EduUser {
     fun sendRoomChatMessage(message: String, callback: EduCallback<EduChatMsg>)
 
     fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduChatMsg>)
+
+    /*process action
+    * 一期教育SDK没有这个方法，只是给娱乐使用*/
+    fun startActionWithConfig(config: EduStartActionConfig, callback: EduCallback<Unit>)
+    fun stopActionWithConfig(config: EduStopActionConfig, callback: EduCallback<Unit>)
 
     fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?, config: VideoRenderConfig = VideoRenderConfig())
 

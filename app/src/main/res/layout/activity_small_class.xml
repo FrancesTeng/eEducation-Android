@@ -107,4 +107,22 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/rcv_videos" />
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/send1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="send"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title_view"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/send2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="send"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/send1"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

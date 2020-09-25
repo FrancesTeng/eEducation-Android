@@ -38,5 +38,7 @@ abstract class EduManager(
 
     abstract fun logMessage(message: String, level: LogLevel): AgoraError
 
+    /**日志上传之后，会通过回调把serialNumber返回
+     * serialNumber：日志序列号，可以用于查询日志*/
     abstract fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError
 }

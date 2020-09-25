@@ -255,7 +255,7 @@ public class MainActivity extends BaseActivity {
     private void createRoom(String yourNameStr, String yourUuid, String roomNameStr, String roomUuid, int roomType) {
         /**createClassroom时，room不存在则新建，存在则返回room信息(此接口非必须调用)，
          * 只要保证在调用joinClassroom之前，classroom在服务端存在即可*/
-        RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType, true);
+        RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType);
         getManager().scheduleClass(options, new EduCallback<Unit>() {
             @Override
             public void onSuccess(@Nullable Unit res) {

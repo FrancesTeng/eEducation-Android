@@ -237,11 +237,8 @@ internal class EduManagerImpl(
         logMessage("${TAG}: 收到点对点消息->${Gson().toJson(p0)}", LogLevel.INFO)
         /**RTM保证peerMsg能到达,不用走同步检查(seq衔接性检查)*/
         p0?.text?.let {
-            val cmdResponseBody = Gson().fromJson<CMDResponseBody<RtmMsg>>(p0.text, object :
-                    TypeToken<CMDResponseBody<RtmMsg>>() {}.type)
-            val eduRoom = findRoom(cmdResponseBody.data.fromRoom)
-            eduRoom?.let {
-                (it as EduRoomImpl).cmdDispatch.dispatchPeerMsg(Gson().toJson(cmdResponseBody), eduManagerEventListener)
+            eduRooms?.forEach {
+                (it as EduRoomImpl).cmdDispatch.dispatchPeerMsg(p0.text, eduManagerEventListener)
             }
         }
     }

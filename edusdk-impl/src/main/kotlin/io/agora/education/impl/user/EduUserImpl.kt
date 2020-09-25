@@ -20,6 +20,8 @@ import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduLocalUserInfo
+import io.agora.education.api.user.data.EduStartActionConfig
+import io.agora.education.api.user.data.EduStopActionConfig
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 import io.agora.education.impl.network.RetrofitManager
@@ -251,6 +253,41 @@ internal open class EduUserImpl(
                     override fun onSuccess(res: ResponseBody<String>?) {
                         val textMessage = EduChatMsg(userInfo, message, EduChatMsgType.Text.value)
                         callback.onSuccess(textMessage)
+                    }
+
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
+                    }
+                }))
+    }
+
+    override fun startActionWithConfig(config: EduStartActionConfig, callback: EduCallback<Unit>) {
+        val startActionReq = EduStartActionReq(config.action.value, config.toUser.userUuid,
+                userInfo.userUuid, config.timeout, config.payload)
+        RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
+                .startAction(APPID, config.processUuid, startActionReq)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
+                    override fun onSuccess(res: ResponseBody<String>?) {
+                        callback.onSuccess(Unit)
+                    }
+
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
+                    }
+                }))
+    }
+
+    override fun stopActionWithConfig(config: EduStopActionConfig, callback: EduCallback<Unit>) {
+        val stopAction = EduStopActionReq(config.action.value, config.payload)
+        RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
+                .stopAction(APPID, config.processUuid, stopAction)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
+                    override fun onSuccess(res: ResponseBody<String>?) {
+                        callback.onSuccess(Unit)
                     }
 
                     override fun onFailure(throwable: Throwable?) {

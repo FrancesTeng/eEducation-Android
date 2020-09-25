@@ -135,8 +135,7 @@ internal class EduRoomImpl(
         /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
         val role = Convert.convertUserRole(localUserInfo.role, getCurRoomType(), curClassType)
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
-                mediaOptions.primaryStreamId.toString(), if (mediaOptions.isAutoPublish())
-            AutoPublishItem.AutoPublish.value else AutoPublishItem.NoAutoPublish.value)
+                mediaOptions.primaryStreamId.toString(), mediaOptions.publishType.value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .joinClassroom(APPID, getRoomInfo().roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {
@@ -215,7 +214,7 @@ internal class EduRoomImpl(
                                         callback: EduCallback<Unit>) {
         /**初始化或更新本地用户的本地流*/
         val localStreamInitOptions = LocalStreamInitOptions(classRoomEntryRes.user.streamUuid,
-                roomMediaOptions.autoPublish, roomMediaOptions.autoPublish)
+                roomMediaOptions.isAutoPublish(), roomMediaOptions.isAutoPublish())
         syncSession.localUser.initOrUpdateLocalStream(localStreamInitOptions, object : EduCallback<EduStreamInfo> {
             override fun onSuccess(streamInfo: EduStreamInfo?) {
                 /**判断是否需要更新本地的流信息(因为当前流信息在本地可能已经存在)*/

@@ -5,7 +5,7 @@ import io.agora.rte.data.RteChannelMediaOptions
 
 data class RoomMediaOptions(
         var autoSubscribe: Boolean = true,
-        var autoPublish: Boolean = true
+        var publishType: AutoPublishItem = AutoPublishItem.NoOperation
 ) {
     /**用户传了primaryStreamId,那么就用他当做streamUuid;如果没传，就是默认值，后端会生成一个streamUuid*/
     var primaryStreamId: Int = DefaultStreamId
@@ -19,7 +19,7 @@ data class RoomMediaOptions(
     }
 
     fun isAutoPublish(): Boolean {
-        return this.autoPublish
+        return this.publishType == AutoPublishItem.AutoPublish
     }
 
     fun isAutoSubscribe(): Boolean {
@@ -38,7 +38,7 @@ data class RoomJoinOptions(
         val mediaOptions: RoomMediaOptions
 ) {
     fun closeAutoPublish() {
-        mediaOptions.autoPublish = false
+        mediaOptions.publishType = AutoPublishItem.NoAutoPublish
     }
 }
 

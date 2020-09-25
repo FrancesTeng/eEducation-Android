@@ -1,13 +1,12 @@
 package io.agora.education.api.user.data
 
-import io.agora.education.api.room.data.Property
 import io.agora.education.api.stream.data.EduStreamEvent
-import io.agora.education.api.stream.data.EduStreamInfo
 
 enum class EduUserRole(var value: Int) {
     EduRoleTypeInvalid(0),
     TEACHER(1),
-    STUDENT(2)
+    STUDENT(2),
+    ASSISTANT(3)
 }
 
 open class EduBaseUserInfo(

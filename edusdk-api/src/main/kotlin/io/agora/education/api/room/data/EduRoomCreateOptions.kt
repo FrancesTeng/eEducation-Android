@@ -24,12 +24,11 @@ data class Property(
     }
 }
 
-/**@param createRemoteClassroom 是否调用远端接口创建房间*/
+
 class RoomCreateOptions(
         var roomUuid: String,
         var roomName: String,
-        val roomType: Int,
-        val createRemoteClassroom: Boolean
+        val roomType: Int
 ) {
     val roomProperties: MutableSet<Property> = mutableSetOf()
 

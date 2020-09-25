@@ -28,6 +28,7 @@ import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
+import io.agora.education.api.room.data.AutoPublishItem;
 import io.agora.education.api.room.data.EduRoomState;
 import io.agora.education.api.room.data.EduRoomStatus;
 import io.agora.education.api.room.data.RoomStatusEvent;
@@ -104,7 +105,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     protected void initData() {
         super.initData();
-        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, false, true,
+        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true,
+                AutoPublishItem.NoAutoPublish, true,
                 new EduCallback<EduStudent>() {
                     @Override
                     public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {

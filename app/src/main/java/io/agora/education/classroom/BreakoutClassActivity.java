@@ -32,6 +32,7 @@ import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
+import io.agora.education.api.room.data.AutoPublishItem;
 import io.agora.education.api.room.data.EduRoomInfo;
 import io.agora.education.api.room.data.EduRoomState;
 import io.agora.education.api.room.data.EduRoomStatus;
@@ -92,7 +93,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     protected void initData() {
         super.initData();
         /**needUserListener为false,将不会收到大班级中的任何local回调*/
-        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, false, true,
+        joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true,
+                AutoPublishItem.NoAutoPublish, true,
                 new EduCallback<EduStudent>() {
                     @Override
                     public void onSuccess(@Nullable EduStudent res) {
@@ -141,22 +143,23 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             public void onSuccess(@Nullable EduRoomInfo res) {
                 if (res != null) {
                     RoomCreateOptions createOptions = new RoomCreateOptions(res.getRoomUuid(),
-                            res.getRoomName(), RoomType.BREAKOUT_CLASS.getValue(), true);
+                            res.getRoomName(), RoomType.BREAKOUT_CLASS.getValue());
                     subEduRoom = buildEduRoom(createOptions, mainRoom.getRoomInfo().getRoomUuid());
-                    joinRoom(subEduRoom, userName, userUuid, true, true, true, new EduCallback<EduStudent>() {
-                        @Override
-                        public void onSuccess(@Nullable EduStudent res) {
-                            /**设置全局的userToken(注意同一个user在不同的room内，token不一样)*/
-                            RetrofitManager.instance().addHeader("token",
-                                    subEduRoom.getLocalUser().getUserInfo().getUserToken());
-                            runOnUiThread(() -> showFragmentWithJoinSuccess());
-                        }
+                    joinRoom(subEduRoom, userName, userUuid, true, AutoPublishItem.AutoPublish,
+                            true, new EduCallback<EduStudent>() {
+                                @Override
+                                public void onSuccess(@Nullable EduStudent res) {
+                                    /**设置全局的userToken(注意同一个user在不同的room内，token不一样)*/
+                                    RetrofitManager.instance().addHeader("token",
+                                            subEduRoom.getLocalUser().getUserInfo().getUserToken());
+                                    runOnUiThread(() -> showFragmentWithJoinSuccess());
+                                }
 
-                        @Override
-                        public void onFailure(int code, @Nullable String reason) {
-                            joinFailed(code, reason);
-                        }
-                    });
+                                @Override
+                                public void onFailure(int code, @Nullable String reason) {
+                                    joinFailed(code, reason);
+                                }
+                            });
                 }
             }
 

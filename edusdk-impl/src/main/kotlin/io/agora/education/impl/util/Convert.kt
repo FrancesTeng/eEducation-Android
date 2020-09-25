@@ -1,5 +1,9 @@
 package io.agora.education.impl.util
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import io.agora.education.api.message.EduActionMessage
+import io.agora.education.api.message.EduActionType
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
 import io.agora.education.api.room.data.Property.Companion.KEY_ASSISTANT_LIMIT
@@ -12,14 +16,12 @@ import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
-import io.agora.education.impl.cmd.bean.CMDResponseBody
+import io.agora.education.impl.cmd.bean.*
+import io.agora.education.impl.cmd.bean.CMDActionMsgRes
 import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
-import io.agora.education.impl.cmd.bean.CMDStreamActionMsg
-import io.agora.education.impl.cmd.bean.CMDSyncStreamRes
-import io.agora.education.impl.cmd.bean.CMDUserStateMsg
 import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.request.LimitConfig
 import io.agora.education.impl.room.data.request.RoleConfig
@@ -403,6 +405,33 @@ internal class Convert {
             }
             return pos
         }
+
+        fun convertActionMsgType(value: Int): EduActionType {
+            return when (value) {
+                EduActionType.EduActionTypeApply.value -> {
+                    EduActionType.EduActionTypeApply
+                }
+                EduActionType.EduActionTypeInvitation.value -> {
+                    EduActionType.EduActionTypeApply
+                }
+                EduActionType.EduActionTypeAccept.value -> {
+                    EduActionType.EduActionTypeApply
+                }
+                EduActionType.EduActionTypeReject.value -> {
+                    EduActionType.EduActionTypeApply
+                }
+                else -> {
+                    EduActionType.EduActionTypeReject
+                }
+            }
+        }
+
+        fun convertEduActionMsg(text: String): EduActionMessage {
+            val cmdResponseBody = Gson().fromJson<CMDResponseBody<CMDActionMsgRes>>(text, object :
+                    TypeToken<CMDResponseBody<CMDActionMsgRes>>() {}.type)
+            val msg = cmdResponseBody.data
+            return EduActionMessage(msg.processUuid, convertActionMsgType(msg.action), msg.fromUser,
+                    msg.timeout, msg.payload)
+        }
     }
 }
-

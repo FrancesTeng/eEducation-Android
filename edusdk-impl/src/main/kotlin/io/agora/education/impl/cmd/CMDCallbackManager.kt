@@ -1,6 +1,7 @@
 package io.agora.education.impl.cmd
 
 import io.agora.education.api.manager.listener.EduManagerEventListener
+import io.agora.education.api.message.EduActionMessage
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.EduRoom
@@ -9,6 +10,8 @@ import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
+import io.agora.education.impl.cmd.bean.CMDActionMsgRes
+import io.agora.education.impl.cmd.bean.CMDStreamActionMsg
 
 internal class CMDCallbackManager {
 
@@ -83,5 +86,9 @@ internal class CMDCallbackManager {
 
     fun onUserMessageReceived(message: EduMsg, listener: EduManagerEventListener?) {
         listener?.onUserMessageReceived(message)
+    }
+
+    fun onUserActionMessageReceived(actionMsg: EduActionMessage, listener: EduManagerEventListener?) {
+        listener?.onUserActionMessageReceived(actionMsg)
     }
 }
