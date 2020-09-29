@@ -2,6 +2,7 @@ package io.agora.education.impl.room.network
 
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.data.request.EduSyncRoomReq
+import io.agora.education.impl.room.data.request.EduUpdateRoomPropertyReq
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.room.data.response.EduSequenceListRes
@@ -119,7 +120,7 @@ internal interface RoomService {
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Path("key") key: String,
-            @Field("value") value: String
+            @Body req: EduUpdateRoomPropertyReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**查询丢失的消息列表*/

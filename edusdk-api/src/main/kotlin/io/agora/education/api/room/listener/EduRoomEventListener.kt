@@ -37,9 +37,13 @@ interface EduRoomEventListener {
 
     fun onRoomStatusChanged(event: RoomStatusEvent, operatorUser: EduUserInfo?, classRoom: EduRoom)
 
-    fun onRoomPropertyChanged(classRoom: EduRoom)
+    /**引起roomProperty发生改变的原因
+     * 对应EduUser中的updateRoomProperty*/
+    fun onRoomPropertyChanged(classRoom: EduRoom, cause: MutableMap<String, Any>?)
 
-    fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, classRoom: EduRoom)
+    /**引起userProperty发生改变的原因
+     * 对应EduUser中的updateUserProperty*/
+    fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, classRoom: EduRoom, cause: MutableMap<String, Any>?)
 
     fun onNetworkQualityChanged(quality: NetworkQuality, user: EduUserInfo, classRoom: EduRoom)
 }

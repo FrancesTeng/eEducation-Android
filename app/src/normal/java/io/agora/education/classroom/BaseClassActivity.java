@@ -533,7 +533,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
+    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
         Log.e(TAG, "收到roomProperty改变的数据");
         Map<String, Object> roomProperties = classRoom.getRoomProperties();
         String boardJson = getProperty(roomProperties, BOARD);
@@ -570,7 +570,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom) {
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+
     }
 
     @Override
@@ -587,7 +588,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
 
     }
 

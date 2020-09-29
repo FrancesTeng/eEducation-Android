@@ -69,7 +69,6 @@ public class TimeView extends AppCompatTextView {
         time = -1;
         if(handler != null) {
             handler.removeCallbacks(updateTimeRunnable);
-            handler = null;
         }
         updateTimeRunnable.run();
     }

@@ -9,7 +9,7 @@ interface EduUserEventListener {
 
     fun onLocalUserUpdated(userEvent: EduUserEvent)
 
-    fun onLocalUserPropertyUpdated(userInfo: EduUserInfo)
+    fun onLocalUserPropertyUpdated(userInfo: EduUserInfo, cause: MutableMap<String, Any>?)
 
     fun onLocalStreamAdded(streamEvent: EduStreamEvent)
 

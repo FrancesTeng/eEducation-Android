@@ -531,7 +531,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
+    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
         if (!classRoom.equals(subEduRoom)) {
             Log.e(TAG, "收到大房间的roomProperty改变的数据");
             Map<String, Object> roomProperties = classRoom.getRoomProperties();
@@ -571,8 +571,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom) {
-        super.onRemoteUserPropertiesUpdated(userInfos, classRoom);
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRemoteUserPropertiesUpdated(userInfos, classRoom, cause);
         if (classRoom.equals(subEduRoom)) {
         }
     }
@@ -601,8 +601,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
-        super.onLocalUserPropertyUpdated(userInfo);
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
+        super.onLocalUserPropertyUpdated(userInfo, cause);
     }
 
     @Override

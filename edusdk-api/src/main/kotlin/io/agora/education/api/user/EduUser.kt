@@ -4,7 +4,6 @@ import android.view.ViewGroup
 import io.agora.education.api.EduCallback
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduMsg
-import io.agora.education.api.room.data.Property
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.data.EduStartActionConfig
@@ -51,7 +50,9 @@ interface EduUser {
 
     fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?)
 
-    fun updateRoomProperty(property: Property, callback: EduCallback<Unit>)
+    fun updateRoomProperty(property: MutableMap.MutableEntry<String, String>,
+                           cause: MutableMap<String, String>, callback: EduCallback<Unit>)
 
-    fun updateUserProperty(property: Property, targetUser: EduUserInfo, callback: EduCallback<Unit>)
+    fun updateUserProperty(property: MutableMap.MutableEntry<String, String>,
+                           cause: MutableMap<String, String>, targetUser: EduUserInfo, callback: EduCallback<Unit>)
 }

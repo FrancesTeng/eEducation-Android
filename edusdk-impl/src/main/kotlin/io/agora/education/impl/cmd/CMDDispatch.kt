@@ -5,9 +5,9 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.agora.education.impl.util.Convert
 import io.agora.education.api.manager.listener.EduManagerEventListener
-import io.agora.education.api.message.EduActionMessage
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.room.EduRoom
+import io.agora.education.api.room.data.Property
 import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduAudioState
@@ -74,9 +74,11 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         TypeToken<CMDResponseBody<Map<String, Any>>>() {}.type).data
                 /**把变化的属性更新到本地*/
                 eduRoom.roomProperties = properties
+                val map = properties[Property.CAUSE]
+                val cause: MutableMap<String, Any>? = map as MutableMap<String, Any>?
                 /**通知用户房间属性发生改变*/
                 Log.e("CMDDispatch", "把收到的roomProperty回调出去")
-                cmdCallbackManager.onRoomPropertyChanged(eduRoom)
+                cmdCallbackManager.onRoomPropertyChanged(eduRoom, cause)
             }
             CMDId.ChannelMsgReceived.value -> {
                 /**频道内的聊天消息*/
@@ -141,11 +143,13 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         (eduRoom as EduRoomImpl).getCurUserList())
                 updatedUserInfo?.let {
                     if (updatedUserInfo == eduRoom.getLocalUser().userInfo) {
-                        eduRoom.getLocalUser().eventListener?.onLocalUserPropertyUpdated(it)
+                        cmdCallbackManager.onLocalUserPropertyUpdated(it, cmdUserPropertyRes.cause,
+                                eduRoom.getLocalUser())
                     } else {
                         /**远端用户property发生改变如何回调出去*/
                         val userInfos = Collections.singletonList(updatedUserInfo)
-                        cmdCallbackManager.onRemoteUserPropertiesUpdated(userInfos, eduRoom)
+                        cmdCallbackManager.onRemoteUserPropertiesUpdated(userInfos, eduRoom,
+                                cmdUserPropertyRes.cause)
                     }
                 }
             }
@@ -166,9 +170,9 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             val element = iterable.next()
                             val streamInfo = element.modifiedStream
                             if (streamInfo.publisher == eduRoom.getLocalUser().userInfo) {
-                                io.agora.rte.RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                                RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
                                 Log.e("CMDDispatch", "join成功，把新添加的本地流回调出去")
-                                eduRoom.getLocalUser().eventListener?.onLocalStreamAdded(element)
+                                cmdCallbackManager.onLocalStreamAdded(element, eduRoom.getLocalUser())
                                 iterable.remove()
                             }
                         }
@@ -211,7 +215,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
                                 RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
                                         element.modifiedStream.hasVideo)
-                                eduRoom.getLocalUser().eventListener?.onLocalStreamRemoved(element)
+                                cmdCallbackManager.onLocalStreamRemoved(element, eduRoom.getLocalUser())
                                 iterable.remove()
                             }
                         }

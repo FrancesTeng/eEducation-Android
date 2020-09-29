@@ -79,7 +79,7 @@ internal interface UserService {
             @Path("roomUuid") roomUuid: String,
             @Path("userUuid") userUuid: String,
             @Path("key") key: String,
-            @Field("value") value: String
+            @Body req: EduUpdateUserPropertyReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**开启 邀请/申请流程*/

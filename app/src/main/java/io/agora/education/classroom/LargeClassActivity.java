@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -590,12 +591,12 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
-        super.onRoomPropertyChanged(classRoom);
+    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRoomPropertyChanged(classRoom, cause);
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom) {
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
     }
 
     @Override
@@ -610,8 +611,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
-        super.onLocalUserPropertyUpdated(userInfo);
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
+        super.onLocalUserPropertyUpdated(userInfo, cause);
     }
 
     @Override

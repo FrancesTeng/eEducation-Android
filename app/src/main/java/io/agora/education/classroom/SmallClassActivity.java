@@ -143,6 +143,39 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
                 }
             });
         });
+        findViewById(R.id.send3).setOnClickListener((v) -> {
+            Map.Entry<String, String> property = new HashMap.SimpleEntry<>("prey", "jerry");
+            Map<String, String> cause = new HashMap<>(1);
+            cause.put("hunter", "tom");
+            getLocalUser().updateRoomProperty(property, cause, new EduCallback<Unit>() {
+                @Override
+                public void onSuccess(@Nullable Unit res) {
+                    Log.e(TAG, "成功3");
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+                    Log.e(TAG, "失败3");
+                }
+            });
+        });
+        findViewById(R.id.send4).setOnClickListener((v) -> {
+            Map.Entry<String, String> property = new HashMap.SimpleEntry<>("prey", "jerry");
+            Map<String, String> cause = new HashMap<>(1);
+            cause.put("hunter", "tom");
+            EduUserInfo userInfo = new EduUserInfo("1012", "101", EduUserRole.STUDENT, true);
+            getLocalUser().updateUserProperty(property, cause, userInfo, new EduCallback<Unit>() {
+                @Override
+                public void onSuccess(@Nullable Unit res) {
+                    Log.e(TAG, "成功4");
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+                    Log.e(TAG, "失败4");
+                }
+            });
+        });
     }
 
     @Override
@@ -327,12 +360,13 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
-        super.onRoomPropertyChanged(classRoom);
+    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRoomPropertyChanged(classRoom, cause);
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom) {
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRemoteUserPropertiesUpdated(userInfos, classRoom, cause);
     }
 
     @Override
@@ -355,8 +389,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
-        super.onLocalUserPropertyUpdated(userInfo);
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
+        super.onLocalUserPropertyUpdated(userInfo, cause);
     }
 
     @Override

@@ -3,7 +3,6 @@ package io.agora.education.impl.user
 import android.util.Log
 import android.view.SurfaceView
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import android.widget.LinearLayout
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
@@ -15,7 +14,6 @@ import io.agora.education.api.EduCallback
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduChatMsgType
 import io.agora.education.api.message.EduMsg
-import io.agora.education.api.room.data.Property
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
@@ -26,6 +24,7 @@ import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 import io.agora.education.impl.network.RetrofitManager
 import io.agora.education.impl.room.EduRoomImpl
+import io.agora.education.impl.room.data.request.EduUpdateRoomPropertyReq
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.stream.network.StreamService
@@ -367,11 +366,13 @@ internal open class EduUserImpl(
         return null
     }
 
-    override fun updateRoomProperty(property: Property, callback: EduCallback<Unit>) {
+    override fun updateRoomProperty(property: MutableMap.MutableEntry<String, String>,
+                                    cause: MutableMap<String, String>, callback: EduCallback<Unit>) {
+        val req = EduUpdateRoomPropertyReq(property.value, cause)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .addRoomProperty(APPID, eduRoom.getRoomInfo().roomUuid, property.key, property.value)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<io.agora.base.network.ResponseBody<String>> {
-                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
+                .addRoomProperty(APPID, eduRoom.getRoomInfo().roomUuid, property.key, req)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
+                    override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
                     }
 
@@ -383,10 +384,13 @@ internal open class EduUserImpl(
                 }))
     }
 
-    override fun updateUserProperty(property: Property, targetUser: EduUserInfo, callback: EduCallback<Unit>) {
+    override fun updateUserProperty(property: MutableMap.MutableEntry<String, String>,
+                                    cause: MutableMap<String, String>, targetUser: EduUserInfo,
+                                    callback: EduCallback<Unit>) {
+        val req = EduUpdateUserPropertyReq(property.value, cause)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
-                .addProperty(APPID, eduRoom.getRoomInfo().roomUuid, eduRoom.getRoomInfo().roomUuid,
-                        property.key, property.value)
+                .addProperty(APPID, eduRoom.getRoomInfo().roomUuid, targetUser.userUuid, property.key,
+                        req)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)

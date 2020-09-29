@@ -19,8 +19,8 @@ internal class CMDCallbackManager {
         classRoom.eventListener?.onRoomStatusChanged(event, operatorUser, classRoom)
     }
 
-    fun onRoomPropertyChanged(classRoom: EduRoom) {
-        classRoom.eventListener?.onRoomPropertyChanged(classRoom)
+    fun onRoomPropertyChanged(classRoom: EduRoom, cause: MutableMap<String, Any>?) {
+        classRoom.eventListener?.onRoomPropertyChanged(classRoom, cause)
     }
 
     fun onRoomChatMessageReceived(chatMsg: EduChatMsg, classRoom: EduRoom) {
@@ -47,8 +47,9 @@ internal class CMDCallbackManager {
         classRoom.eventListener?.onRemoteStreamsRemoved(streamEvents, classRoom)
     }
 
-    fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, classRoom: EduRoom) {
-        classRoom.eventListener?.onRemoteUserPropertiesUpdated(userInfos, classRoom)
+    fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, classRoom: EduRoom,
+                                      cause: MutableMap<String, Any>?) {
+        classRoom.eventListener?.onRemoteUserPropertiesUpdated(userInfos, classRoom, cause)
     }
 
     fun onRemoteStreamsUpdated(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom) {
@@ -63,8 +64,8 @@ internal class CMDCallbackManager {
         eduUser.eventListener?.onLocalUserUpdated(userEvent)
     }
 
-    fun onLocalUserPropertyUpdated(userInfo: EduUserInfo, eduUser: EduUser) {
-        eduUser.eventListener?.onLocalUserPropertyUpdated(userInfo)
+    fun onLocalUserPropertyUpdated(userInfo: EduUserInfo, cause: MutableMap<String, Any>?, eduUser: EduUser) {
+        eduUser.eventListener?.onLocalUserPropertyUpdated(userInfo, cause)
     }
 
     fun onLocalStreamAdded(streamEvent: EduStreamEvent, eduUser: EduUser) {

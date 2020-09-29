@@ -1,6 +1,5 @@
 package io.agora.log;
 
-import android.content.Context;
 
 import androidx.annotation.NonNull;
 
@@ -18,6 +17,7 @@ public class LogManager {
     private static File sPath;
     private static String sTag;
     private Logger logger;
+    private final String p0 = "%", p1 = "%%";
 
     public static void init(@NonNull String logPath, @NonNull String tag) {
         sPath = new File(logPath);
@@ -35,19 +35,30 @@ public class LogManager {
         logger = XLog.tag(getTag() + "-" + sTag).build();
     }
 
+    private String check(String msg, Object... args) {
+        if (args.length == 0 && msg.contains(p0)) {
+            msg = msg.replaceAll(p0, p1);
+        }
+        return msg;
+    }
+
     public void d(String msg, Object... args) {
+        msg = check(msg, args);
         logger.d(msg, args);
     }
 
     public void i(String msg, Object... args) {
+        msg = check(msg, args);
         logger.i(msg, args);
     }
 
     public void w(String msg, Object... args) {
+        msg = check(msg, args);
         logger.w(msg, args);
     }
 
     public void e(String msg, Object... args) {
+        msg = check(msg, args);
         logger.e(msg, args);
     }
 

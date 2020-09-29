@@ -111,7 +111,7 @@
         android:id="@+id/send1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="send"
+        android:text="send1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/title_view"/>
@@ -120,9 +120,27 @@
         android:id="@+id/send2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="send"
+        android:text="send2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/send1"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/send3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="send3"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/send2"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/send4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="send4"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/send3"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

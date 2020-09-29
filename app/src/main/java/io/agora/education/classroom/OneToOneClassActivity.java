@@ -285,8 +285,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom) {
-        super.onRoomPropertyChanged(classRoom);
+    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRoomPropertyChanged(classRoom, cause);
         runOnUiThread(() -> {
             /**小班课，默认学生可以针对白板进行输入*/
             whiteboardFragment.disableCameraTransform(false);
@@ -295,7 +295,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom) {
+    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
     }
 
     @Override
@@ -319,8 +319,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo) {
-        super.onLocalUserPropertyUpdated(userInfo);
+    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
+        super.onLocalUserPropertyUpdated(userInfo, cause);
     }
 
     @Override
