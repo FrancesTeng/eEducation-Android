@@ -104,7 +104,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
         super.onRemoteUsersInitialized(users, classRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
         runOnUiThread(() -> {
-            /**小班课，默认学生可以针对白板进行输入*/
+            /**一对一，默认学生可以针对白板进行输入*/
             whiteboardFragment.disableCameraTransform(false);
             whiteboardFragment.disableDeviceInputs(false);
         });

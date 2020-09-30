@@ -29,7 +29,6 @@ import butterknife.OnTouch;
 import io.agora.base.ToastManager;
 import io.agora.education.R;
 import io.agora.education.base.BaseFragment;
-import io.agora.education.classroom.bean.board.BoardFollowMode;
 import io.agora.education.classroom.bean.board.BoardState;
 import io.agora.education.classroom.widget.whiteboard.ApplianceView;
 import io.agora.education.classroom.widget.whiteboard.ColorPicker;
@@ -57,6 +56,11 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     private String curLocalUuid;
     private final double miniScale = 0.1d;
     private final double maxScale = 10d;
+    /**
+     * 初始化时不进行相关提示
+     */
+    private boolean inputTips = false;
+    private boolean transform = false;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -119,10 +123,17 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     public void disableDeviceInputs(boolean disabled) {
         if (disabled != boardManager.isDisableDeviceInputs()) {
-            ToastManager.showShort(disabled ? R.string.revoke_board : R.string.authorize_board);
+            if (!inputTips) {
+                inputTips = true;
+            } else {
+                ToastManager.showShort(disabled ? R.string.revoke_board : R.string.authorize_board);
+            }
         }
         if (appliance_view != null) {
             appliance_view.setVisibility(disabled ? View.GONE : View.VISIBLE);
+        }
+        if (page_control_view != null) {
+            page_control_view.setVisibility(disabled ? View.GONE : View.VISIBLE);
         }
         boardManager.disableDeviceInputs(disabled);
     }
@@ -131,7 +142,11 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
         boolean a = boardManager.isDisableCameraTransform();
         if (disabled != a) {
             if (disabled) {
-                ToastManager.showShort(R.string.follow_tips);
+                if (!transform) {
+                    transform = true;
+                } else {
+                    ToastManager.showShort(R.string.follow_tips);
+                }
                 boardManager.disableDeviceInputsTemporary(true);
             } else {
                 boardManager.disableDeviceInputsTemporary(boardManager.isDisableDeviceInputs());

@@ -11,6 +11,7 @@ import io.agora.education.api.room.data.Property
 import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduAudioState
+import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
@@ -49,7 +50,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster
                         broadcasterMuteChat?.let {
                             eduRoom.getRoomStatus().isStudentChatAllowed =
-                                    broadcasterMuteChat.toInt() == EduAudioState.Open.value
+                                    broadcasterMuteChat.toFloat().toInt() == EduChatState.Allow.value
                         }
                         /**
                          * roomStatus中仅定义了isStudentChatAllowed来标识是否全员禁聊；没有属性来标识是否全员禁摄像头和麦克风；
@@ -61,7 +62,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         val audienceMuteChat = rtmRoomMuteState.muteChat?.audience
                         audienceMuteChat?.let {
                             eduRoom.getRoomStatus().isStudentChatAllowed =
-                                    audienceMuteChat.toInt() == EduAudioState.Open.value
+                                    audienceMuteChat.toFloat().toInt() == EduChatState.Allow.value
                         }
                     }
                 }

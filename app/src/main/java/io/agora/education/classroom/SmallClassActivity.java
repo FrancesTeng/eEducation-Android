@@ -338,18 +338,18 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
         super.onRoomStatusChanged(event, operatorUser, classRoom);
-        EduRoomStatus roomStatus = classRoom.getRoomStatus();
-        switch (event) {
-            case COURSE_STATE:
-                title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
-                        System.currentTimeMillis() - roomStatus.getStartTime());
-                break;
-            case STUDENT_CHAT:
-                chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
-                break;
-            default:
-                break;
-        }
+//        EduRoomStatus roomStatus = classRoom.getRoomStatus();
+//        switch (event) {
+//            case COURSE_STATE:
+//                title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
+//                        System.currentTimeMillis() - roomStatus.getStartTime());
+//                break;
+//            case STUDENT_CHAT:
+//                chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
+//                break;
+//            default:
+//                break;
+//        }
     }
 
     @Override
