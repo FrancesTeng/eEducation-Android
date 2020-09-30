@@ -48,9 +48,17 @@ import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.fragment.UserListFragment;
+import io.agora.rtc.IRtcEngineEventHandler;
+import io.agora.rtc.RtcChannel;
+import io.agora.rte.RteEngineImpl;
+import io.agora.rte.listener.RteAudioMixingListener;
+import io.agora.rte.listener.RteMediaDeviceListener;
+import io.agora.rte.listener.RteSpeakerReportListener;
+import io.agora.rte.listener.RteStatisticsReportListener;
 import kotlin.Unit;
 
-public class SmallClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
+public class SmallClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener,
+        RteAudioMixingListener, RteMediaDeviceListener, RteSpeakerReportListener, RteStatisticsReportListener {
     private static final String TAG = "SmallClassActivity";
 
     @BindView(R.id.rcv_videos)
@@ -108,74 +116,57 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
                 .add(R.id.layout_chat_room, userListFragment)
                 .show(userListFragment)
                 .commitNow();
-
+        /**测试监听回调*/
+        RteEngineImpl.INSTANCE.setMediaDeviceListener(this);
+        RteEngineImpl.INSTANCE.setAudioMixingListener(this);
+        RteEngineImpl.INSTANCE.setSpeakerReportListener(this);
         findViewById(R.id.send1).setOnClickListener((v) -> {
-            Map<String, String> map = new HashMap<>(1);
-            map.put("name", "tom");
-            EduBaseUserInfo userInfo = new EduBaseUserInfo("1012", "101", EduUserRole.STUDENT);
-            EduStartActionConfig config = new EduStartActionConfig("444",
-                    EduActionType.EduActionTypeApply, userInfo, 1000, map);
-            getLocalUser().startActionWithConfig(config, new EduCallback<Unit>() {
-                @Override
-                public void onSuccess(@Nullable Unit res) {
-                    Log.e(TAG, "成功1");
-                }
 
-                @Override
-                public void onFailure(int code, @Nullable String reason) {
-                    Log.e(TAG, "失败1");
-                }
-            });
         });
         findViewById(R.id.send2).setOnClickListener((v) -> {
-            Map<String, String> map = new HashMap<>(1);
-            map.put("name", "jerry");
-            EduStopActionConfig config = new EduStopActionConfig("444", EduActionType.EduActionTypeAccept, map);
-            getLocalUser().stopActionWithConfig(config, new EduCallback<Unit>() {
-                @Override
-                public void onSuccess(@Nullable Unit res) {
-                    Log.e(TAG, "成功2");
-                }
-
-                @Override
-                public void onFailure(int code, @Nullable String reason) {
-                    Log.e(TAG, "失败2");
-                }
-            });
+            RteEngineImpl.INSTANCE.startAudioMixing("/sdcard/1/111.mp3", false, false, 1);
         });
         findViewById(R.id.send3).setOnClickListener((v) -> {
-            Map.Entry<String, String> property = new HashMap.SimpleEntry<>("prey", "jerry");
-            Map<String, String> cause = new HashMap<>(1);
-            cause.put("hunter", "tom");
-            getLocalUser().updateRoomProperty(property, cause, new EduCallback<Unit>() {
-                @Override
-                public void onSuccess(@Nullable Unit res) {
-                    Log.e(TAG, "成功3");
-                }
 
-                @Override
-                public void onFailure(int code, @Nullable String reason) {
-                    Log.e(TAG, "失败3");
-                }
-            });
         });
         findViewById(R.id.send4).setOnClickListener((v) -> {
-            Map.Entry<String, String> property = new HashMap.SimpleEntry<>("prey", "jerry");
-            Map<String, String> cause = new HashMap<>(1);
-            cause.put("hunter", "tom");
-            EduUserInfo userInfo = new EduUserInfo("1012", "101", EduUserRole.STUDENT, true);
-            getLocalUser().updateUserProperty(property, cause, userInfo, new EduCallback<Unit>() {
-                @Override
-                public void onSuccess(@Nullable Unit res) {
-                    Log.e(TAG, "成功4");
-                }
 
-                @Override
-                public void onFailure(int code, @Nullable String reason) {
-                    Log.e(TAG, "失败4");
-                }
-            });
         });
+    }
+
+    @Override
+    public void onAudioMixingFinished() {
+        Log.e(TAG, "onAudioMixingFinished");
+    }
+
+    @Override
+    public void onAudioMixingStateChanged(int state, int errorCode) {
+        Log.e(TAG, "onAudioMixingStateChanged->state:" + state + ",errorCode:" + errorCode);
+    }
+
+    @Override
+    public void onAudioRouteChanged(int routing) {
+        Log.e(TAG, "onAudioRouteChanged->routing:" + routing);
+    }
+
+    @Override
+    public void onAudioVolumeIndicationOfLocalSpeaker(@Nullable IRtcEngineEventHandler.AudioVolumeInfo[] speakers, int totalVolume) {
+        Log.e(TAG, "onAudioVolumeIndicationOfLocalSpeaker->totalVolume:" + totalVolume);
+    }
+
+    @Override
+    public void onAudioVolumeIndicationOfRemoteSpeaker(@Nullable IRtcEngineEventHandler.AudioVolumeInfo[] speakers, int totalVolume) {
+        Log.e(TAG, "onAudioVolumeIndicationOfRemoteSpeaker->totalVolume:" + totalVolume);
+    }
+
+    @Override
+    public void onRtcStats(@Nullable RtcChannel channel, @Nullable IRtcEngineEventHandler.RtcStats stats) {
+        Log.e(TAG, "onRtcStats->stats:" + stats.rxKBitRate);
+    }
+
+    @Override
+    public void onVideoSizeChanged(@Nullable RtcChannel channel, int uid, int width, int height, int rotation) {
+        Log.e(TAG, "onVideoSizeChanged->uid:" + uid + ",width:" + width + ",height:" + height + ",rotation:" + rotation);
     }
 
     @Override
@@ -214,6 +205,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
 
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
+        /*测试回调*/
+        RteEngineImpl.INSTANCE.setStatisticsReportListener(classRoom.getRoomInfo().getRoomUuid(), this);
         super.onRemoteUsersInitialized(users, classRoom);
         userListFragment.setUserList(getCurFullUser());
         title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));

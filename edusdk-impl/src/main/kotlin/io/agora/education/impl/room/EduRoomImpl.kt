@@ -41,12 +41,13 @@ import io.agora.education.impl.util.CommonUtil
 import io.agora.rtc.Constants.*
 import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rte.RteEngineImpl
+import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rtm.*
 
 internal class EduRoomImpl(
         roomInfo: EduRoomInfo,
         roomStatus: EduRoomStatus
-) : EduRoom(roomInfo, roomStatus), io.agora.rte.listener.RteChannelEventListener {
+) : EduRoom(roomInfo, roomStatus), RteChannelEventListener {
 
     private val TAG = "EduRoomImpl"
     internal var syncSession: RoomSyncSession

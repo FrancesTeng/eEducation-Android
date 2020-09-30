@@ -8,7 +8,9 @@ import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtc.video.VideoEncoderConfiguration
-import io.agora.rte.listener.RteChannelEventListener
+import io.agora.rte.data.RteAudioReverbPreset
+import io.agora.rte.data.RteAudioVoiceChanger
+import io.agora.rte.listener.*
 import io.agora.rtm.*
 import java.io.File
 
@@ -17,10 +19,95 @@ object RteEngineImpl : IRteEngine {
     internal lateinit var rtcEngine: RtcEngine
     private val channelMap = mutableMapOf<String, IRteChannel>()
 
-    var eventListener: io.agora.rte.listener.RteEngineEventListener? = null
+    var eventListener: RteEngineEventListener? = null
+    var mediaDeviceListener: RteMediaDeviceListener? = null
+    var audioMixingListener: RteAudioMixingListener? = null
+    var speakerReportListener: RteSpeakerReportListener? = null
 
     /**rtm登录成功的标志*/
     var rtmLoginSuccess = false
+
+    private val rtmClientListener = object : RtmClientListener {
+        override fun onTokenExpired() {
+        }
+
+        override fun onPeersOnlineStatusChanged(p0: MutableMap<String, Int>?) {
+        }
+
+        /**RTE连接质量发生改变*/
+        override fun onConnectionStateChanged(p0: Int, p1: Int) {
+            eventListener?.onConnectionStateChanged(p0, p1)
+        }
+
+        /**收到私聊消息 peerMsg*/
+        override fun onMessageReceived(p0: RtmMessage?, p1: String?) {
+            eventListener?.onPeerMsgReceived(p0, p1)
+        }
+    }
+
+    private val rtcEngineEventHandler = object : IRtcEngineEventHandler() {
+
+        override fun onError(err: Int) {
+            Log.e("RteEngineImpl", String.format("onError code %d message %s", err, RtcEngine.getErrorDescription(err)))
+        }
+
+        override fun onWarning(warn: Int) {
+            super.onWarning(warn)
+            Log.e("RteEngineImpl", String.format("onWarning code %d message %s", warn, RtcEngine.getErrorDescription(warn)));
+        }
+
+        override fun onClientRoleChanged(oldRole: Int, newRole: Int) {
+            super.onClientRoleChanged(oldRole, newRole)
+            Log.e("RteEngineImpl", "onClientRoleChanged, $oldRole, $newRole")
+        }
+
+        override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
+            super.onJoinChannelSuccess(channel, uid, elapsed)
+            Log.e("RteEngineImpl", String.format("onJoinChannelSuccess channel %s uid %d", channel, uid))
+        }
+
+        override fun onUserJoined(uid: Int, elapsed: Int) {
+            super.onUserJoined(uid, elapsed)
+            Log.e("RteEngineImpl", "onUserJoined->$uid")
+        }
+
+//        override fun onSubscribeVideoStateChanged(channel: String?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
+//            super.onSubscribeVideoStateChanged(channel, uid, oldState, newState, elapseSinceLastState)
+//            Log.e("RteEngineImpl", "onSubscribeVideoStateChanged->$uid, oldState->$oldState, newState->$newState")
+//        }
+
+        override fun onRemoteVideoStateChanged(uid: Int, state: Int, reason: Int, elapsed: Int) {
+            super.onRemoteVideoStateChanged(uid, state, reason, elapsed)
+            Log.e("RteEngineImpl", "onRemoteVideoStateChanged->$uid, state->$state, reason->$reason")
+        }
+
+        override fun onAudioRouteChanged(routing: Int) {
+            super.onAudioRouteChanged(routing)
+            mediaDeviceListener?.onAudioRouteChanged(routing)
+        }
+
+        override fun onAudioMixingFinished() {
+            super.onAudioMixingFinished()
+            audioMixingListener?.onAudioMixingFinished()
+        }
+
+        override fun onAudioMixingStateChanged(state: Int, errorCode: Int) {
+            super.onAudioMixingStateChanged(state, errorCode)
+            audioMixingListener?.onAudioMixingStateChanged(state, errorCode)
+        }
+
+        override fun onAudioVolumeIndication(speakers: Array<out AudioVolumeInfo>?, totalVolume: Int) {
+            super.onAudioVolumeIndication(speakers, totalVolume)
+            speakers?.let {
+                /*本地用户独享的音量提示回调返回的 speakers 数组中： uid 为 0， volume 等于 totalVolume*/
+                if (speakers?.size == 1 && speakers[0].uid == 0) {
+                    speakerReportListener?.onAudioVolumeIndicationOfLocalSpeaker(speakers, totalVolume)
+                } else {
+                    speakerReportListener?.onAudioVolumeIndicationOfRemoteSpeaker(speakers, totalVolume)
+                }
+            }
+        }
+    }
 
     override fun init(context: Context, appId: String, logFileDir: String) {
         var path = logFileDir.plus(File.separatorChar).plus("agorartm.log")
@@ -86,17 +173,19 @@ object RteEngineImpl : IRteEngine {
         rtcEngine.enableLocalAudio(video)
     }
 
-    operator fun get(channelId: String): io.agora.rte.IRteChannel? {
+    operator fun get(channelId: String): IRteChannel? {
         return channelMap[channelId]
     }
 
-    override fun setClientRole(channelId: String, role: Int) {
+    override fun setClientRole(channelId: String, role: Int): Int {
         if (channelMap.isNotEmpty()) {
-            val code = (channelMap[channelId] as io.agora.rte.RteChannelImpl).rtcChannel.setClientRole(role)
+            val code = (channelMap[channelId] as RteChannelImpl).rtcChannel.setClientRole(role)
             if (code == 0) {
                 Log.e("RteEngineImpl", "成功设置角色为:$role")
             }
+            return code
         }
+        return -1
     }
 
     override fun publish(channelId: String): Int {
@@ -160,58 +249,56 @@ object RteEngineImpl : IRteEngine {
         return rtcEngine.setupRemoteVideo(local)
     }
 
-    private val rtmClientListener = object : RtmClientListener {
-        override fun onTokenExpired() {
-        }
-
-        override fun onPeersOnlineStatusChanged(p0: MutableMap<String, Int>?) {
-        }
-
-        /**RTE连接质量发生改变*/
-        override fun onConnectionStateChanged(p0: Int, p1: Int) {
-            eventListener?.onConnectionStateChanged(p0, p1)
-        }
-
-        /**收到私聊消息 peerMsg*/
-        override fun onMessageReceived(p0: RtmMessage?, p1: String?) {
-            eventListener?.onPeerMsgReceived(p0, p1)
-        }
+    override fun startAudioMixing(filePath: String, loopback: Boolean, replace: Boolean, cycle: Int): Int {
+        return rtcEngine.startAudioMixing(filePath, loopback, replace, cycle)
     }
 
-    private val rtcEngineEventHandler = object : IRtcEngineEventHandler() {
+    override fun setAudioMixingPosition(pos: Int): Int {
+        return rtcEngine.setAudioMixingPosition(pos)
+    }
 
-        override fun onError(err: Int) {
-            Log.e("RteEngineImpl", String.format("onError code %d message %s", err, RtcEngine.getErrorDescription(err)))
+    override fun pauseAudioMixing(): Int {
+        return rtcEngine.pauseAudioMixing()
+    }
+
+    override fun resumeAudioMixing(): Int {
+        return rtcEngine.resumeAudioMixing()
+    }
+
+    override fun stopAudioMixing(): Int {
+        return rtcEngine.stopAudioMixing()
+    }
+
+    override fun getAudioMixingDuration(): Int {
+        return rtcEngine.audioMixingDuration
+    }
+
+    override fun getAudioMixingCurrentPosition(): Int {
+        return rtcEngine.audioMixingCurrentPosition
+    }
+
+    override fun setLocalVoiceChanger(voiceManager: RteAudioVoiceChanger): Int {
+        return rtcEngine.setLocalVoiceChanger(voiceManager.value)
+    }
+
+    override fun setLocalVoiceReverbPreset(preset: RteAudioReverbPreset): Int {
+        return rtcEngine.setLocalVoiceReverbPreset(preset.value)
+    }
+
+    override fun enableInEarMonitoring(enabled: Boolean): Int {
+        return rtcEngine.enableInEarMonitoring(enabled)
+    }
+
+    override fun enableAudioVolumeIndication(interval: Int, smooth: Int, report_vad: Boolean) {
+        rtcEngine.enableAudioVolumeIndication(interval, smooth, report_vad)
+    }
+
+    override fun setStatisticsReportListener(channelId: String, listener: RteStatisticsReportListener): Int {
+        if (channelMap.isNotEmpty()) {
+            val channel = channelMap[channelId] as RteChannelImpl
+            channel.statisticsReportListener = listener
+            return 0
         }
-
-        override fun onWarning(warn: Int) {
-            super.onWarning(warn)
-            Log.e("RteEngineImpl", String.format("onWarning code %d message %s", warn, RtcEngine.getErrorDescription(warn)));
-        }
-
-        override fun onClientRoleChanged(oldRole: Int, newRole: Int) {
-            super.onClientRoleChanged(oldRole, newRole)
-            Log.e("RteEngineImpl", "onClientRoleChanged, $oldRole, $newRole")
-        }
-
-        override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
-            super.onJoinChannelSuccess(channel, uid, elapsed)
-            Log.e("RteEngineImpl", String.format("onJoinChannelSuccess channel %s uid %d", channel, uid));
-        }
-
-        override fun onUserJoined(uid: Int, elapsed: Int) {
-            super.onUserJoined(uid, elapsed)
-            Log.e("RteEngineImpl", "onUserJoined->$uid")
-        }
-
-//        override fun onSubscribeVideoStateChanged(channel: String?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
-//            super.onSubscribeVideoStateChanged(channel, uid, oldState, newState, elapseSinceLastState)
-//            Log.e("RteEngineImpl", "onSubscribeVideoStateChanged->$uid, oldState->$oldState, newState->$newState")
-//        }
-
-        override fun onRemoteVideoStateChanged(uid: Int, state: Int, reason: Int, elapsed: Int) {
-            super.onRemoteVideoStateChanged(uid, state, reason, elapsed)
-            Log.e("RteEngineImpl", "onRemoteVideoStateChanged->$uid, state->$state, reason->$reason")
-        }
+        return -1
     }
 }

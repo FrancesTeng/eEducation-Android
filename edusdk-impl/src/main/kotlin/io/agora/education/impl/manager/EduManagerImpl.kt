@@ -36,6 +36,7 @@ import io.agora.log.LogManager
 import io.agora.log.UploadManager
 import io.agora.rte.RteCallback
 import io.agora.rte.RteEngineImpl
+import io.agora.rte.listener.RteEngineEventListener
 import io.agora.rtm.RtmMessage
 import io.agora.rtm.RtmStatusCode
 import okhttp3.logging.HttpLoggingInterceptor
@@ -43,7 +44,7 @@ import java.io.File
 
 internal class EduManagerImpl(
         options: EduManagerOptions
-) : EduManager(options), io.agora.rte.listener.RteEngineEventListener {
+) : EduManager(options), RteEngineEventListener {
 
     companion object {
         private const val TAG = "EduManagerImpl"

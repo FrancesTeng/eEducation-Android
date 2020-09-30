@@ -7,6 +7,7 @@ import io.agora.rtc.IRtcChannelEventHandler
 import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
+import io.agora.rte.listener.RteStatisticsReportListener
 import io.agora.rtm.*
 
 internal class RteChannelImpl(
@@ -14,6 +15,7 @@ internal class RteChannelImpl(
         private var eventListener: io.agora.rte.listener.RteChannelEventListener?
 ) : IRteChannel {
 
+    internal var statisticsReportListener: RteStatisticsReportListener? = null
     private val rtmChannelListener = object : RtmChannelListener {
         override fun onAttributesUpdated(p0: MutableList<RtmChannelAttribute>?) {
 
@@ -85,6 +87,16 @@ internal class RteChannelImpl(
 //            Log.e("RteChannelImpl", "onSubscribeVideoStateChanged->$${rtcChannel?.channelId()}, " +
 //                    "uid->$uid, oldState->$oldState, newState->$newState")
 //        }
+
+        override fun onRtcStats(rtcChannel: RtcChannel?, stats: IRtcEngineEventHandler.RtcStats?) {
+            super.onRtcStats(rtcChannel, stats)
+            statisticsReportListener?.onRtcStats(rtcChannel, stats)
+        }
+
+        override fun onVideoSizeChanged(rtcChannel: RtcChannel?, uid: Int, width: Int, height: Int, rotation: Int) {
+            super.onVideoSizeChanged(rtcChannel, uid, width, height, rotation)
+            statisticsReportListener?.onVideoSizeChanged(rtcChannel, uid, width, height, rotation)
+        }
     }
 
     private val rtmChannel = RteEngineImpl.rtmClient.createChannel(channelId, rtmChannelListener)
