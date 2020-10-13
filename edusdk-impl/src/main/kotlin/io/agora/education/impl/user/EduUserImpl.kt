@@ -342,7 +342,10 @@ internal open class EduUserImpl(
     }
 
     override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?) {
-        setStreamView(stream, channelId, viewGroup, VideoRenderConfig(RenderMode.HIDDEN))
+        /*屏幕分享使用fit模式，尽可能的保持画面完整*/
+        val config = if (stream.videoSourceType == VideoSourceType.SCREEN) RenderMode.FIT else
+            RenderMode.HIDDEN
+        setStreamView(stream, channelId, viewGroup, VideoRenderConfig(config))
     }
 
     internal fun removeAllSurfaceView() {
