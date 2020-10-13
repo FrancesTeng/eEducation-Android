@@ -64,6 +64,11 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             eduRoom.getRoomStatus().isStudentChatAllowed =
                                     audienceMuteChat.toFloat().toInt() == EduChatState.Allow.value
                         }
+                        val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster
+                        broadcasterMuteChat?.let {
+                            eduRoom.getRoomStatus().isStudentChatAllowed =
+                                    broadcasterMuteChat.toFloat().toInt() == EduChatState.Allow.value
+                        }
                     }
                 }
                 val operator = Convert.convertUserInfo(rtmRoomMuteState.operator, eduRoom.getCurRoomType())
@@ -131,6 +136,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 /**判断有效的数据中是否有本地用户的数据,有则处理并回调*/
                 for (element in validUserList) {
                     if (element.modifiedUser.userUuid == eduRoom.getLocalUser().userInfo.userUuid) {
+                        Log.e("CMDDispatch", "onLocalUserUpdated")
                         cmdCallbackManager.onLocalUserUpdated(EduUserEvent(element.modifiedUser,
                                 element.operatorUser), eduRoom.getLocalUser())
                     }

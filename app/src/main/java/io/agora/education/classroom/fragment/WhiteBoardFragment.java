@@ -95,7 +95,8 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
             appliance_view.check(appliance_view.getApplianceId(boardManager.getAppliance()));
             boardManager.setStrokeColor(ColorUtil.colorToArray(color));
         });
-        page_control_view.setListener(this);
+        /*白板控制按钮暂时不予适用*/
+//        page_control_view.setListener(this);
     }
 
     public void initBoardWithRoomToken(String uuid, String roomToken, String localUserUuid) {
@@ -122,7 +123,8 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     }
 
     public void disableDeviceInputs(boolean disabled) {
-        if (disabled != boardManager.isDisableDeviceInputs()) {
+        boolean a = boardManager.isDisableDeviceInputs();
+        if (disabled != a) {
             if (!inputTips) {
                 inputTips = true;
             } else {

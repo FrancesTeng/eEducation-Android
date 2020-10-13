@@ -102,24 +102,25 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
-        runOnUiThread(() -> {
-            /**一对一，默认学生可以针对白板进行输入*/
-            whiteboardFragment.disableCameraTransform(false);
-            whiteboardFragment.disableDeviceInputs(false);
-        });
+        video_student.setName(getLocalUserInfo().getUserName());
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
+//        runOnUiThread(() -> {
+//            /**一对一，默认学生可以针对白板进行输入*/
+//            whiteboardFragment.disableCameraTransform(false);
+//            whiteboardFragment.disableDeviceInputs(false);
+//        });
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         super.onRemoteUsersLeft(userEvents, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
@@ -287,11 +288,11 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
         super.onRoomPropertyChanged(classRoom, cause);
-        runOnUiThread(() -> {
-            /**小班课，默认学生可以针对白板进行输入*/
-            whiteboardFragment.disableCameraTransform(false);
-            whiteboardFragment.disableDeviceInputs(false);
-        });
+//        runOnUiThread(() -> {
+//            /**小班课，默认学生可以针对白板进行输入*/
+//            whiteboardFragment.disableCameraTransform(false);
+//            whiteboardFragment.disableDeviceInputs(false);
+//        });
     }
 
     @Override
@@ -306,16 +307,13 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
-        title_view.setNetworkQuality(quality.getValue());
+        title_view.setNetworkQuality(quality);
     }
 
 
     @Override
     public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
         super.onLocalUserUpdated(userEvent);
-        /**更新用户信息*/
-        EduUserInfo userInfo = userEvent.getModifiedUser();
-        video_student.setName(userInfo.getUserName());
     }
 
     @Override

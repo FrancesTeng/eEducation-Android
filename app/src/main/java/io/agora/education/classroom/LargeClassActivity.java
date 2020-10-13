@@ -402,7 +402,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         /**老师不在的时候不能举手*/
         resetHandState();
     }
@@ -410,7 +410,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         /**老师不在的时候不能举手*/
         resetHandState();
 
@@ -419,7 +419,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         super.onRemoteUsersLeft(userEvents, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         /**老师不在的时候不能举手*/
         resetHandState();
     }
@@ -602,7 +602,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
-        title_view.setNetworkQuality(quality.getValue());
+        title_view.setNetworkQuality(quality);
     }
 
     @Override

@@ -2,9 +2,14 @@ package io.agora.education.classroom;
 
 import android.graphics.Rect;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -61,6 +66,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         RteAudioMixingListener, RteMediaDeviceListener, RteSpeakerReportListener, RteStatisticsReportListener {
     private static final String TAG = "SmallClassActivity";
 
+    @BindView(R.id.layout_placeholder)
+    protected ConstraintLayout layout_placeholder;
     @BindView(R.id.rcv_videos)
     protected RecyclerView rcv_videos;
     @BindView(R.id.layout_im)
@@ -70,6 +77,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
 
     private ClassVideoAdapter classVideoAdapter;
     private UserListFragment userListFragment;
+    private View teacherPlaceholderView;
 
     @Override
     protected int getLayoutResId() {
@@ -135,6 +143,39 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
+    protected int getClassType() {
+        return Room.Type.SMALL;
+    }
+
+    @OnClick(R.id.iv_float)
+    public void onClick(View view) {
+        boolean isSelected = view.isSelected();
+        view.setSelected(!isSelected);
+        layout_im.setVisibility(isSelected ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    public void onTabSelected(TabLayout.Tab tab) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        if (tab.getPosition() == 0) {
+            transaction.show(chatRoomFragment).hide(userListFragment);
+        } else {
+            transaction.show(userListFragment).hide(chatRoomFragment);
+        }
+        transaction.commitNow();
+    }
+
+    @Override
+    public void onTabUnselected(TabLayout.Tab tab) {
+
+    }
+
+    @Override
+    public void onTabReselected(TabLayout.Tab tab) {
+
+    }
+
+    @Override
     public void onAudioMixingFinished() {
         Log.e(TAG, "onAudioMixingFinished");
     }
@@ -169,39 +210,6 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         Log.e(TAG, "onVideoSizeChanged->uid:" + uid + ",width:" + width + ",height:" + height + ",rotation:" + rotation);
     }
 
-    @Override
-    protected int getClassType() {
-        return Room.Type.SMALL;
-    }
-
-    @OnClick(R.id.iv_float)
-    public void onClick(View view) {
-        boolean isSelected = view.isSelected();
-        view.setSelected(!isSelected);
-        layout_im.setVisibility(isSelected ? View.VISIBLE : View.GONE);
-    }
-
-    @Override
-    public void onTabSelected(TabLayout.Tab tab) {
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        if (tab.getPosition() == 0) {
-            transaction.show(chatRoomFragment).hide(userListFragment);
-        } else {
-            transaction.show(userListFragment).hide(chatRoomFragment);
-        }
-        transaction.commitNow();
-    }
-
-    @Override
-    public void onTabUnselected(TabLayout.Tab tab) {
-
-    }
-
-    @Override
-    public void onTabReselected(TabLayout.Tab tab) {
-
-    }
-
 
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
@@ -209,21 +217,21 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         RteEngineImpl.INSTANCE.setStatisticsReportListener(classRoom.getRoomInfo().getRoomUuid(), this);
         super.onRemoteUsersInitialized(users, classRoom);
         userListFragment.setUserList(getCurFullUser());
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
         userListFragment.setUserList(getCurFullUser());
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
     public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
         super.onRemoteUsersLeft(userEvents, classRoom);
         userListFragment.setUserList(getCurFullUser());
-        title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
@@ -269,7 +277,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             }
         }
         userListFragment.setLocalUserUuid(classRoom.getLocalUser().getUserInfo().getUserUuid());
-        classVideoAdapter.setNewList(getCurFullStream());
+        showVideoList(getCurFullStream());
     }
 
     @Override
@@ -289,7 +297,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         /**有远端Camera流添加，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流添加，刷新视频列表");
-            classVideoAdapter.setNewList(getCurFullStream());
+            showVideoList(getCurFullStream());
         }
     }
 
@@ -310,7 +318,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         /**有远端Camera流添加，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
-            classVideoAdapter.setNewList(getCurFullStream());
+            showVideoList(getCurFullStream());
         }
     }
 
@@ -331,7 +339,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         /**有远端Camera流被移除，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
-            classVideoAdapter.setNewList(getCurFullStream());
+            showVideoList(getCurFullStream());
         }
     }
 
@@ -370,14 +378,14 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
-        title_view.setNetworkQuality(quality.getValue());
+        title_view.setNetworkQuality(quality);
     }
 
     @Override
     public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
         super.onLocalUserUpdated(userEvent);
         /**更新用户信息*/
-        classVideoAdapter.setNewList(getCurFullStream());
+        showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }
 
@@ -389,14 +397,14 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
-        classVideoAdapter.setNewList(getCurFullStream());
+        showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamUpdated(streamEvent);
-        classVideoAdapter.setNewList(getCurFullStream());
+        showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }
 
@@ -410,5 +418,24 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     public void onUserActionMessageReceived(@NotNull EduActionMessage actionMessage) {
         super.onUserActionMessageReceived(actionMessage);
         Log.e(TAG, "action->" + new Gson().toJson(actionMessage));
+    }
+
+    private void showVideoList(List<EduStreamInfo> list) {
+        classVideoAdapter.setNewList(list);
+        runOnUiThread(() -> {
+            for (EduStreamInfo streamInfo : list) {
+                if (streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
+                    /*隐藏老师的占位布局*/
+                    layout_placeholder.setVisibility(View.GONE);
+                    return;
+                }
+            }
+            /*显示老师的占位布局*/
+            if (teacherPlaceholderView == null) {
+                teacherPlaceholderView = LayoutInflater.from(this).inflate(R.layout.layout_video_small_class,
+                        layout_placeholder);
+            }
+            layout_placeholder.setVisibility(View.VISIBLE);
+        });
     }
 }

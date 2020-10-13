@@ -16,8 +16,11 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.agora.education.R;
+import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.classroom.BaseClassActivity;
 import io.agora.rtc.Constants;
+
+import static io.agora.education.api.statistics.NetworkQuality.*;
 
 public class TitleView extends ConstraintLayout {
 
@@ -59,18 +62,18 @@ public class TitleView extends ConstraintLayout {
         ((Activity) getContext()).runOnUiThread(() -> tv_room_name.setText(title));
     }
 
-    public void setNetworkQuality(int quality) {
+    public void setNetworkQuality(NetworkQuality quality) {
         ((Activity) getContext()).runOnUiThread(() -> {
             if (iv_quality != null) {
                 switch (quality) {
-                    case Constants.QUALITY_EXCELLENT:
-                    case Constants.QUALITY_GOOD:
+                    case GOOD:
                         iv_quality.setImageResource(R.drawable.ic_signal_good);
                         break;
-                    case Constants.QUALITY_VBAD:
-                    case Constants.QUALITY_DOWN:
+                    case BAD:
                         iv_quality.setImageResource(R.drawable.ic_signal_bad);
                         break;
+                    case POOR:
+                    case UNKNOWN:
                     default:
                         iv_quality.setImageResource(R.drawable.ic_signal_normal);
                         break;

@@ -11,6 +11,7 @@ import io.agora.education.api.room.data.Property.Companion.KEY_STUDENT_LIMIT
 import io.agora.education.api.room.data.Property.Companion.KEY_TEACHER_LIMIT
 import io.agora.education.api.statistics.ConnectionState
 import io.agora.education.api.statistics.ConnectionStateChangeReason
+import io.agora.education.api.statistics.NetworkQuality
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduLocalUserInfo
@@ -28,6 +29,7 @@ import io.agora.education.impl.room.data.request.RoleConfig
 import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.user.data.EduLocalUserInfoImpl
 import io.agora.education.impl.user.data.request.RoleMuteConfig
+import io.agora.rtc.Constants.*
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.RtmStatusCode.ConnectionChangeReason.*
 import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
@@ -432,6 +434,16 @@ internal class Convert {
             val msg = cmdResponseBody.data
             return EduActionMessage(msg.processUuid, convertActionMsgType(msg.action), msg.fromUser,
                     msg.timeout, msg.payload)
+        }
+
+        fun convertNetworkQuality(quality: Int): NetworkQuality {
+            return when (quality) {
+                QUALITY_UNKNOWN, QUALITY_DETECTING -> NetworkQuality.UNKNOWN
+                QUALITY_EXCELLENT, QUALITY_GOOD -> NetworkQuality.GOOD
+                QUALITY_POOR, QUALITY_BAD -> NetworkQuality.POOR
+                QUALITY_VBAD, QUALITY_DOWN -> NetworkQuality.BAD
+                else -> NetworkQuality.UNKNOWN
+            }
         }
     }
 }

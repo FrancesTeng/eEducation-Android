@@ -42,6 +42,7 @@ import io.agora.education.api.room.data.RoomType;
 import io.agora.education.api.room.listener.EduRoomEventListener;
 import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.ConnectionStateChangeReason;
+import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
@@ -413,14 +414,25 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             runOnUiThread(() -> {
                 whiteboardFragment.initBoardWithRoomToken(info.getBoardId(),
                         info.getBoardToken(), getLocalUserInfo().getUserUuid());
+                /*根据Json获取当前白板是否是跟随模式和当前用户是否得到白板授权;
+                同时,一对一模式下学生始终有白板授权*/
                 boolean follow = whiteBoardIsFollowMode(state);
-                whiteboardFragment.disableCameraTransform(follow);
-                boolean granted = whiteBoardIsGranted((state));
-                whiteboardFragment.disableDeviceInputs(!granted);
                 if (follow) {
                     layout_whiteboard.setVisibility(View.VISIBLE);
                     layout_share_video.setVisibility(View.GONE);
                 }
+                if (getClassType() == Room.Type.ONE2ONE) {
+                    /*一对一模式下学生端默认跟随模式*/
+                    whiteboardFragment.disableCameraTransform(false);
+                } else {
+                    whiteboardFragment.disableCameraTransform(!follow);
+                }
+                boolean granted = whiteBoardIsGranted((state));
+                if (getClassType() == Room.Type.ONE2ONE) {
+                    /*一对一模式下学生始终有白板授权*/
+                    granted = true;
+                }
+                whiteboardFragment.disableDeviceInputs(!granted);
             });
         }
     }
@@ -544,14 +556,25 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             runOnUiThread(() -> {
                 whiteboardFragment.initBoardWithRoomToken(mainBoardBean.getInfo().getBoardId(),
                         mainBoardBean.getInfo().getBoardToken(), getLocalUserInfo().getUserUuid());
+                /*根据Json获取当前白板是否是跟随模式和当前用户是否得到白板授权;
+                同时,一对一模式下学生始终有白板授权*/
                 boolean follow = whiteBoardIsFollowMode(mainBoardBean.getState());
-                whiteboardFragment.disableCameraTransform(follow);
-                boolean granted = whiteBoardIsGranted((mainBoardBean.getState()));
-                whiteboardFragment.disableDeviceInputs(!granted);
                 if (follow) {
                     layout_whiteboard.setVisibility(View.VISIBLE);
                     layout_share_video.setVisibility(View.GONE);
                 }
+                if (getClassType() == Room.Type.ONE2ONE) {
+                    /*一对一模式下学生端默认跟随模式*/
+                    whiteboardFragment.disableCameraTransform(false);
+                } else {
+                    whiteboardFragment.disableCameraTransform(!follow);
+                }
+                boolean granted = whiteBoardIsGranted((mainBoardBean.getState()));
+                if (getClassType() == Room.Type.ONE2ONE) {
+                    /*一对一模式下学生始终有白板授权*/
+                    granted = true;
+                }
+                whiteboardFragment.disableDeviceInputs(!granted);
             });
         }
         String recordJson = getProperty(roomProperties, RECORD);
@@ -575,8 +598,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onNetworkQualityChanged(@NotNull io.agora.education.api.statistics.NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
-
+    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
+        Log.e(TAG, "onNetworkQualityChanged->" + quality.getValue());
     }
 
 

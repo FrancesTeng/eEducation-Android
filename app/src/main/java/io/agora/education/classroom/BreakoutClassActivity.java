@@ -3,10 +3,12 @@ package io.agora.education.classroom;
 import android.graphics.Rect;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -72,6 +74,8 @@ import static io.agora.education.classroom.bean.record.RecordState.END;
 public class BreakoutClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
     private static final String TAG = "BreakoutClassActivity";
 
+    @BindView(R.id.layout_placeholder)
+    protected ConstraintLayout layout_placeholder;
     @BindView(R.id.rcv_videos)
     protected RecyclerView rcv_videos;
     @BindView(R.id.layout_im)
@@ -81,6 +85,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
 
     private ClassVideoAdapter classVideoAdapter;
     private UserListFragment userListFragment;
+    private View teacherPlaceholderView;
 
     private EduRoom subEduRoom;
 
@@ -260,6 +265,25 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         return list;
     }
 
+    private void showVideoList(List<EduStreamInfo> list) {
+        classVideoAdapter.setNewList(list);
+        runOnUiThread(() -> {
+            for (EduStreamInfo streamInfo : list) {
+                if (streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
+                    /*隐藏老师的占位布局*/
+                    layout_placeholder.setVisibility(View.GONE);
+                    return;
+                }
+            }
+            /*显示老师的占位布局*/
+            if (teacherPlaceholderView == null) {
+                teacherPlaceholderView = LayoutInflater.from(this).inflate(R.layout.layout_video_small_class,
+                        layout_placeholder);
+            }
+            layout_placeholder.setVisibility(View.VISIBLE);
+        });
+    }
+
     @OnClick(R.id.iv_float)
     public void onClick(View view) {
         boolean isSelected = view.isSelected();
@@ -324,7 +348,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             }
 
             userListFragment.setUserList(getCurAllStudent());
-            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+            title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         } else {
             EduRoomStatus roomStatus = getMainEduRoom().getRoomStatus();
             title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
@@ -344,7 +368,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         super.onRemoteUsersJoined(users, classRoom);
         if (classRoom.equals(subEduRoom)) {
             userListFragment.setUserList(getCurAllStudent());
-            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+            title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         }
     }
 
@@ -353,7 +377,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         super.onRemoteUsersLeft(userEvents, classRoom);
         if (classRoom.equals(subEduRoom)) {
             userListFragment.setUserList(getCurAllStudent());
-            title_view.setTitle(String.format(Locale.getDefault(), "%s(%d)", getMediaRoomName(), getCurFullUser().size()));
+            title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         }
     }
 
@@ -410,7 +434,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         super.onRemoteStreamsInitialized(streams, classRoom);
         if (classRoom.equals(subEduRoom)) {
             userListFragment.setLocalUserUuid(classRoom.getLocalUser().getUserInfo().getUserUuid());
-            classVideoAdapter.setNewList(getCurFullStream());
+            showVideoList(getCurFullStream());
         } else {
             boolean notify = false;
             for (EduStreamInfo streamInfo : streams) {
@@ -437,7 +461,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             if (notify) {
                 /*此时小组房间可能还没有加入成功，所以只刷新大房间的流*/
                 List<EduStreamInfo> list = getMainEduRoom().getFullStreamList();
-                classVideoAdapter.setNewList(list);
+                showVideoList(list);
             }
         }
     }
@@ -461,7 +485,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         /**有远端Camera流添加，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流添加，刷新视频列表");
-            classVideoAdapter.setNewList(getCurFullStream());
+            showVideoList(getCurFullStream());
         }
     }
 
@@ -484,7 +508,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         /**有远端Camera流添加，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
-            classVideoAdapter.setNewList(getCurFullStream());
+            showVideoList(getCurFullStream());
         }
     }
 
@@ -507,7 +531,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         /**有远端Camera流被移除，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
-            classVideoAdapter.setNewList(getCurFullStream());
+            showVideoList(getCurFullStream());
         }
     }
 
@@ -588,7 +612,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            title_view.setNetworkQuality(quality.getValue());
+            title_view.setNetworkQuality(quality);
         }
     }
 
@@ -596,7 +620,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
         super.onLocalUserUpdated(userEvent);
         /**更新用户信息*/
-        classVideoAdapter.setNewList(getCurFullStream());
+        showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }
 
@@ -608,14 +632,14 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
-        classVideoAdapter.setNewList(getCurFullStream());
+        showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamUpdated(streamEvent);
-        classVideoAdapter.setNewList(getCurFullStream());
+        showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }
 

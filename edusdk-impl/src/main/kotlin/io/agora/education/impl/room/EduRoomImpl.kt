@@ -16,6 +16,7 @@ import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.education.impl.util.Convert
 import io.agora.education.api.statistics.AgoraError
+import io.agora.education.api.statistics.NetworkQuality
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduChatState
@@ -43,6 +44,8 @@ import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rte.RteEngineImpl
 import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rtm.*
+import retrofit2.Converter
+import kotlin.math.max
 
 internal class EduRoomImpl(
         roomInfo: EduRoomInfo,
@@ -399,5 +402,9 @@ internal class EduRoomImpl(
     }
 
     override fun onNetworkQuality(uid: Int, txQuality: Int, rxQuality: Int) {
+        /*上行和下行取最差的一个;类型转换之后，直接转发*/
+        val value = max(txQuality, rxQuality)
+        val quality: NetworkQuality = Convert.convertNetworkQuality(value)
+        eventListener?.onNetworkQualityChanged(quality, getLocalUser().userInfo, this)
     }
 }

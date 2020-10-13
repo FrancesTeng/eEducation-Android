@@ -169,8 +169,8 @@ object RteEngineImpl : IRteEngine {
     }
 
     override fun enableLocalMedia(audio: Boolean, video: Boolean) {
-        rtcEngine.enableLocalVideo(audio)
-        rtcEngine.enableLocalAudio(video)
+        rtcEngine.enableLocalAudio(audio)
+        rtcEngine.enableLocalVideo(video)
     }
 
     operator fun get(channelId: String): IRteChannel? {
@@ -220,8 +220,8 @@ object RteEngineImpl : IRteEngine {
     }
 
     override fun muteLocalStream(muteAudio: Boolean, muteVideo: Boolean): Int {
-        val code0 = rtcEngine.muteLocalVideoStream(muteAudio)
-        val code1 = rtcEngine.muteLocalAudioStream(muteVideo)
+        val code0 = rtcEngine.muteLocalAudioStream(muteAudio)
+        val code1 = rtcEngine.muteLocalVideoStream(muteVideo)
         return if (code0 == ERR_OK && code1 == ERR_OK) ERR_OK else -1
     }
 

@@ -7,12 +7,13 @@ import io.agora.rtc.IRtcChannelEventHandler
 import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
+import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rte.listener.RteStatisticsReportListener
 import io.agora.rtm.*
 
 internal class RteChannelImpl(
         channelId: String,
-        private var eventListener: io.agora.rte.listener.RteChannelEventListener?
+        private var eventListener: RteChannelEventListener?
 ) : IRteChannel {
 
     internal var statisticsReportListener: RteStatisticsReportListener? = null
