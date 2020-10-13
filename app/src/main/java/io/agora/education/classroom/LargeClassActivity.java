@@ -10,8 +10,12 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatTextView;
 import androidx.cardview.widget.CardView;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
+import com.google.android.material.badge.BadgeDrawable;
+import com.google.android.material.tabs.TabItem;
 import com.google.android.material.tabs.TabLayout;
 
 import org.jetbrains.annotations.NotNull;
@@ -81,6 +85,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
 
     private RtcVideoView video_teacher;
     private RtcVideoView video_student;
+    private AppCompatTextView textView_unRead;
+    private ConstraintLayout layout_unRead;
 
     /**
      * 当前本地用户是否在连麦中
@@ -90,6 +96,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
      * 当前连麦用户
      */
     private EduBaseUserInfo curLinkedUser;
+
+    private int unReadCount = 0;
 
     @Override
     protected int getLayoutResId() {
@@ -151,7 +159,11 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         video_student.setViewVisibility(View.GONE);
 
         if (layout_tab != null) {
+            /*不为空说明是竖屏*/
             layout_tab.addOnTabSelectedListener(this);
+            layout_tab.getTabAt(1).setCustomView(R.layout.layout_largeclass_chatroom);
+            layout_unRead = findViewById(R.id.layout_unRead);
+            textView_unRead = findViewById(R.id.textView_unRead);
         }
 
         // disable operation in large class
@@ -207,6 +219,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 @Override
                 public void onFailure(int code, @Nullable String reason) {
                     Log.e(TAG, "举手失败");
+                    ToastManager.showShort(R.string.function_error, code, reason);
                 }
             });
         }
@@ -253,6 +266,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 @Override
                 public void onSuccess(@Nullable EduStreamInfo res) {
                     localCoVideoStatus = DisCoVideo;
+                    curLinkedUser = null;
                     resetHandState();
                     video_student.setName(getLocalUserInfo().getUserName());
                     renderStream(getMainEduRoom(), getLocalCameraStream(), null);
@@ -350,32 +364,46 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             });
         }
         localCoVideoStatus = coVideoing ? CoVideoing : DisCoVideo;
-        curLinkedUser = getLocalUserInfo();
+        curLinkedUser = coVideoing ? getLocalUserInfo() : null;
         resetHandState();
     }
 
     /**
      * 被取消连麦
      */
-//    @Override
-//    public void onHandUpCanceled() {
-//        layout_hand_up.setSelected(false);
-//    }
     private void resetHandState() {
         runOnUiThread(() -> {
             boolean hasTeacher = getTeacher() != null;
             /**有老师的情况下才显示*/
-            layout_hand_up.setVisibility(hasTeacher ? View.VISIBLE : View.GONE);
+//            layout_hand_up.setVisibility(hasTeacher ? View.VISIBLE : View.GONE);
             /**当前连麦用户不是本地用户时，隐藏*/
             if (curLinkedUser != null) {
-                layout_hand_up.setVisibility((curLinkedUser.equals(getLocalUserInfo()) ?
-                        View.VISIBLE : View.GONE));
+//                layout_hand_up.setVisibility((curLinkedUser.equals(getLocalUserInfo()) ?
+//                        View.VISIBLE : View.GONE));
+                layout_hand_up.setEnabled(curLinkedUser.equals(getLocalUserInfo()));
+                layout_hand_up.setSelected(true);
+            } else {
+                layout_hand_up.setEnabled(true);
+                layout_hand_up.setSelected(false);
             }
-            /***/
-            if (hasTeacher) {
-                layout_hand_up.setSelected(localCoVideoStatus != DisCoVideo);
-            }
+//            if (hasTeacher) {
+//                layout_hand_up.setSelected(localCoVideoStatus != DisCoVideo);
+//            }
         });
+    }
+
+    private boolean chatRoomShowing() {
+        return layout_chat_room.getVisibility() == View.VISIBLE;
+    }
+
+    private void updateUnReadCount(boolean gone) {
+        if (gone) {
+            unReadCount = 0;
+        } else {
+            unReadCount++;
+            textView_unRead.setText(String.valueOf(unReadCount));
+        }
+        textView_unRead.setVisibility(gone ? View.GONE : View.VISIBLE);
     }
 
     @Override
@@ -386,6 +414,9 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         boolean showMaterials = tab.getPosition() == 0;
         layout_materials.setVisibility(showMaterials ? View.VISIBLE : View.GONE);
         layout_chat_room.setVisibility(showMaterials ? View.GONE : View.VISIBLE);
+        if (!showMaterials) {
+            updateUnReadCount(true);
+        }
     }
 
     @Override
@@ -437,6 +468,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
         super.onRoomChatMessageReceived(eduChatMsg, classRoom);
+        runOnUiThread(() -> updateUnReadCount(chatRoomShowing()));
     }
 
     @Override
@@ -593,6 +625,13 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
         super.onRoomPropertyChanged(classRoom, cause);
+        /*处理可能收到的录制的消息*/
+        runOnUiThread(() -> {
+            if (revRecordMsg) {
+                revRecordMsg = false;
+                updateUnReadCount(chatRoomShowing());
+            }
+        });
     }
 
     @Override

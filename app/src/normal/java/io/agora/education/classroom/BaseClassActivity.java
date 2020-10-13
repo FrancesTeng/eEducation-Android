@@ -96,11 +96,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     protected ChatRoomFragment chatRoomFragment = new ChatRoomFragment();
 
     protected RoomEntry roomEntry;
-    private boolean isJoining = false, joinSuccess = false;
+    private volatile boolean isJoining = false, joinSuccess = false;
     private EduRoom mainEduRoom;
     private EduStreamInfo localCameraStream, localScreenStream;
     protected BoardBean mainBoardBean;
     protected RecordBean mainRecordBean;
+    protected volatile boolean revRecordMsg = false;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -583,6 +585,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             if (mainRecordBean == null || tmp.getState() != mainRecordBean.getState()) {
                 mainRecordBean = tmp;
                 if (mainRecordBean.getState() == END) {
+                    revRecordMsg = true;
                     RecordMsg recordMsg = new RecordMsg(getMediaRoomUuid(), getLocalUserInfo(),
                             getString(R.string.replay_link), EduChatMsgType.Text.getValue());
                     recordMsg.isMe = true;
