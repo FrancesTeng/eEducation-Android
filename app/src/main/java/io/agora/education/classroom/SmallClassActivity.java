@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -421,12 +422,16 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     private void showVideoList(List<EduStreamInfo> list) {
-        classVideoAdapter.setNewList(list);
         runOnUiThread(() -> {
-            for (EduStreamInfo streamInfo : list) {
+            for (int i = 0; i < list.size(); i++) {
+                EduStreamInfo streamInfo = list.get(i);
                 if (streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
                     /*隐藏老师的占位布局*/
                     layout_placeholder.setVisibility(View.GONE);
+                    if (i != 0) {
+                        Collections.swap(list, 0, i);
+                    }
+                    classVideoAdapter.setNewList(list);
                     return;
                 }
             }
@@ -436,6 +441,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
                         layout_placeholder);
             }
             layout_placeholder.setVisibility(View.VISIBLE);
+            classVideoAdapter.setNewList(list);
         });
     }
 }
