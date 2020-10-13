@@ -3,6 +3,7 @@ package io.agora.education.classroom.fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -39,6 +40,7 @@ import io.agora.education.service.RecordService;
 import io.agora.education.service.bean.response.RecordRes;
 
 public class ChatRoomFragment extends BaseFragment implements OnItemChildClickListener, View.OnKeyListener {
+    public static final String TAG = ChatRoomFragment.class.getSimpleName();
 
     @BindView(R.id.rcv_msg)
     protected RecyclerView rcv_msg;
@@ -46,7 +48,7 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
     protected EditText edit_send_msg;
 
     private MessageListAdapter adapter;
-    private boolean isMuteAll;
+    private boolean isMuteAll = false;
     private boolean isMuteLocal;
 
     @Override
@@ -67,6 +69,7 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
         rcv_msg.setLayoutManager(layoutManager);
         rcv_msg.setAdapter(adapter);
         edit_send_msg.setOnKeyListener(this);
+        setEditTextEnable(!(this.isMuteAll));
     }
 
     public void setMuteAll(boolean isMuteAll) {

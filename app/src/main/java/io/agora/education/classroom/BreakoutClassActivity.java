@@ -352,13 +352,13 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     }
                 });
             }
-
             userListFragment.setUserList(getCurAllStudent());
             title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         } else {
             EduRoomStatus roomStatus = getMainEduRoom().getRoomStatus();
             title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
                     System.currentTimeMillis() - roomStatus.getStartTime());
+            chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
             /**处理roomProperties*/
             Map<String, Object> roomProperties = classRoom.getRoomProperties();
             String boardJson = getProperty(roomProperties, BOARD);

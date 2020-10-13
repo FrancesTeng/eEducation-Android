@@ -15,16 +15,13 @@ import io.agora.education.util.TimeUtil;
 public class TimeView extends AppCompatTextView {
 
     private Handler handler;
-    private long time = -1;
+    private long time = 0;
     private Runnable updateTimeRunnable = () -> {
-        if (time >= 0) {
-            setText(TimeUtil.stringForTimeHMS(time, "%02d:%02d:%02d"));
-            time++;
-            handler.postDelayed(this.updateTimeRunnable, 1000);
-        } else {
-            setText(R.string.time_default);
-        }
+        setText(TimeUtil.stringForTimeHMS(time, "%02d:%02d:%02d"));
+        time++;
+        handler.postDelayed(this.updateTimeRunnable, 1000);
     };
+    private boolean isStarted = false;
 
     public TimeView(Context context) {
         this(context, null);
@@ -54,23 +51,21 @@ public class TimeView extends AppCompatTextView {
     }
 
     public boolean isStarted() {
-        return time >= 0;
+        return isStarted;
     }
 
     public void start() {
-        if (time < 0) {
-            time = 0;
-        }
+        time = 0;
         handler.removeCallbacks(updateTimeRunnable);
+        isStarted = true;
         updateTimeRunnable.run();
     }
 
     public void stop() {
-        time = -1;
-        if(handler != null) {
+        if (handler != null) {
             handler.removeCallbacks(updateTimeRunnable);
         }
-        updateTimeRunnable.run();
+        isStarted = false;
     }
 
 }

@@ -401,6 +401,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         EduRoomStatus roomStatus = getMyMediaRoom().getRoomStatus();
         title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
                 System.currentTimeMillis() - roomStatus.getStartTime());
+        chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
         /**处理roomProperties*/
         Map<String, Object> roomProperties = classRoom.getRoomProperties();
         /**判断roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/

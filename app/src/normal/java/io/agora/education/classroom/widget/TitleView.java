@@ -58,6 +58,12 @@ public class TitleView extends ConstraintLayout {
         LayoutInflater.from(getContext()).inflate(layoutResId, this, true);
     }
 
+    public void hideTime() {
+        if (time_view != null) {
+            time_view.setVisibility(GONE);
+        }
+    }
+
     public void setTitle(String title) {
         ((Activity) getContext()).runOnUiThread(() -> tv_room_name.setText(title));
     }
