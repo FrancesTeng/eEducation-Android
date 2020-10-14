@@ -319,8 +319,14 @@ internal class Convert {
                     }
                 }
                 RoomType.LARGE_CLASS -> {
-                    val allow0 = muteChatConfig?.audience?.toInt() == EduMuteState.Enable.value
-                    val allow1 = muteChatConfig?.broadcaster?.toInt() == EduMuteState.Enable.value
+                    var allow0 = true
+                    var allow1 = true
+                    muteChatConfig?.audience?.let {
+                        allow0 = it.toInt() == EduMuteState.Enable.value
+                    }
+                    muteChatConfig?.broadcaster?.let {
+                        allow1 = it.toInt() == EduMuteState.Enable.value
+                    }
                     allow = allow0 || allow1
                 }
             }

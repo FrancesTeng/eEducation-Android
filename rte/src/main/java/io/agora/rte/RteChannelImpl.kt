@@ -16,6 +16,7 @@ internal class RteChannelImpl(
         private var eventListener: RteChannelEventListener?
 ) : IRteChannel {
 
+    private val TAG = RteChannelImpl::class.java.simpleName
     internal var statisticsReportListener: RteStatisticsReportListener? = null
     private val rtmChannelListener = object : RtmChannelListener {
         override fun onAttributesUpdated(p0: MutableList<RtmChannelAttribute>?) {
@@ -24,7 +25,7 @@ internal class RteChannelImpl(
 
         /**收到频道内消息(包括频道内的群聊消息和各种房间配置、人员信息、流信息等)*/
         override fun onMessageReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
-            Log.e("测试测试", p0?.text)
+            Log.e(TAG, "接收到频道${p1?.channelId}内的消息->${p0?.text}")
             eventListener?.onChannelMsgReceived(p0, p1)
         }
 

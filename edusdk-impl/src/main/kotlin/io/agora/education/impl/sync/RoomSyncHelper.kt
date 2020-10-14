@@ -22,6 +22,7 @@ import io.agora.education.impl.room.data.response.EduSequenceRes
 import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
 import io.agora.education.impl.room.network.RoomService
 import java.util.*
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**只同步管理channelMsg，不同步peerMsg，因为RTM能保障peerMsg到达，而且peerMsg只和业务有关*/
 internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInfo,
@@ -61,7 +62,9 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
 
     /**
      * @return null 成功更新，序号前后衔接，无遗漏
-     *         != null 有遗漏，需请求遗漏数据*/
+     *         != null 有遗漏，需请求遗漏数据
+     * @return pair.first:nextId
+     *         pair.second:count*/
     override fun updateSequenceId(cmdResponseBody: CMDResponseBody<Any>): Pair<Int, Int>? {
         val eduSequenceRes = Convert.convertCMDResponseBody(cmdResponseBody)
         /**join过程中或者同步seq过程中收到的消息均加入缓存*/
@@ -109,7 +112,8 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                 val element = iterable.next()
                 val pair = updateSequenceId(element)
                 if (pair != null) {
-                    fetchLostSequence(pair.first, pair.second, callback)
+                    /*count设为null，请求所有丢失的数据*/
+                    fetchLostSequence(pair.first, null, callback)
                     return
                 }
             }
@@ -123,16 +127,17 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
     }
 
     override fun fetchLostSequence(callback: EduCallback<Unit>) {
-        fetchLostSequence(lastSequenceId, null, callback)
+        fetchLostSequence(lastSequenceId + 1, null, callback)
     }
 
     /**请求当前丢失的sequence消息
-     * @param nextId 查询的起始sequence
-     * @param count 需要查询的条数*/
+     * @param nextId 查询的起始sequence(当前本地最新的sequence的下一个)
+     * @param count 需要查询的条数(为空则是请求全部)*/
     override fun fetchLostSequence(nextId: Int, count: Int?, callback: EduCallback<Unit>) {
         syncing = true
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .fetchLostSequences(APPID, roomInfo.roomUuid, nextId, count)
+                .fetchLostSequences(eduRoom.getLocalUser().userInfo.userToken!!, APPID,
+                        roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceListRes<Any>>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceListRes<Any>>?) {
                         Log.e(TAG, "请求到的丢失数据:${Gson().toJson(res)}")
@@ -179,7 +184,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
     override fun fetchSnapshot(callback: EduCallback<Unit>) {
         syncing = true
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .fetchSnapshot(APPID, roomInfo.roomUuid)
+                .fetchSnapshot(eduRoom.getLocalUser().userInfo.userToken!!, APPID, roomInfo.roomUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceSnapshotRes>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceSnapshotRes>?) {
                         Log.e(TAG, "请求到的快照数据:${Gson().toJson(res)}")
@@ -213,7 +218,8 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
 
     internal class Cache {
         /**缓存的cmd消息*/
-        var list = mutableListOf<CMDResponseBody<Any>>()
+//        var list = mutableListOf<CMDResponseBody<Any>>()
+        var list = CopyOnWriteArrayList<CMDResponseBody<Any>>()
 
         fun add(cmdResponseBody: CMDResponseBody<Any>) {
             list.add(cmdResponseBody)

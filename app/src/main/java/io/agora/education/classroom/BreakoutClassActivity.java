@@ -62,6 +62,7 @@ import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.bean.record.RecordBean;
 import io.agora.education.classroom.bean.record.RecordMsg;
 import io.agora.education.classroom.fragment.UserListFragment;
+import io.agora.education.impl.role.data.EduUserRoleStr;
 import io.agora.education.service.CommonService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.service.bean.request.AllocateGroupReq;
@@ -220,11 +221,12 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
         /**消息需要添加roomUuid*/
         /**调用super方法把消息发送到大房间中去；但是fromRoomUuid是小房间的-Web端需要*/
-        super.sendRoomChatMsg(new ChannelMsg.BreakoutChatMsgContent(msg, subEduRoom.getRoomInfo()
-                .getRoomUuid()).toJsonString(), callback);
+        super.sendRoomChatMsg(new ChannelMsg.BreakoutChatMsgContent(EduUserRole.STUDENT.getValue(),
+                msg, subEduRoom.getRoomInfo().getRoomUuid()).toJsonString(), callback);
         /**把消息发送到小房间去*/
-        subEduRoom.getLocalUser().sendRoomChatMessage(new ChannelMsg.BreakoutChatMsgContent(msg,
-                subEduRoom.getRoomInfo().getRoomUuid()).toJsonString(), callback);
+        subEduRoom.getLocalUser().sendRoomChatMessage(new ChannelMsg.BreakoutChatMsgContent(
+                EduUserRole.STUDENT.getValue(),
+                msg, subEduRoom.getRoomInfo().getRoomUuid()).toJsonString(), callback);
     }
 
     @Override
@@ -548,6 +550,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             EduRoomStatus roomStatus = classRoom.getRoomStatus();
             switch (event) {
                 case COURSE_STATE:
+                    Log.e(TAG, "班级:" + getMainEduRoom().getRoomInfo().getRoomUuid() + "内的课堂状态->"
+                            + roomStatus.getCourseState());
                     title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
                             System.currentTimeMillis() - roomStatus.getStartTime());
                     break;

@@ -41,12 +41,25 @@ public class ChannelMsg extends JsonBean {
     }
 
     public static class BreakoutChatMsgContent extends JsonBean {
+        /*消息发送者在班级内的角色
+         * 超小分为大班和小班，消息发送着在不同班级内的角色不一样*/
+        private int role;
         private String content;
+        /*消息来自哪个班级(目前此值约定为小班级的roomUuid)*/
         private String fromRoomUuid;
 
-        public BreakoutChatMsgContent(String content, String fromRoomUuid) {
+        public BreakoutChatMsgContent(int role, String content, String fromRoomUuid) {
+            this.role = role;
             this.content = content;
             this.fromRoomUuid = fromRoomUuid;
+        }
+
+        public int getRole() {
+            return role;
+        }
+
+        public void setRole(int role) {
+            this.role = role;
         }
 
         public String getContent() {

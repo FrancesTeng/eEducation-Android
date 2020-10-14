@@ -126,6 +126,7 @@ internal interface RoomService {
     /**查询丢失的消息列表*/
     @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/sequences")
     fun fetchLostSequences(
+            @Header("token") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Query("nextId") nextId: Int,
@@ -135,6 +136,7 @@ internal interface RoomService {
     /**查询快照(全量更新)*/
     @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/snapshot")
     fun fetchSnapshot(
+            @Header("token") userToken: String,
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String
     ): Call<ResponseBody<EduSequenceSnapshotRes>>

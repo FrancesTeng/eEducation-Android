@@ -95,10 +95,11 @@ public class TitleView extends ConstraintLayout {
                     if (!time_view.isStarted()) {
                         time_view.start();
                     }
-                    time_view.setTime(time);
+//                    time_view.setTime(time);
                 } else {
                     time_view.stop();
                 }
+                time_view.setTime(time);
             }
         });
     }

@@ -603,7 +603,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
-        Log.e(TAG, "onNetworkQualityChanged->" + quality.getValue());
+//        Log.e(TAG, "onNetworkQualityChanged->" + quality.getValue());
     }
 
 

@@ -1,9 +1,7 @@
 package io.agora.education.classroom.fragment;
 
 import android.content.Intent;
-import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -17,8 +15,6 @@ import com.chad.library.adapter.base.listener.OnItemChildClickListener;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import butterknife.BindView;
@@ -29,6 +25,7 @@ import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
+import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.base.BaseCallback;
 import io.agora.education.base.BaseFragment;
 import io.agora.education.classroom.BaseClassActivity;
@@ -178,10 +175,16 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
         String text = edit_send_msg.getText().toString();
         if (KeyEvent.KEYCODE_ENTER == keyCode && KeyEvent.ACTION_DOWN == event.getAction() && text.trim().length() > 0) {
             if (context instanceof BaseClassActivity) {
-                ((BaseClassActivity) getActivity()).sendRoomChatMsg(text, new EduCallback<EduChatMsg>() {
+                edit_send_msg.setText("");
+                BaseClassActivity activity = (BaseClassActivity) getActivity();
+                /*本地消息直接添加*/
+                ChannelMsg.ChatMsg msg = new ChannelMsg.ChatMsg(activity.getLocalUser().getUserInfo(), text,
+                        EduChatMsgType.Text.getValue());
+                msg.isMe = true;
+                addMessage(msg);
+                activity.sendRoomChatMsg(text, new EduCallback<EduChatMsg>() {
                     @Override
                     public void onSuccess(@Nullable EduChatMsg res) {
-                        edit_send_msg.setText("");
                     }
 
                     @Override

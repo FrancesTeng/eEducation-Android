@@ -19,6 +19,8 @@ import io.agora.rte.RteEngineImpl
 import java.util.*
 
 internal class CMDDispatch(private val eduRoom: EduRoom) {
+    private val TAG = CMDDispatch::class.java.simpleName
+
     private val cmdCallbackManager: CMDCallbackManager = CMDCallbackManager()
 
     fun dispatchMsg(cmdResponseBody: CMDResponseBody<Any>?) {
@@ -37,6 +39,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 val rtmRoomState = Gson().fromJson<CMDResponseBody<CMDRoomState>>(text, object :
                         TypeToken<CMDResponseBody<CMDRoomState>>() {}.type).data
                 eduRoom.getRoomStatus().courseState = Convert.convertRoomState(rtmRoomState.state)
+                Log.e(TAG, "课堂状态改变为->${eduRoom.getRoomStatus().courseState.value}")
                 eduRoom.getRoomStatus().startTime = rtmRoomState.startTime
                 val operator = Convert.convertUserInfo(rtmRoomState.operator, (eduRoom as EduRoomImpl).getCurRoomType())
                 cmdCallbackManager.onRoomStatusChanged(RoomStatusEvent.COURSE_STATE, operator, eduRoom)
@@ -75,7 +78,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 cmdCallbackManager.onRoomStatusChanged(RoomStatusEvent.STUDENT_CHAT, operator, eduRoom)
             }
             CMDId.RoomPropertyChanged.value -> {
-                Log.e("CMDDispatch", "收到roomProperty改变的RTM:${text}")
+                Log.e(TAG, "收到roomProperty改变的RTM:${text}")
                 val properties = Gson().fromJson<CMDResponseBody<Map<String, Any>>>(text, object :
                         TypeToken<CMDResponseBody<Map<String, Any>>>() {}.type).data
                 /**把变化的属性更新到本地*/
@@ -83,25 +86,36 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 val map = properties[Property.CAUSE]
                 val cause: MutableMap<String, Any>? = map as MutableMap<String, Any>?
                 /**通知用户房间属性发生改变*/
-                Log.e("CMDDispatch", "把收到的roomProperty回调出去")
+                Log.e(TAG, "把收到的roomProperty回调出去")
                 cmdCallbackManager.onRoomPropertyChanged(eduRoom, cause)
             }
             CMDId.ChannelMsgReceived.value -> {
                 /**频道内的聊天消息*/
-                Log.e("CMDDispatch", "收到频道内聊天消息")
+                Log.e(TAG, "收到频道内聊天消息")
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom) as EduChatMsg
-                Log.e("CMDDispatch", "构造出eduMsg")
-                cmdCallbackManager.onRoomChatMessageReceived(eduMsg, eduRoom)
+                Log.e(TAG, "构造出eduChatMsg")
+                if (eduMsg.fromUser == eduRoom.getLocalUser().userInfo) {
+                    Log.e(TAG, "本地用户发送的频道内消息，自动屏蔽掉")
+                } else {
+                    Log.e(TAG, "非本地用户发送的频道内消息，回调出去")
+                    cmdCallbackManager.onRoomChatMessageReceived(eduMsg, eduRoom)
+                }
             }
             CMDId.ChannelCustomMsgReceived.value -> {
                 /**频道内自定义消息(可以是用户的自定义的信令)*/
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom)
-                cmdCallbackManager.onRoomMessageReceived(eduMsg, eduRoom)
+                Log.e(TAG, "构造出eduMsg")
+                if (eduMsg.fromUser == eduRoom.getLocalUser().userInfo) {
+                    Log.e(TAG, "本地用户发送的频道内自定义消息，自动屏蔽掉")
+                } else {
+                    Log.e(TAG, "非本地用户发送的频道内自定义消息，回调出去")
+                    cmdCallbackManager.onRoomMessageReceived(eduMsg, eduRoom)
+                }
             }
             CMDId.UserJoinOrLeave.value -> {
                 val rtmInOutMsg = Gson().fromJson<CMDResponseBody<RtmUserInOutMsg>>(text, object :
                         TypeToken<CMDResponseBody<RtmUserInOutMsg>>() {}.type).data
-                Log.e("CMDDispatch", "收到用户进入或离开的通知->${eduRoom.getRoomInfo().roomUuid}:${text}")
+                Log.e(TAG, "收到用户进入或离开的通知->${eduRoom.getRoomInfo().roomUuid}:${text}")
                 /**根据回调数据，维护本地存储的流列表，并返回有效数据*/
                 val validOnlineUsers = CMDDataMergeProcessor.addUserWithOnline(rtmInOutMsg.onlineUsers,
                         (eduRoom as EduRoomImpl).getCurUserList(), eduRoom.getCurRoomType())
@@ -136,14 +150,14 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 /**判断有效的数据中是否有本地用户的数据,有则处理并回调*/
                 for (element in validUserList) {
                     if (element.modifiedUser.userUuid == eduRoom.getLocalUser().userInfo.userUuid) {
-                        Log.e("CMDDispatch", "onLocalUserUpdated")
+                        Log.e(TAG, "onLocalUserUpdated")
                         cmdCallbackManager.onLocalUserUpdated(EduUserEvent(element.modifiedUser,
                                 element.operatorUser), eduRoom.getLocalUser())
                     }
                 }
             }
             CMDId.UserPropertiedChanged.value -> {
-                Log.e("CMDDispatch", "收到userProperty改变的通知:${text}")
+                Log.e(TAG, "收到userProperty改变的通知:${text}")
                 val cmdUserPropertyRes = Gson().fromJson<CMDResponseBody<CMDUserPropertyRes>>(text, object :
                         TypeToken<CMDResponseBody<CMDUserPropertyRes>>() {}.type).data
                 val updatedUserInfo = CMDDataMergeProcessor.updateUserPropertyWithChange(cmdUserPropertyRes,
@@ -167,10 +181,10 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 when (cmdStreamActionMsg.action) {
                     /**流的Add和Remove跟随人员进出,所以此处的Add和Remove不会走了*/
                     CMDStreamAction.Add.value -> {
-                        Log.e("CMDDispatch", "收到新添加流的通知：${text}")
+                        Log.e(TAG, "收到新添加流的通知：${text}")
                         val validAddStreams = CMDDataMergeProcessor.addStreamWithAction(cmdStreamActionMsg,
                                 (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
-                        Log.e("CMDDispatch", "有效新添加流大小：" + validAddStreams.size)
+                        Log.e(TAG, "有效新添加流大小：" + validAddStreams.size)
                         /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
                         val iterable = validAddStreams.iterator()
                         while (iterable.hasNext()) {
@@ -178,21 +192,21 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             val streamInfo = element.modifiedStream
                             if (streamInfo.publisher == eduRoom.getLocalUser().userInfo) {
                                 RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
-                                Log.e("CMDDispatch", "join成功，把新添加的本地流回调出去")
+                                Log.e(TAG, "join成功，把新添加的本地流回调出去")
                                 cmdCallbackManager.onLocalStreamAdded(element, eduRoom.getLocalUser())
                                 iterable.remove()
                             }
                         }
                         if (validAddStreams.size > 0) {
-                            Log.e("CMDDispatch", "join成功，把新添加远端流回调出去")
+                            Log.e(TAG, "join成功，把新添加远端流回调出去")
                             cmdCallbackManager.onRemoteStreamsAdded(validAddStreams, eduRoom)
                         }
                     }
                     CMDStreamAction.Modify.value -> {
-                        Log.e("CMDDispatch", "收到修改流的通知：${text}")
+                        Log.e(TAG, "收到修改流的通知：${text}")
                         val validModifyStreams = CMDDataMergeProcessor.updateStreamWithAction(cmdStreamActionMsg,
                                 (eduRoom as EduRoomImpl).getCurStreamList(), (eduRoom as EduRoomImpl).getCurRoomType())
-                        Log.e("CMDDispatch", "有效修改流大小：" + validModifyStreams.size)
+                        Log.e(TAG, "有效修改流大小：" + validModifyStreams.size)
                         /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
                         val iterable = validModifyStreams.iterator()
                         while (iterable.hasNext()) {
@@ -200,18 +214,18 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
                                 RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
                                         element.modifiedStream.hasVideo)
-                                Log.e("CMDDispatch", "join成功，把发生改变的本地流回调出去")
+                                Log.e(TAG, "join成功，把发生改变的本地流回调出去")
                                 cmdCallbackManager.onLocalStreamUpdated(element, eduRoom.getLocalUser())
                                 iterable.remove()
                             }
                         }
                         if (validModifyStreams.size > 0) {
-                            Log.e("CMDDispatch", "join成功，把发生改变的远端流回调出去")
+                            Log.e(TAG, "join成功，把发生改变的远端流回调出去")
                             cmdCallbackManager.onRemoteStreamsUpdated(validModifyStreams, eduRoom)
                         }
                     }
                     CMDStreamAction.Remove.value -> {
-                        Log.e("CMDDispatch", "收到移除流的通知：${text}")
+                        Log.e(TAG, "收到移除流的通知：${text}")
                         val validRemoveStreams = CMDDataMergeProcessor.removeStreamWithAction(cmdStreamActionMsg,
                                 (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
 
@@ -227,7 +241,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             }
                         }
                         if (validRemoveStreams.size > 0) {
-                            Log.e("CMDDispatch", "join成功，把被移除的远端流回调出去")
+                            Log.e(TAG, "join成功，把被移除的远端流回调出去")
                             cmdCallbackManager.onRemoteStreamsRemoved(validRemoveStreams, eduRoom)
                         }
                     }
@@ -261,7 +275,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
             }
 //            /**只要发起数据同步请求就会受到此消息*/
 //            CMDId.SyncRoomInfo.value -> {
-//                Log.e("CMDDispatch", "收到同步房间信息的消息:" + text)
+//                Log.e(TAG, "收到同步房间信息的消息:" + text)
 //                /**接收到需要同步的房间信息*/
 //                val cmdSyncRoomInfoRes = Gson().fromJson<CMDResponseBody<CMDSyncRoomInfoRes>>(text,
 //                        object : TypeToken<CMDResponseBody<CMDSyncRoomInfoRes>>() {}.type)
@@ -277,7 +291,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
 //                    /**roomInfo同步完成，打开开关*/
 //                    roomStateChangeEnable = true
 //                    /**roomInfo同步成功*/
-//                    Log.e("CMDDispatch", "房间信息同步完成")
+//                    Log.e(TAG, "房间信息同步完成")
 //                    eduRoom.syncRoomOrAllUserStreamSuccess(
 //                            true, null, null)
 //                }
@@ -294,7 +308,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
 //                     * 第二阶段（不属于join流程）（根据ts增量），如果中间断连，可根据ts续传*/
 //                    when (syncUserStreamData.step) {
 //                        EduSyncStep.FIRST.value -> {
-//                            Log.e("CMDDispatch", "收到同步人流的消息-第一阶段:" + text)
+//                            Log.e(TAG, "收到同步人流的消息-第一阶段:" + text)
 //                            /**把此部分的全量人流数据同步到本地缓存中*/
 //                            CMDDataMergeProcessor.syncUserStreamListToEduRoomWithFirst(syncUserStreamData, eduRoom)
 //                            val firstFinished = syncUserStreamData.isFinished == EduSyncFinished.YES.value
@@ -306,12 +320,12 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
 //                            /**如果步骤一同步完成，则说明join流程中的同步全量人流数据阶段完成，同时还需要把全局的step改为2，
 //                             * 防止在步骤二(join流程中的同步增量人流数据阶段)过程出现异常后，再次发起的同步请求中step还是1*/
 //                            if (firstFinished) {
-//                                Log.e("CMDDispatch", "收到同步人流的消息-第一阶段完成")
+//                                Log.e(TAG, "收到同步人流的消息-第一阶段完成")
 //                                eduRoom.roomSyncHelper.updateStep(EduSyncStep.SECOND.value)
 //                            }
 //                        }
 //                        EduSyncStep.SECOND.value -> {
-//                            Log.e("CMDDispatch", "收到同步人流的消息-第二阶段:" + text)
+//                            Log.e(TAG, "收到同步人流的消息-第二阶段:" + text)
 //                            /**增量数据合并到本地缓存中去*/
 //                            val validDatas = CMDDataMergeProcessor.syncUserStreamListToEduRoomWithSecond(
 //                                    syncUserStreamData, eduRoom)
@@ -319,11 +333,11 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
 //                            synchronized(eduRoom.joinSuccess) {
 //                                /**接收到一部分增量数据，就调用一次，目的是为了刷新rtm超时任务*/
 //                                if (eduRoom.joinSuccess) {
-//                                    Log.e("CMDDispatch", "收到同步人流的消息-join成功后的增量")
+//                                    Log.e(TAG, "收到同步人流的消息-join成功后的增量")
 //                                    eduRoom.roomSyncHelper.interruptRtmTimeout(!incrementFinished)
 //                                } else {
 //                                    if (incrementFinished) {
-//                                        Log.e("CMDDispatch", "收到同步人流的消息-第二阶段完成")
+//                                        Log.e(TAG, "收到同步人流的消息-第二阶段完成")
 //                                        (eduRoom as EduRoomImpl).syncRoomOrAllUserStreamSuccess(
 //                                                null, null, incrementFinished)
 //                                    }
@@ -337,7 +351,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
 //                                if (incrementFinished) {
 //                                    /**成功加入房间后的全部增量数据需要回调出去*/
 //                                    if (eduRoom.joinSuccess) {
-//                                        Log.e("CMDDispatch", "收到同步人流的消息-join成功后的增量-完成")
+//                                        Log.e(TAG, "收到同步人流的消息-join成功后的增量-完成")
 //                                        cmdCallbackManager.callbackValidData(eduRoom)
 //                                    }
 //                                    /**userStream同步完成，打开开关*/
