@@ -219,8 +219,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     public void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
         /**消息需要添加roomUuid*/
-        /**调用super方法把消息发送到大房间中去*/
-        super.sendRoomChatMsg(new ChannelMsg.BreakoutChatMsgContent(msg, getMainEduRoom().getRoomInfo()
+        /**调用super方法把消息发送到大房间中去；但是fromRoomUuid是小房间的-Web端需要*/
+        super.sendRoomChatMsg(new ChannelMsg.BreakoutChatMsgContent(msg, subEduRoom.getRoomInfo()
                 .getRoomUuid()).toJsonString(), callback);
         /**把消息发送到小房间去*/
         subEduRoom.getLocalUser().sendRoomChatMessage(new ChannelMsg.BreakoutChatMsgContent(msg,

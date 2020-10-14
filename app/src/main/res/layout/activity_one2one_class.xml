@@ -31,6 +31,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layout_video_teacher" />
 
+    <FrameLayout
+        android:id="@+id/layout_whiteboard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/layout_video_teacher"
+        app:layout_constraintTop_toBottomOf="@id/title_view" />
+
+    <FrameLayout
+        android:id="@+id/layout_share_video"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/layout_video_teacher"
+        app:layout_constraintTop_toBottomOf="@id/title_view" />
+
     <RelativeLayout
         android:id="@+id/layout_im"
         android:layout_width="@dimen/dp_222"
@@ -50,6 +68,7 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/dp_40"
             android:layout_toEndOf="@id/line_vertical"
+            android:background="@color/white"
             android:gravity="center"
             android:text="@string/title_chat_room"
             android:textColor="@color/gray_333333"
@@ -71,24 +90,6 @@
             android:layout_toEndOf="@id/line_vertical" />
 
     </RelativeLayout>
-
-    <FrameLayout
-        android:id="@+id/layout_whiteboard"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/layout_im"
-        app:layout_constraintStart_toEndOf="@id/layout_video_teacher"
-        app:layout_constraintTop_toBottomOf="@id/title_view" />
-
-    <FrameLayout
-        android:id="@+id/layout_share_video"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/layout_im"
-        app:layout_constraintStart_toEndOf="@id/layout_video_teacher"
-        app:layout_constraintTop_toBottomOf="@id/title_view" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/iv_float"
