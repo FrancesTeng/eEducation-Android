@@ -26,7 +26,7 @@ public class ToastManager {
 
     public static void showShort(@NonNull String text) {
         Context context = getContext();
-        sHandler.post(() -> Toast.makeText(context, text, Toast.LENGTH_SHORT).show());
+        sHandler.post(() -> Toast.makeText(context, text, 300).show());
     }
 
     private static Context getContext() throws IllegalStateException {

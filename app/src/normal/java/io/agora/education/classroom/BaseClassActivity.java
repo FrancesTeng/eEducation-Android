@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import butterknife.BindView;
+import io.agora.base.ToastManager;
 import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.RetrofitManager;
 import io.agora.education.R;
@@ -121,6 +122,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     protected void initView() {
+        if(getClassType() == RoomType.ONE_ON_ONE.getValue()) {
+            whiteboardFragment.setInputWhileFollow(true);
+        }
     }
 
     protected void showFragmentWithJoinSuccess() {
@@ -424,12 +428,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                     layout_whiteboard.setVisibility(View.VISIBLE);
                     layout_share_video.setVisibility(View.GONE);
                 }
-                if (getClassType() == Room.Type.ONE2ONE) {
-                    /*一对一模式下学生端默认跟随模式*/
-                    whiteboardFragment.disableCameraTransform(false);
-                } else {
-                    whiteboardFragment.disableCameraTransform(!follow);
-                }
+                whiteboardFragment.disableCameraTransform(follow);
                 boolean granted = whiteBoardIsGranted((state));
                 if (getClassType() == Room.Type.ONE2ONE) {
                     /*一对一模式下学生始终有白板授权*/
@@ -566,12 +565,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                     layout_whiteboard.setVisibility(View.VISIBLE);
                     layout_share_video.setVisibility(View.GONE);
                 }
-                if (getClassType() == Room.Type.ONE2ONE) {
-                    /*一对一模式下学生端默认跟随模式*/
-                    whiteboardFragment.disableCameraTransform(false);
-                } else {
-                    whiteboardFragment.disableCameraTransform(!follow);
-                }
+                whiteboardFragment.disableCameraTransform(follow);
                 boolean granted = whiteBoardIsGranted((mainBoardBean.getState()));
                 if (getClassType() == Room.Type.ONE2ONE) {
                     /*一对一模式下学生始终有白板授权*/
@@ -688,18 +682,25 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     }
 
+    private boolean curFollowState = false;
+
     /**
      * 白板的全局回调
      */
     @Override
     public void onGlobalStateChanged(GlobalState state) {
-        if (getClassType() == RoomType.ONE_ON_ONE.getValue()) {
-            /**一对一不受此控制*/
-            return;
-        }
         BoardState boardState = (BoardState) state;
         boolean follow = whiteBoardIsFollowMode(boardState);
+        if (curFollowState != follow) {
+            curFollowState = follow;
+            ToastManager.showShort(follow ? R.string.open_follow_board : R.string.relieve_follow_board);
+        }
         whiteboardFragment.disableCameraTransform(follow);
+        if (getClassType() == RoomType.ONE_ON_ONE.getValue()) {
+            /**一对一，学生始终有输入权限*/
+            whiteboardFragment.disableDeviceInputs(false);
+            return;
+        }
         boolean granted = whiteBoardIsGranted(boardState);
         whiteboardFragment.disableDeviceInputs(!granted);
     }

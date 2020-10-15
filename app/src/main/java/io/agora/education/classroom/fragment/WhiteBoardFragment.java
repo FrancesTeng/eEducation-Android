@@ -7,6 +7,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -56,11 +57,11 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     private String curLocalUuid;
     private final double miniScale = 0.1d;
     private final double maxScale = 10d;
-    /**
-     * 初始化时不进行相关提示
-     */
+    /*初始化时不进行相关提示*/
     private boolean inputTips = false;
     private boolean transform = false;
+    /*是否允许在开启白板跟随的情况下，进行书写(仅仅书写，不包括移动缩放)*/
+    private boolean inputWhileFollow = false;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -97,6 +98,10 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
         });
         /*白板控制按钮暂时不予适用*/
 //        page_control_view.setListener(this);
+    }
+
+    public void setInputWhileFollow(boolean inputWhileFollow) {
+        this.inputWhileFollow = inputWhileFollow;
     }
 
     public void initBoardWithRoomToken(String uuid, String roomToken, String localUserUuid) {
@@ -147,7 +152,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
                 if (!transform) {
                     transform = true;
                 } else {
-                    ToastManager.showShort(R.string.follow_tips);
+//                    ToastManager.showShort(R.string.follow_tips);
                 }
                 boardManager.disableDeviceInputsTemporary(true);
             } else {
@@ -171,9 +176,31 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
             white_board_view.requestFocus();
             if (boardManager.isDisableCameraTransform() && !boardManager.isDisableDeviceInputs()) {
                 ToastManager.showShort(R.string.follow_tips);
+                return true;
             }
         }
         return false;
+
+//        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+//            white_board_view.requestFocus();
+//            if (boardManager.isDisableCameraTransform() && !boardManager.isDisableDeviceInputs()) {
+//                if (inputWhileFollow) {
+//                    return false;
+//                } else {
+//                    ToastManager.showShort(R.string.follow_tips);
+//                    return true;
+//                }
+//            }
+//        }
+//        else if (event.getAction() == MotionEvent.ACTION_MOVE && event.getPointerCount() == 2) {
+//            white_board_view.requestFocus();
+//            if (boardManager.isDisableCameraTransform() && !boardManager.isDisableDeviceInputs()) {
+//                Log.e(TAG, "cccccccccccc");
+//                Toast.makeText(getContext(), getString(R.string.follow_tips), 10).show();
+//                return true;
+//            }
+//        }
+//        return false;
     }
 
     @Override
