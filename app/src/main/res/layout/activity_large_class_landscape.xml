@@ -79,8 +79,8 @@
 
     <FrameLayout
         android:id="@+id/layout_video_student"
-        android:layout_width="@dimen/dp_120"
-        android:layout_height="@dimen/dp_85"
+        android:layout_width="@dimen/dp_81"
+        android:layout_height="@dimen/dp_114"
         android:layout_marginStart="@dimen/dp_66"
         android:layout_marginTop="@dimen/dp_10"
         app:layout_constraintStart_toStartOf="parent"

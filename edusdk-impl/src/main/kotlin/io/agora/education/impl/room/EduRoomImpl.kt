@@ -4,11 +4,14 @@ import android.util.Log
 import androidx.annotation.NonNull
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import io.agora.Constants
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
+import io.agora.Constants.Companion.AgoraLog
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.education.api.EduCallback
+import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
 import io.agora.education.api.user.EduStudent
@@ -170,7 +173,7 @@ internal class EduRoomImpl(
                         joinRte(rtcToken, roomEntryRes.user.streamUuid.toLong(),
                                 mediaOptions.convert(), object : ResultCallback<Void> {
                             override fun onSuccess(p0: Void?) {
-                                /**拉去全量数据*/
+                                /**拉取全量数据*/
                                 syncSession.fetchSnapshot(object : EduCallback<Unit> {
                                     override fun onSuccess(res: Unit?) {
                                         /**全量数据拉取并合并成功*/
@@ -388,8 +391,18 @@ internal class EduRoomImpl(
         p0?.text?.let {
             val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(p0.text, object :
                     TypeToken<CMDResponseBody<Any>>() {}.type)
+//
+//
+//
+//            if(cmdResponseBody.cmd == 3) {
+//                return
+//            }
+//
+//
+
             val pair = syncSession.updateSequenceId(cmdResponseBody)
             if (pair != null) {
+                /*count设为null,请求所有丢失的数据*/
                 syncSession.fetchLostSequence(pair.first, pair.second, object : EduCallback<Unit> {
                     override fun onSuccess(res: Unit?) {
                     }

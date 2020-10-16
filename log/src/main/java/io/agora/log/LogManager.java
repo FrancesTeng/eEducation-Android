@@ -13,6 +13,12 @@ import com.elvishew.xlog.printer.file.naming.ChangelessFileNameGenerator;
 
 import java.io.File;
 
+import static com.elvishew.xlog.LogLevel.DEBUG;
+import static com.elvishew.xlog.LogLevel.ERROR;
+import static com.elvishew.xlog.LogLevel.INFO;
+import static com.elvishew.xlog.LogLevel.VERBOSE;
+import static com.elvishew.xlog.LogLevel.WARN;
+
 public class LogManager {
     private static File sPath;
     private static String sTag;
@@ -40,6 +46,24 @@ public class LogManager {
             msg = msg.replaceAll(p0, p1);
         }
         return msg;
+    }
+
+    public void logMsg(String msg, int level) {
+        switch (level) {
+            case DEBUG:
+                d(msg);
+                break;
+            case WARN:
+                w(msg);
+                break;
+            case ERROR:
+                e(msg);
+                break;
+            case INFO:
+            default:
+                i(msg);
+                break;
+        }
     }
 
     public void d(String msg, Object... args) {

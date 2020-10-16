@@ -4,10 +4,12 @@ import android.util.Log
 import com.google.gson.Gson
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
+import io.agora.Constants.Companion.AgoraLog
 import io.agora.education.impl.util.Convert
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.education.api.EduCallback
+import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduRoomInfo
 import io.agora.education.api.room.data.EduRoomStatus
@@ -73,11 +75,15 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
         } else {
             when {
                 cmdResponseBody.sequence - lastSequenceId == 1 -> {
+                    AgoraLog.logMsg("sequence-${cmdResponseBody.sequence}和${lastSequenceId}衔接，" +
+                            "传递转发", LogLevel.INFO.value)
                     lastSequenceId = cmdResponseBody.sequence
                     /**传递转发*/
                     eduRoom.cmdDispatch.dispatchMsg(cmdResponseBody)
                 }
                 cmdResponseBody.sequence - lastSequenceId > 1 -> {
+                    AgoraLog.logMsg("sequence-${cmdResponseBody.sequence}和${lastSequenceId}不衔接，" +
+                            "返回丢失起始点", LogLevel.INFO.value)
                     sequenceList.add(cmdResponseBody.sequence)
                     sequenceData[cmdResponseBody.sequence] = eduSequenceRes
                     return Pair(lastSequenceId + 1, cmdResponseBody.sequence - lastSequenceId - 1)
@@ -106,14 +112,14 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
      * 2:join成功后的流程中，某一次sync完成后
      * */
     fun handleCache(callback: EduCallback<Unit>) {
+        AgoraLog.logMsg("检查并处理缓存数据(处理CMD消息)", LogLevel.INFO.value)
         if (cache.hasCache()) {
             val iterable = cache.list.iterator()
             while (iterable.hasNext()) {
                 val element = iterable.next()
                 val pair = updateSequenceId(element)
                 if (pair != null) {
-                    /*count设为null，请求所有丢失的数据*/
-                    fetchLostSequence(pair.first, null, callback)
+                    fetchLostSequence(pair.first, pair.second, callback)
                     return
                 }
             }
@@ -121,9 +127,13 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
         sequenceList.sort()
         sequenceList?.forEach {
             val cmdRes = Convert.convertEduSequenceRes(sequenceData[it] as EduSequenceRes<Any>)
+            if (it > lastSequenceId) {
+                lastSequenceId = it
+            }
             (eduRoom as EduRoomImpl).cmdDispatch.dispatchMsg(cmdRes)
         }
         cache.clear()
+        clearSequence()
     }
 
     override fun fetchLostSequence(callback: EduCallback<Unit>) {
@@ -140,7 +150,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                         roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceListRes<Any>>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceListRes<Any>>?) {
-                        Log.e(TAG, "请求到的丢失数据:${Gson().toJson(res)}")
+                        Log.e(TAG, "根据${nextId}请求到的丢失数据:${Gson().toJson(res)}")
                         res?.data?.let {
                             /**把缺失的seq数据添加到集合中*/
                             addSequenceData(res.data as EduSequenceListRes<Any>)

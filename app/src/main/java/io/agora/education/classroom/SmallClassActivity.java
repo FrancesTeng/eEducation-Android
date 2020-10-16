@@ -203,7 +203,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
 
     @Override
     public void onRtcStats(@Nullable RtcChannel channel, @Nullable IRtcEngineEventHandler.RtcStats stats) {
-        Log.e(TAG, "onRtcStats->stats:" + stats.rxKBitRate);
+//        Log.e(TAG, "onRtcStats->stats:" + stats.rxKBitRate);
     }
 
     @Override

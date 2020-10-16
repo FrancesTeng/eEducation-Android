@@ -122,7 +122,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     protected void initView() {
-        if(getClassType() == RoomType.ONE_ON_ONE.getValue()) {
+        if (getClassType() == RoomType.ONE_ON_ONE.getValue()) {
             whiteboardFragment.setInputWhileFollow(true);
         }
     }
@@ -631,7 +631,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
-        Log.e(TAG, "收到更新本地流的回到");
+        Log.e(TAG, "收到更新本地流的回调");
         switch (streamEvent.getModifiedStream().getVideoSourceType()) {
             case CAMERA:
                 localCameraStream = streamEvent.getModifiedStream();
@@ -646,7 +646,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
-        Log.e(TAG, "收到移除本地流的回到");
+        Log.e(TAG, "收到移除本地流的回调");
         switch (streamEvent.getModifiedStream().getVideoSourceType()) {
             case CAMERA:
                 localCameraStream = null;

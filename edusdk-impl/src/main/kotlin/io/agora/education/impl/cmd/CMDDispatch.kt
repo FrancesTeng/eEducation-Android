@@ -116,18 +116,34 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 val rtmInOutMsg = Gson().fromJson<CMDResponseBody<RtmUserInOutMsg>>(text, object :
                         TypeToken<CMDResponseBody<RtmUserInOutMsg>>() {}.type).data
                 Log.e(TAG, "收到用户进入或离开的通知->${eduRoom.getRoomInfo().roomUuid}:${text}")
-                /**根据回调数据，维护本地存储的流列表，并返回有效数据*/
+
+                /**根据回调数据，维护本地存储的流列表，并返回有效数据(可能同时包含local和remote数据)*/
                 val validOnlineUsers = CMDDataMergeProcessor.addUserWithOnline(rtmInOutMsg.onlineUsers,
                         (eduRoom as EduRoomImpl).getCurUserList(), eduRoom.getCurRoomType())
                 val validOfflineUsers = CMDDataMergeProcessor.removeUserWithOffline(rtmInOutMsg.offlineUsers,
                         eduRoom.getCurUserList(), eduRoom.getCurRoomType())
 
-                /**判断是否携带了流信息*/
+                /**从以上有效数据中剥离出本地用户的数据
+                 * 本地用户的online数据不回调出去，内部处理
+                 * 本地用户的online数据暂不回调出去，后期会在EduUserEventListener中添加
+                 * onLocalUserLeft回调来处理此消息(为踢人功能预备)*/
+                val validOnlineLocalUser = CMDProcessor.filterLocalUserInfo(
+                        eduRoom.getLocalUser().userInfo, validOnlineUsers)
+                val validOfflineLocalUser = CMDProcessor.filterLocalUserEvent(
+                        eduRoom.getLocalUser().userInfo, validOfflineUsers)
+
+                /**判断是否携带了流信息(可能同时包含local和remote数据)*/
                 val validAddedStreams = CMDDataMergeProcessor.addStreamWithUserOnline(rtmInOutMsg.onlineUsers,
                         eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
                 val validRemovedStreams = CMDDataMergeProcessor.removeStreamWithUserOffline(rtmInOutMsg.offlineUsers,
                         eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
-                /**人员进出会携带着各自可能存在的流信息*/
+
+                /**从以上有效数据中剥离出本地用户的流数据*/
+                val validAddedLocalStream = CMDProcessor.filterLocalStreamInfo(
+                        eduRoom.getLocalUser().userInfo, validAddedStreams)
+                val validRemovedLocalStream = CMDProcessor.filterLocalStreamInfo(
+                        eduRoom.getLocalUser().userInfo, validRemovedStreams)
+
                 if (validOnlineUsers.size > 0) {
                     cmdCallbackManager.onRemoteUsersJoined(validOnlineUsers, eduRoom)
                 }
@@ -139,6 +155,12 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 }
                 if (validRemovedStreams.size > 0) {
                     cmdCallbackManager.onRemoteStreamsRemoved(validRemovedStreams, eduRoom)
+                }
+                validAddedLocalStream?.let {
+                    cmdCallbackManager.onLocalStreamAdded(it, eduRoom.getLocalUser())
+                }
+                validRemovedLocalStream?.let {
+                    cmdCallbackManager.onLocalStreamRemoved(it, eduRoom.getLocalUser())
                 }
             }
             CMDId.UserStateChange.value -> {
@@ -179,7 +201,6 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         TypeToken<CMDResponseBody<CMDStreamActionMsg>>() {}.type).data
                 /**根据回调数据，维护本地存储的流列表*/
                 when (cmdStreamActionMsg.action) {
-                    /**流的Add和Remove跟随人员进出,所以此处的Add和Remove不会走了*/
                     CMDStreamAction.Add.value -> {
                         Log.e(TAG, "收到新添加流的通知：${text}")
                         val validAddStreams = CMDDataMergeProcessor.addStreamWithAction(cmdStreamActionMsg,

@@ -12,6 +12,7 @@ import io.agora.rte.data.RteAudioReverbPreset
 import io.agora.rte.data.RteAudioVoiceChanger
 import io.agora.rte.listener.*
 import io.agora.rtm.*
+import io.agora.rtm.RtmStatusCode.LoginError.LOGIN_ERR_ALREADY_LOGIN
 import java.io.File
 
 object RteEngineImpl : IRteEngine {
@@ -129,13 +130,17 @@ object RteEngineImpl : IRteEngine {
             rtmClient.login(rtmToken, rtmUid, object : ResultCallback<Void> {
                 override fun onSuccess(p0: Void?) {
                     rtmLoginSuccess = true
-                    callback.onSuccess(if (p0 != null) p0 as Unit else Unit)
+                    callback.onSuccess(Unit)
                 }
 
                 override fun onFailure(p0: ErrorInfo?) {
                     rtmLoginSuccess = false
                     p0?.let {
-                        callback.onFailure(p0.errorCode, p0.errorDescription)
+                        if (p0.errorCode == LOGIN_ERR_ALREADY_LOGIN) {
+                            callback.onSuccess(Unit)
+                        } else {
+                            callback.onFailure(p0.errorCode, p0.errorDescription)
+                        }
                     }
                 }
             })

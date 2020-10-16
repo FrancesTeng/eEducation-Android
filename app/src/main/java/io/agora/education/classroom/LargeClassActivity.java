@@ -156,10 +156,10 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     muteLocalVideo(!video_student.isVideoMuted());
                 }
             });
+            video_student.setViewVisibility(View.GONE);
         }
         removeFromParent(video_student);
         layout_video_student.addView(video_student, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        video_student.setViewVisibility(View.GONE);
 
         if (layout_tab != null) {
             /*不为空说明是竖屏*/
