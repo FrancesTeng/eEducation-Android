@@ -17,7 +17,7 @@ internal class EduSnapshotRes(
 internal class EduSnapshotRoomRes(
         val roomInfo: EduSnapshotRoomInfoRes,
         val roomState: EduSnapshotRoomStateRes,
-        val roomProperties: Map<String, Any>?
+        val roomProperties: MutableMap<String, Any>?
 ) {}
 
 internal class EduSnapshotRoomInfoRes(

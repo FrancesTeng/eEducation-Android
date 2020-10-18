@@ -7,16 +7,15 @@ import io.agora.education.impl.util.Convert
 import io.agora.education.api.manager.listener.EduManagerEventListener
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.room.EduRoom
-import io.agora.education.api.room.data.Property
 import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
-import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
 import io.agora.rte.RteEngineImpl
 import java.util.*
+
 
 internal class CMDDispatch(private val eduRoom: EduRoom) {
     private val TAG = CMDDispatch::class.java.simpleName
@@ -79,15 +78,13 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
             }
             CMDId.RoomPropertyChanged.value -> {
                 Log.e(TAG, "收到roomProperty改变的RTM:${text}")
-                val properties = Gson().fromJson<CMDResponseBody<Map<String, Any>>>(text, object :
-                        TypeToken<CMDResponseBody<Map<String, Any>>>() {}.type).data
-                /**把变化的属性更新到本地*/
-                eduRoom.roomProperties = properties
-                val map = properties[Property.CAUSE]
-                val cause: MutableMap<String, Any>? = map as MutableMap<String, Any>?
+                val propertyChangeEvent = Gson().fromJson<CMDResponseBody<CMDRoomPropertyRes>>(
+                        text, object : TypeToken<CMDResponseBody<CMDRoomPropertyRes>>() {}.type).data
+                /**把变化(update or delete)的属性更新到本地*/
+                CMDDataMergeProcessor.updateRoomProperties(eduRoom, propertyChangeEvent)
                 /**通知用户房间属性发生改变*/
                 Log.e(TAG, "把收到的roomProperty回调出去")
-                cmdCallbackManager.onRoomPropertyChanged(eduRoom, cause)
+                cmdCallbackManager.onRoomPropertyChanged(eduRoom, propertyChangeEvent.cause)
             }
             CMDId.ChannelMsgReceived.value -> {
                 /**频道内的聊天消息*/

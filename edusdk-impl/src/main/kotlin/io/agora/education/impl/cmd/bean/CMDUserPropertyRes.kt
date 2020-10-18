@@ -4,7 +4,8 @@ import io.agora.education.api.user.data.EduBaseUserInfo
 
 class CMDUserPropertyRes(
         val fromUser: EduBaseUserInfo,
-        val userProperties: Map<String, Any>,
-        val cause: MutableMap<String, Any>?
-) {
+        action: Int,
+        changeProperties: MutableMap<String, Any>,
+        cause: MutableMap<String, Any>?
+) : CMDRoomPropertyRes(action, changeProperties, cause) {
 }

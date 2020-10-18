@@ -169,7 +169,9 @@ internal class EduRoomImpl(
                         getRoomStatus().courseState = Convert.convertRoomState(roomEntryRes.room.roomState.state)
                         getRoomStatus().isStudentChatAllowed = Convert.extractStudentChatAllowState(
                                 roomEntryRes.room.roomState.muteChat, getCurRoomType())
-                        roomProperties = roomEntryRes.room.roomProperties
+                        roomEntryRes.room.roomProperties?.let {
+                            roomProperties = it
+                        }
                         /**加入rte(包括rtm和rtc)*/
                         joinRte(rtcToken, roomEntryRes.user.streamUuid.toLong(),
                                 mediaOptions.convert(), object : ResultCallback<Void> {

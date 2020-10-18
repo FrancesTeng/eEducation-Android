@@ -38,17 +38,6 @@ internal interface RoomService {
             @Body eduSyncRoomReq: EduSyncRoomReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
-    /**为房间添加自定义属性
-     * @param key 属性key
-     * @param value 属性值（null为删除）*/
-    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/properties/{key}")
-    fun setProperty(
-            @Path("appId") appId: String,
-            @Path("roomUuid") roomUuid: String,
-            @Path("key") key: String,
-            @Field("value") value: String
-    )
-
     /**更新课堂状态*/
     @PUT("/scene/apps/{appId}/v1/rooms/{roomUUid}/states/{state}")
     fun updateClassroomState(

@@ -5,7 +5,6 @@ import com.google.gson.Gson
 import io.agora.education.impl.util.Convert
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduRoomState
-import io.agora.education.api.room.data.RoomStatusEvent
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.api.stream.data.EduAudioState
 import io.agora.education.api.stream.data.EduStreamEvent
@@ -118,7 +117,16 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                                          eduUserInfos: MutableList<EduUserInfo>): EduUserInfo? {
             for (element in eduUserInfos) {
                 if (cmdUsrPropertyRes.fromUser.userUuid == element.userUuid) {
-                    element.userProperties = cmdUsrPropertyRes.userProperties
+                    val properties = cmdUsrPropertyRes.changeProperties
+                    val sets = properties.entries
+                    sets?.forEach {
+                        if (cmdUsrPropertyRes.action == PropertyChangeType.Update.value) {
+                            element.userProperties[it.key] = it.value
+                        } else if (cmdUsrPropertyRes.action == PropertyChangeType.Delete.value) {
+                            element.userProperties.remove(it.key)
+                        }
+                    }
+                    element.userProperties = cmdUsrPropertyRes.changeProperties
                     return element
                 }
             }
@@ -306,13 +314,27 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             if (roomStatus.state == EduRoomState.START.value) {
                 eduRoom.getRoomStatus().startTime = roomStatus.startTime
             }
-            eduRoom.roomProperties = snapshotRoomRes.roomProperties
+            snapshotRoomRes.roomProperties?.let {
+                eduRoom.roomProperties = it
+            }
             val snapshotUserRes = snapshotRes.users
             val validAddedUserList = addUserWithOnline(snapshotUserRes, eduRoom.getCurUserList(),
                     eduRoom.getCurRoomType())
             val validAddedStreamList = addStreamWithUserOnline(snapshotUserRes, eduRoom.getCurStreamList(),
                     eduRoom.getCurRoomType())
             eduRoom.getRoomStatus().onlineUsersCount = validAddedUserList.size
+        }
+
+        fun updateRoomProperties(eduRoom: EduRoom, event: CMDRoomPropertyRes) {
+            val properties = event.changeProperties
+            val sets = properties.entries
+            sets?.forEach {
+                if (event.action == PropertyChangeType.Update.value) {
+                    eduRoom.roomProperties[it.key] = it.value
+                } else if (event.action == PropertyChangeType.Delete.value) {
+                    eduRoom.roomProperties.remove(it.key)
+                }
+            }
         }
     }
 }

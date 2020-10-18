@@ -23,7 +23,7 @@ abstract class EduRoom(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus) {
         }
     }
 
-    var roomProperties: Map<String, Any>? = mapOf()
+    var roomProperties: MutableMap<String, Any> = mutableMapOf()
 
     lateinit var board: EduBoard
     lateinit var record: EduRecord

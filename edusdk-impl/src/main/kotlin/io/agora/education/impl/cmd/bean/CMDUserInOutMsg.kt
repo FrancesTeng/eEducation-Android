@@ -13,14 +13,14 @@ class RtmUserInOutMsg(val total: Int, val onlineUsers: MutableList<OnlineUserInf
 class OnlineUserInfo(userUuid: String, userName: String, role: String,
                      muteChat: Int, updateTime: Long?, state: Int,
                      val streamUuid: String, val streams: MutableList<EduBaseStreamRes>,
-                     val userProperties: Map<String, Any>)
+                     val userProperties: MutableMap<String, Any>)
     : EduUserRes(userUuid, userName, role, muteChat, updateTime, state)
 
 class OfflineUserInfo(userUuid: String, userName: String, role: String,
                       muteChat: Int, updateTime: Long?, state: Int,
                       val operator: EduUserRes?, val streamUuid: String,
                       val streams: MutableList<EduBaseStreamRes>,
-                      val userProperties: Map<String, Any>)
+                      val userProperties: MutableMap<String, Any>)
     : EduUserRes(userUuid, userName, role, muteChat, updateTime, state) {
 
 }

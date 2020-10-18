@@ -403,9 +403,13 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             unReadCount = 0;
         } else {
             unReadCount++;
-            textView_unRead.setText(String.valueOf(unReadCount));
+            if(textView_unRead != null) {
+                textView_unRead.setText(String.valueOf(unReadCount));
+            }
         }
-        textView_unRead.setVisibility(gone ? View.GONE : View.VISIBLE);
+        if(textView_unRead != null) {
+            textView_unRead.setVisibility(gone ? View.GONE : View.VISIBLE);
+        }
     }
 
     @Override

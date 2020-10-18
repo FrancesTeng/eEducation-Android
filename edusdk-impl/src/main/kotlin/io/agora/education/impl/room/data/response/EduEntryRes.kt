@@ -11,7 +11,7 @@ class EduEntryRes(val room: EduEntryRoomRes, val user: EduEntryUserRes) {
 }
 
 class EduEntryRoomRes(val roomInfo: EduRoomInfo, val roomState: EduEntryRoomStateRes,
-                      val roomProperties: Map<String, Any>?) {
+                      val roomProperties: MutableMap<String, Any>?) {
 
 }
 
@@ -23,7 +23,7 @@ class EduEntryRoomStateRes(val state: Int, val startTime: Long,
 
 class EduEntryUserRes(val userUuid: String, val userName: String, val role: String,
                       val streamUuid: String, val userToken: String, val rtmToken: String,
-                      val rtcToken: String, val muteChat: Int, val userProperties: Map<String, Any>,
+                      val rtcToken: String, val muteChat: Int, val userProperties: MutableMap<String, Any>,
                       val streams: MutableList<EduEntryStreamRes>?, updateTime: Long, state: Int) {
 }
 
