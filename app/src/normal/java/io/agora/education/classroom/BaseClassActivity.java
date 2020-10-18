@@ -22,6 +22,7 @@ import butterknife.BindView;
 import io.agora.base.ToastManager;
 import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.RetrofitManager;
+import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.RoomEntry;
 import io.agora.education.api.EduCallback;
@@ -151,22 +152,20 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             roomType = TextUtils.isEmpty(parentRoomUuid) ? RoomType.LARGE_CLASS.getValue() :
                     RoomType.SMALL_CLASS.getValue();
         }
-        EduRoomInfo eduRoomInfo = EduRoomInfo.Companion.create(roomType, options.getRoomUuid(),
-                options.getRoomName());
-        EduRoomStatus status = new EduRoomStatus(EduRoomState.INIT, 0, true, 0);
-        EduRoom room = EduRoom.Companion.create(eduRoomInfo, status);
+        options = new RoomCreateOptions(options.getRoomUuid(), options.getRoomName(), roomType);
+        EduRoom room = EduApplication.buildEduRoom(options);
         room.setEventListener(BaseClassActivity.this);
         return room;
     }
 
     protected void joinRoom(EduRoom eduRoom, String yourNameStr, String yourUuid, boolean autoSubscribe,
-                            AutoPublishItem publishType, boolean needUserListener, EduCallback<EduStudent> callback) {
+                            boolean autoPublish, boolean needUserListener, EduCallback<EduStudent> callback) {
         if (isJoining) {
             return;
         }
         isJoining = true;
         RoomJoinOptions options = new RoomJoinOptions(yourUuid, yourNameStr, EduUserRole.STUDENT,
-                new RoomMediaOptions(autoSubscribe, publishType));
+                new RoomMediaOptions(autoSubscribe, autoPublish));
         eduRoom.joinClassroom(options, new EduCallback<EduStudent>() {
             @Override
             public void onSuccess(@Nullable EduStudent res) {

@@ -24,10 +24,7 @@ abstract class EduManager(
 
     var eduManagerEventListener: EduManagerEventListener? = null
 
-//    abstract fun createClassroom(config: RoomCreateOptions, callback: EduCallback<EduRoom>)
-
-    /**排课*/
-    abstract fun scheduleClass(roomCreateOptions: RoomCreateOptions, callback: EduCallback<Unit>)
+    abstract fun createClassroom(config: RoomCreateOptions): EduRoom
 
     /**登录rtm*/
     abstract fun login(loginOptions: EduLoginOptions, callback: EduCallback<Unit>)

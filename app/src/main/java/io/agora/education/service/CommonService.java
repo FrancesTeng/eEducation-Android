@@ -5,6 +5,7 @@ import java.util.Map;
 import io.agora.education.BuildConfig;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.service.bean.request.AllocateGroupReq;
+import io.agora.education.service.bean.request.RoomCreateOptionsReq;
 import io.agora.education.service.bean.response.AppVersionRes;
 import io.agora.education.service.bean.response.EduRoomInfoRes;
 import retrofit2.Call;
@@ -32,4 +33,14 @@ public interface CommonService {
             @Path("roomUuid") String roomUuid,
             @Body AllocateGroupReq allocateGroupReq);
 
+    /**创建房间*/
+    /**
+     * @return 房间id(roomId)
+     */
+    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/config")
+    Call<ResponseBody<String>> createClassroom(
+            @Path("appId") String appId,
+            @Path("roomUuid") String roomUuid,
+            @Body RoomCreateOptionsReq roomCreateOptionsReq
+    );
 }

@@ -3,13 +3,11 @@ package io.agora.education.impl.manager
 import android.os.Build
 import android.util.Base64
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.AgoraLog
 import io.agora.Constants.Companion.LOGS_DIR_NAME
 import io.agora.Constants.Companion.LOG_APPSECRET
-import io.agora.education.impl.util.Convert
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.education.api.BuildConfig
@@ -19,19 +17,17 @@ import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.manager.EduManager
 import io.agora.education.api.manager.EduManagerOptions
 import io.agora.education.api.room.EduRoom
-import io.agora.education.api.room.data.EduLoginOptions
-import io.agora.education.api.room.data.EduRoomInfo
-import io.agora.education.api.room.data.RoomCreateOptions
+import io.agora.education.api.room.data.*
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.util.CryptoUtil
 import io.agora.education.impl.ResponseBody
-import io.agora.education.impl.cmd.bean.CMDResponseBody
-import io.agora.education.impl.cmd.bean.RtmMsg
 import io.agora.education.impl.network.RetrofitManager
 import io.agora.education.impl.room.EduRoomImpl
+import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.RtmConnectState
 import io.agora.education.impl.room.data.response.EduLoginRes
 import io.agora.education.impl.room.network.RoomService
+import io.agora.education.impl.util.Convert
 import io.agora.log.LogManager
 import io.agora.log.UploadManager
 import io.agora.rte.RteCallback
@@ -89,33 +85,10 @@ internal class EduManagerImpl(
         logMessage("${TAG}: 初始化EduManagerImpl完成", LogLevel.INFO)
     }
 
-    override fun scheduleClass(config: RoomCreateOptions, callback: EduCallback<Unit>) {
-        logMessage("${TAG}: 调用scheduleClass函数", LogLevel.INFO)
-        RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .createClassroom(APPID, config.roomUuid, Convert.convertRoomCreateOptions(config))
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<
-                        io.agora.base.network.ResponseBody<String>> {
-                    /**接口返回Int类型的roomId*/
-                    override fun onSuccess(res: io.agora.base.network.ResponseBody<String>?) {
-                        logMessage("${TAG}: 调用scheduleClass函数成功", LogLevel.INFO)
-                        callback.onSuccess(Unit)
-                    }
-
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        error = error ?: BusinessException(throwable?.message)
-                        error?.code?.let {
-                            logMessage("${TAG}: 调用scheduleClass函数失败->${error?.code}, reason:${error?.message
-                                    ?: throwable?.message}", LogLevel.ERROR)
-                            if (error?.code == AgoraError.ROOM_ALREADY_EXISTS.value) {
-                                callback.onSuccess(Unit)
-                            } else {
-                                callback.onFailure(error?.code, error?.message
-                                        ?: throwable?.message)
-                            }
-                        }
-                    }
-                }))
+    override fun createClassroom(config: RoomCreateOptions): EduRoom {
+        val eduRoomInfo = EduRoomInfoImpl(config.roomType, config.roomUuid, config.roomName)
+        val status = EduRoomStatus(EduRoomState.INIT, 0, true, 0)
+        return EduRoomImpl(eduRoomInfo, status)
     }
 
     override fun login(loginOptions: EduLoginOptions, callback: EduCallback<Unit>) {

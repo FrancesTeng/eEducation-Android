@@ -136,13 +136,14 @@ internal class EduRoomImpl(
         (syncSession.localUser as EduUserImpl).eduRoom = this
         /**大班课强制不自动发流*/
         if (getCurRoomType() == RoomType.LARGE_CLASS) {
+            AgoraLog.logMsg("大班课强制不自动发流", LogLevel.WARN.value)
             options.closeAutoPublish()
         }
         mediaOptions = options.mediaOptions
         /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
         val role = Convert.convertUserRole(localUserInfo.role, getCurRoomType(), curClassType)
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
-                mediaOptions.primaryStreamId.toString(), mediaOptions.publishType.value)
+                mediaOptions.primaryStreamId.toString(), mediaOptions.getPublishType().value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .joinClassroom(APPID, getRoomInfo().roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {
@@ -221,7 +222,7 @@ internal class EduRoomImpl(
                                         callback: EduCallback<Unit>) {
         /**初始化或更新本地用户的本地流*/
         val localStreamInitOptions = LocalStreamInitOptions(classRoomEntryRes.user.streamUuid,
-                roomMediaOptions.isAutoPublish(), roomMediaOptions.isAutoPublish())
+                roomMediaOptions.autoPublish, roomMediaOptions.autoPublish)
         syncSession.localUser.initOrUpdateLocalStream(localStreamInitOptions, object : EduCallback<EduStreamInfo> {
             override fun onSuccess(streamInfo: EduStreamInfo?) {
                 /**判断是否需要更新本地的流信息(因为当前流信息在本地可能已经存在)*/
@@ -239,7 +240,7 @@ internal class EduRoomImpl(
                     /**大班课场景下为audience,小班课一对一都是broadcaster*/
                     RteEngineImpl.setClientRole(getRoomInfo().roomUuid, if (getCurRoomType() !=
                             RoomType.LARGE_CLASS) CLIENT_ROLE_BROADCASTER else CLIENT_ROLE_AUDIENCE)
-                    if (mediaOptions.isAutoPublish()) {
+                    if (mediaOptions.autoPublish) {
                         val code = RteEngineImpl.publish(getRoomInfo().roomUuid)
                         Log.e(TAG, "publish: $code")
                     }

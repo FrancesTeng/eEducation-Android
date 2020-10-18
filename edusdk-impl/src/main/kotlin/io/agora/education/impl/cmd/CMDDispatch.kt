@@ -123,22 +123,19 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 val validOfflineUsers = CMDDataMergeProcessor.removeUserWithOffline(rtmInOutMsg.offlineUsers,
                         eduRoom.getCurUserList(), eduRoom.getCurRoomType())
 
-                /**从以上有效数据中剥离出本地用户的数据
-                 * 本地用户的online数据不回调出去，内部处理
-                 * 本地用户的online数据暂不回调出去，后期会在EduUserEventListener中添加
-                 * onLocalUserLeft回调来处理此消息(为踢人功能预备)*/
+                /**从online和offline数据中剥离出本地用户的数据*/
                 val validOnlineLocalUser = CMDProcessor.filterLocalUserInfo(
                         eduRoom.getLocalUser().userInfo, validOnlineUsers)
                 val validOfflineLocalUser = CMDProcessor.filterLocalUserEvent(
                         eduRoom.getLocalUser().userInfo, validOfflineUsers)
 
-                /**判断是否携带了流信息(可能同时包含local和remote数据)*/
+                /**提取出online和offline携带的流信息(可能同时包含local和remote数据)*/
                 val validAddedStreams = CMDDataMergeProcessor.addStreamWithUserOnline(rtmInOutMsg.onlineUsers,
                         eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
                 val validRemovedStreams = CMDDataMergeProcessor.removeStreamWithUserOffline(rtmInOutMsg.offlineUsers,
                         eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
 
-                /**从以上有效数据中剥离出本地用户的流数据*/
+                /**从有效的流数据中剥离出本地用户的流数据*/
                 val validAddedLocalStream = CMDProcessor.filterLocalStreamInfo(
                         eduRoom.getLocalUser().userInfo, validAddedStreams)
                 val validRemovedLocalStream = CMDProcessor.filterLocalStreamInfo(
@@ -149,6 +146,12 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 }
                 if (validAddedStreams.size > 0) {
                     cmdCallbackManager.onRemoteStreamsAdded(validAddedStreams, eduRoom)
+                }
+                validOnlineLocalUser?.let {
+                    cmdCallbackManager.onLocalUserAdded(it, eduRoom.getLocalUser())
+                }
+                validOfflineLocalUser?.let {
+                    cmdCallbackManager.onLocalUserRemoved(it, eduRoom.getLocalUser())
                 }
                 if (validOfflineUsers.size > 0) {
                     cmdCallbackManager.onRemoteUsersLeft(validOfflineUsers, eduRoom)

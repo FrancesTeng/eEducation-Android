@@ -20,11 +20,14 @@ import butterknife.BindView;
 import butterknife.OnClick;
 import butterknife.OnTouch;
 import io.agora.base.ToastManager;
+import io.agora.base.callback.ThrowableCallback;
+import io.agora.base.network.BusinessException;
 import io.agora.base.network.RetrofitManager;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.room.data.EduLoginOptions;
 import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.room.data.RoomType;
+import io.agora.education.api.statistics.AgoraError;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.base.BaseActivity;
 import io.agora.education.base.BaseCallback;
@@ -36,12 +39,16 @@ import io.agora.education.classroom.OneToOneClassActivity;
 import io.agora.education.classroom.SmallClassActivity;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.service.CommonService;
+import io.agora.education.service.bean.ResponseBody;
+import io.agora.education.service.bean.request.RoomCreateOptionsReq;
 import io.agora.education.util.AppUtil;
 import io.agora.education.widget.ConfirmDialog;
 import io.agora.education.widget.PolicyDialog;
 import kotlin.Unit;
 
+import static io.agora.education.BuildConfig.API_BASE_URL;
 import static io.agora.education.EduApplication.LogError;
+import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.EduApplication.getManager;
 import static io.agora.education.classroom.BaseClassActivity.RESULT_CODE;
 
@@ -82,7 +89,7 @@ public class MainActivity extends BaseActivity {
         filter.setPriority(IntentFilter.SYSTEM_LOW_PRIORITY);
         registerReceiver(receiver, filter);
 
-        commonService = RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, CommonService.class);
+        commonService = RetrofitManager.instance().getService(API_BASE_URL, CommonService.class);
         checkVersion();
     }
 
@@ -256,18 +263,37 @@ public class MainActivity extends BaseActivity {
         /**createClassroom时，room不存在则新建，存在则返回room信息(此接口非必须调用)，
          * 只要保证在调用joinClassroom之前，classroom在服务端存在即可*/
         RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType);
-        getManager().scheduleClass(options, new EduCallback<Unit>() {
-            @Override
-            public void onSuccess(@Nullable Unit res) {
-                Intent intent = createIntent(yourNameStr, yourUuid, roomNameStr, roomUuid, roomType);
-                login(yourUuid, intent);
-            }
 
-            @Override
-            public void onFailure(int code, @Nullable String reason) {
-                Log.e(TAG, "排课失败");
-            }
-        });
+        Log.e(TAG, "调用scheduleClass函数");
+        RetrofitManager.instance().getService(API_BASE_URL, CommonService.class)
+                .createClassroom(getAppId(), options.getRoomUuid(),
+                        RoomCreateOptionsReq.convertRoomCreateOptions(options))
+                .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<String>>() {
+                    @Override
+                    public void onSuccess(@Nullable ResponseBody<String> res) {
+                        Log.e(TAG, "调用scheduleClass函数成功");
+                        Intent intent = createIntent(yourNameStr, yourUuid, roomNameStr, roomUuid, roomType);
+                        login(yourUuid, intent);
+                    }
+
+                    @Override
+                    public void onFailure(@Nullable Throwable throwable) {
+                        BusinessException error;
+                        if (throwable instanceof BusinessException) {
+                            error = (BusinessException) throwable;
+                        } else {
+                            error = new BusinessException(throwable.getMessage());
+                        }
+                        Log.e(TAG, "调用scheduleClass函数失败->" + error.getCode() + ", reason:" +
+                                error.getMessage());
+                        if (error.getCode() == AgoraError.ROOM_ALREADY_EXISTS.getValue()) {
+                            Intent intent = createIntent(yourNameStr, yourUuid, roomNameStr, roomUuid, roomType);
+                            login(yourUuid, intent);
+                        } else {
+                            Log.e(TAG, "排课失败");
+                        }
+                    }
+                }));
     }
 
     private void login(String yourUuid, Intent intent) {

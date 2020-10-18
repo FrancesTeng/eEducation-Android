@@ -3,7 +3,6 @@ package io.agora.education.impl.room.network
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.room.data.request.EduSyncRoomReq
 import io.agora.education.impl.room.data.request.EduUpdateRoomPropertyReq
-import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.room.data.response.EduSequenceListRes
 import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
@@ -16,15 +15,6 @@ import retrofit2.Call
 import retrofit2.http.*
 
 internal interface RoomService {
-
-    /**创建房间*/
-    /**@return 房间id(roomId)*/
-    @POST("/scene/apps/{appId}/v1/rooms/{roomUuid}/config")
-    fun createClassroom(
-            @Path("appId") appId: String,
-            @Path("roomUuid") roomUuid: String,
-            @Body roomCreateOptionsReq: RoomCreateOptionsReq
-    ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**登录*/
     @POST("/scene/apps/{appId}/v1/users/{userUuid}/login")

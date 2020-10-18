@@ -1,6 +1,5 @@
 package io.agora.education.api.room.data
 
-import android.os.Parcelable
 import java.io.Serializable
 
 /**超级小班课中会包含一个大班和N个小班*/

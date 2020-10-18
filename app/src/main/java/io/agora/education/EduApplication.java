@@ -16,6 +16,8 @@ import io.agora.education.api.logger.DebugItem;
 import io.agora.education.api.logger.LogLevel;
 import io.agora.education.api.manager.EduManager;
 import io.agora.education.api.manager.EduManagerOptions;
+import io.agora.education.api.room.EduRoom;
+import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.util.CryptoUtil;
 import io.agora.education.service.bean.response.AppConfigRes;
 import kotlin.text.Charsets;
@@ -100,6 +102,13 @@ public class EduApplication extends Application {
             instance.config = new AppConfigRes();
         }
         instance.config.appId = appId;
+    }
+
+    public static EduRoom buildEduRoom(RoomCreateOptions options) {
+        if(instance.config == null) {
+            return null;
+        }
+        return instance.eduManager.createClassroom(options);
     }
 
     @Nullable

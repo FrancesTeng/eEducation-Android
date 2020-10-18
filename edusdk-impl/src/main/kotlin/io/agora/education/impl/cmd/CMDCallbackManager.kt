@@ -60,8 +60,17 @@ internal class CMDCallbackManager {
         classRoom.eventListener?.onRemoteUserUpdated(userEvents, classRoom)
     }
 
+    fun onLocalUserAdded(userInfo: EduUserInfo, eduUser: EduUser) {
+        /**本地用户的online数据不回调出去，仅内部处理*/
+    }
+
     fun onLocalUserUpdated(userEvent: EduUserEvent, eduUser: EduUser) {
         eduUser.eventListener?.onLocalUserUpdated(userEvent)
+    }
+
+    fun onLocalUserRemoved(userEvent: EduUserEvent, eduUser: EduUser) {
+        /**本地用户的offline数据暂不回调出去，后期会在EduUserEventListener中添加
+         * onLocalUserLeft回调来处理此消息(为踢人功能预备)*/
     }
 
     fun onLocalUserPropertyUpdated(userInfo: EduUserInfo, cause: MutableMap<String, Any>?, eduUser: EduUser) {

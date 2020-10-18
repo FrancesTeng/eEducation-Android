@@ -24,9 +24,6 @@ import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.request.LimitConfig
-import io.agora.education.impl.room.data.request.RoleConfig
-import io.agora.education.impl.room.data.request.RoomCreateOptionsReq
 import io.agora.education.impl.user.data.EduLocalUserInfoImpl
 import io.agora.education.impl.user.data.request.RoleMuteConfig
 import io.agora.rtc.Constants.*
@@ -36,48 +33,6 @@ import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
 
 internal class Convert {
     companion object {
-
-        fun convertRoomCreateOptions(roomCreateOptions: RoomCreateOptions): RoomCreateOptionsReq {
-            var roomCreateOptionsReq = RoomCreateOptionsReq()
-            roomCreateOptionsReq.roomName = roomCreateOptions.roomName
-
-            val mRoleConfig = convertRoleConfig(roomCreateOptions)
-            roomCreateOptionsReq.roleConfig = mRoleConfig
-            return roomCreateOptionsReq
-        }
-
-        fun convertRoleConfig(roomCreateOptions: RoomCreateOptions): RoleConfig {
-
-            val roleConfig = RoleConfig()
-            var teacherLimit = 0
-            var studentLimit = 0
-            var assistantLimit = 0
-            for (element in roomCreateOptions.roomProperties) {
-                when (element.key) {
-                    KEY_TEACHER_LIMIT -> {
-                        teacherLimit = element.value.toInt() ?: 0
-                    }
-                    KEY_STUDENT_LIMIT -> {
-                        studentLimit = element.value.toInt() ?: 0
-                    }
-                    KEY_ASSISTANT_LIMIT -> {
-                        assistantLimit = element.value.toInt() ?: 0
-                    }
-                }
-            }
-            roleConfig.host = LimitConfig(teacherLimit)
-            if (roomCreateOptions.roomType == RoomType.LARGE_CLASS.value) {
-                roleConfig.audience = LimitConfig(studentLimit)
-            } else if (roomCreateOptions.roomType == RoomType.BREAKOUT_CLASS.value) {
-                /**目前，超级小班课情况下，移动端只可能创建大房间，小房间由服务端创建，所以此处学生的角色是audience
-                 * */
-                roleConfig.audience = LimitConfig(studentLimit)
-                roleConfig.assistant = LimitConfig(assistantLimit)
-            } else {
-                roleConfig.broadcaster = LimitConfig(studentLimit)
-            }
-            return roleConfig
-        }
 
         fun convertVideoEncoderConfig(videoEncoderConfig: VideoEncoderConfig): VideoEncoderConfiguration {
             var videoDimensions = VideoEncoderConfiguration.VideoDimensions(
