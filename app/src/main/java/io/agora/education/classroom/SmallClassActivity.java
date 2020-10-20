@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.gson.Gson;
+import com.herewhite.sdk.domain.GlobalState;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,6 +43,7 @@ import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.api.user.data.EduUserStateChangeType;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
+import io.agora.education.classroom.bean.board.BoardState;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.fragment.UserListFragment;
 import io.agora.rtc.IRtcEngineEventHandler;
@@ -199,27 +201,23 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         Log.e(TAG, "onVideoSizeChanged->uid:" + uid + ",width:" + width + ",height:" + height + ",rotation:" + rotation);
     }
 
-
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         /*测试回调*/
         RteEngineImpl.INSTANCE.setStatisticsReportListener(classRoom.getRoomInfo().getRoomUuid(), this);
         super.onRemoteUsersInitialized(users, classRoom);
-        userListFragment.setUserList(getCurFullUser());
         title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        userListFragment.setUserList(getCurFullUser());
         title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
     public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         super.onRemoteUserLeft(userEvent, classRoom);
-        userListFragment.setUserList(getCurFullUser());
         title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
@@ -267,6 +265,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             }
         }
         userListFragment.setLocalUserUuid(classRoom.getLocalUser().getUserInfo().getUserUuid());
+        userListFragment.setUserList(getCurFullStream());
         showVideoList(getCurFullStream());
     }
 
@@ -289,6 +288,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             Log.e(TAG, "有远端Camera流添加，刷新视频列表");
             showVideoList(getCurFullStream());
         }
+        userListFragment.setUserList(getCurFullStream());
     }
 
     @Override
@@ -309,6 +309,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
             showVideoList(getCurFullStream());
         }
+        userListFragment.setUserList(getCurFullStream());
     }
 
     @Override
@@ -330,6 +331,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
             Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
             showVideoList(getCurFullStream());
         }
+        userListFragment.setUserList(getCurFullStream());
     }
 
     @Override
@@ -409,6 +411,14 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     public void onUserActionMessageReceived(@NotNull EduActionMessage actionMessage) {
         super.onUserActionMessageReceived(actionMessage);
         Log.e(TAG, "action->" + new Gson().toJson(actionMessage));
+    }
+
+    @Override
+    public void onGlobalStateChanged(GlobalState state) {
+        super.onGlobalStateChanged(state);
+        BoardState boardState = (BoardState) state;
+        List<String> grantedUuids = boardState.getGrantUsers();
+        userListFragment.setGrantedUuids(grantedUuids);
     }
 
     private void showVideoList(List<EduStreamInfo> list) {

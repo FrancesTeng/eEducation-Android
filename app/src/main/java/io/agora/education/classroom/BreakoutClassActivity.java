@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.gson.Gson;
+import com.herewhite.sdk.domain.GlobalState;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -239,8 +240,11 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         super.renderStream(room, eduStreamInfo, viewGroup);
     }
 
-    private List<EduUserInfo> getCurAllStudent() {
-        return subEduRoom.getFullUserList();
+    /**
+     * 获取当前所在 超级小班 的 小班级 中的所有学生的流
+     */
+    private List<EduStreamInfo> getCurAllStudentStream() {
+        return subEduRoom.getFullStreamList();
     }
 
     @Override
@@ -331,7 +335,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         if (classRoom.equals(subEduRoom)) {
-            /**判断大班级中的roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
+            /**判断大班级中的roomProperties中是否有白板信息，如果没有，发起请求,等待RTM通知*/
             if (mainBoardBean == null) {
                 Log.e(TAG, "请求大房间的白板信息");
                 requestBoardInfo((getMainEduRoom().getLocalUser().getUserInfo()).getUserToken(),
@@ -342,17 +346,16 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 runOnUiThread(() -> {
                     whiteboardFragment.initBoardWithRoomToken(info.getBoardId(),
                             info.getBoardToken(), getLocalUserInfo().getUserUuid());
-                    boolean follow = whiteBoardIsFollowMode(state);
-                    whiteboardFragment.disableCameraTransform(follow);
-                    boolean granted = whiteBoardIsGranted((state));
-                    whiteboardFragment.disableDeviceInputs(!granted);
-                    if (follow) {
-                        layout_whiteboard.setVisibility(View.VISIBLE);
-                        layout_share_video.setVisibility(View.GONE);
-                    }
+//                    boolean follow = whiteBoardIsFollowMode(state);
+//                    whiteboardFragment.disableCameraTransform(follow);
+//                    boolean granted = whiteBoardIsGranted((state));
+//                    whiteboardFragment.disableDeviceInputs(!granted);
+//                    if (follow) {
+//                        layout_whiteboard.setVisibility(View.VISIBLE);
+//                        layout_share_video.setVisibility(View.GONE);
+//                    }
                 });
             }
-            userListFragment.setUserList(getCurAllStudent());
             title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         } else {
             EduRoomStatus roomStatus = getMainEduRoom().getRoomStatus();
@@ -373,7 +376,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurAllStudent());
+            userListFragment.setUserList(getCurAllStudentStream());
             title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         }
     }
@@ -382,7 +385,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         super.onRemoteUserLeft(userEvent, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurAllStudent());
+            userListFragment.setUserList(getCurAllStudentStream());
             title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         }
     }
@@ -438,6 +441,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         super.onRemoteStreamsInitialized(streams, classRoom);
         if (classRoom.equals(subEduRoom)) {
             userListFragment.setLocalUserUuid(classRoom.getLocalUser().getUserInfo().getUserUuid());
+            userListFragment.setUserList(getCurAllStudentStream());
             showVideoList(getCurFullStream());
         } else {
             boolean notify = false;
@@ -491,6 +495,9 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             Log.e(TAG, "有远端Camera流添加，刷新视频列表");
             showVideoList(getCurFullStream());
         }
+        if (classRoom.equals(subEduRoom)) {
+            userListFragment.setUserList(getCurAllStudentStream());
+        }
     }
 
     @Override
@@ -512,6 +519,9 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         if (notify) {
             Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
             showVideoList(getCurFullStream());
+        }
+        if (classRoom.equals(subEduRoom)) {
+            userListFragment.setUserList(getCurAllStudentStream());
         }
     }
 
@@ -535,6 +545,9 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         if (notify) {
             Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
             showVideoList(getCurFullStream());
+        }
+        if (classRoom.equals(subEduRoom)) {
+            userListFragment.setUserList(getCurAllStudentStream());
         }
     }
 
@@ -572,14 +585,14 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 runOnUiThread(() -> {
                     whiteboardFragment.initBoardWithRoomToken(mainBoardBean.getInfo().getBoardId(),
                             mainBoardBean.getInfo().getBoardToken(), getLocalUserInfo().getUserUuid());
-                    boolean follow = whiteBoardIsFollowMode(mainBoardBean.getState());
-                    whiteboardFragment.disableCameraTransform(follow);
-                    boolean granted = whiteBoardIsGranted((mainBoardBean.getState()));
-                    whiteboardFragment.disableDeviceInputs(!granted);
-                    if (follow) {
-                        layout_whiteboard.setVisibility(View.VISIBLE);
-                        layout_share_video.setVisibility(View.GONE);
-                    }
+//                    boolean follow = whiteBoardIsFollowMode(mainBoardBean.getState());
+//                    whiteboardFragment.disableCameraTransform(follow);
+//                    boolean granted = whiteBoardIsGranted((mainBoardBean.getState()));
+//                    whiteboardFragment.disableDeviceInputs(!granted);
+//                    if (follow) {
+//                        layout_whiteboard.setVisibility(View.VISIBLE);
+//                        layout_share_video.setVisibility(View.GONE);
+//                    }
                 });
             }
             String recordJson = getProperty(roomProperties, RECORD);
@@ -651,5 +664,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         super.onLocalStreamRemoved(streamEvent);
         /**此回调被调用就说明classroom结束，人员退出；所以此回调可以不处理*/
         Log.e(TAG, "本地流被移除:" + streamEvent.getModifiedStream().getStreamUuid());
+    }
+
+    @Override
+    public void onGlobalStateChanged(GlobalState state) {
+        super.onGlobalStateChanged(state);
     }
 }

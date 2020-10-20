@@ -439,25 +439,22 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         } else {
             mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
             BoardInfo info = mainBoardBean.getInfo();
-            BoardState state = mainBoardBean.getState();
             Log.e(TAG, "白板信息已存在->" + boardJson);
             runOnUiThread(() -> {
                 whiteboardFragment.initBoardWithRoomToken(info.getBoardId(),
                         info.getBoardToken(), getLocalUserInfo().getUserUuid());
-                /*根据Json获取当前白板是否是跟随模式和当前用户是否得到白板授权;
-                同时,一对一模式下学生始终有白板授权*/
-                boolean follow = whiteBoardIsFollowMode(state);
-                if (follow) {
-                    layout_whiteboard.setVisibility(View.VISIBLE);
-                    layout_share_video.setVisibility(View.GONE);
-                }
-                whiteboardFragment.disableCameraTransform(follow);
-                boolean granted = whiteBoardIsGranted((state));
-                if (getClassType() == Room.Type.ONE2ONE) {
-                    /*一对一模式下学生始终有白板授权*/
-                    granted = true;
-                }
-                whiteboardFragment.disableDeviceInputs(!granted);
+//                boolean follow = whiteBoardIsFollowMode(state);
+//                if (follow) {
+//                    layout_whiteboard.setVisibility(View.VISIBLE);
+//                    layout_share_video.setVisibility(View.GONE);
+//                }
+//                whiteboardFragment.disableCameraTransform(follow);
+//                boolean granted = whiteBoardIsGranted((state));
+//                if (getClassType() == Room.Type.ONE2ONE) {
+//                    /*一对一模式下学生始终有白板授权*/
+//                    granted = true;
+//                }
+//                whiteboardFragment.disableDeviceInputs(!granted);
             });
         }
     }
@@ -580,20 +577,18 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             runOnUiThread(() -> {
                 whiteboardFragment.initBoardWithRoomToken(mainBoardBean.getInfo().getBoardId(),
                         mainBoardBean.getInfo().getBoardToken(), getLocalUserInfo().getUserUuid());
-                /*根据Json获取当前白板是否是跟随模式和当前用户是否得到白板授权;
-                同时,一对一模式下学生始终有白板授权*/
-                boolean follow = whiteBoardIsFollowMode(mainBoardBean.getState());
-                if (follow) {
-                    layout_whiteboard.setVisibility(View.VISIBLE);
-                    layout_share_video.setVisibility(View.GONE);
-                }
-                whiteboardFragment.disableCameraTransform(follow);
-                boolean granted = whiteBoardIsGranted((mainBoardBean.getState()));
-                if (getClassType() == Room.Type.ONE2ONE) {
-                    /*一对一模式下学生始终有白板授权*/
-                    granted = true;
-                }
-                whiteboardFragment.disableDeviceInputs(!granted);
+//                boolean follow = whiteBoardIsFollowMode(state);
+//                if (follow) {
+//                    layout_whiteboard.setVisibility(View.VISIBLE);
+//                    layout_share_video.setVisibility(View.GONE);
+//                }
+//                whiteboardFragment.disableCameraTransform(follow);
+//                boolean granted = whiteBoardIsGranted((state));
+//                if (getClassType() == Room.Type.ONE2ONE) {
+//                    /*一对一模式下学生始终有白板授权*/
+//                    granted = true;
+//                }
+//                whiteboardFragment.disableDeviceInputs(!granted);
             });
         }
         String recordJson = getProperty(roomProperties, RECORD);
@@ -703,6 +698,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     }
 
+    private boolean followTips = false;
     private boolean curFollowState = false;
 
     /**
@@ -712,9 +708,14 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     public void onGlobalStateChanged(GlobalState state) {
         BoardState boardState = (BoardState) state;
         boolean follow = whiteBoardIsFollowMode(boardState);
-        if (curFollowState != follow) {
+        if(followTips) {
+            if (curFollowState != follow) {
+                curFollowState = follow;
+                ToastManager.showShort(follow ? R.string.open_follow_board : R.string.relieve_follow_board);
+            }
+        } else {
+            followTips = true;
             curFollowState = follow;
-            ToastManager.showShort(follow ? R.string.open_follow_board : R.string.relieve_follow_board);
         }
         whiteboardFragment.disableCameraTransform(follow);
         if (getClassType() == RoomType.ONE_ON_ONE.getValue()) {

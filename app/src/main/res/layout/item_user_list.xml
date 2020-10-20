@@ -40,7 +40,9 @@
         android:id="@+id/iv_btn_grant_board"
         android:layout_width="@dimen/dp_30"
         android:layout_height="@dimen/dp_30"
+        android:clickable="false"
         android:src="@drawable/ic_board"
+        android:state_selected="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/iv_btn_mute_video"
         app:layout_constraintTop_toTopOf="parent" />

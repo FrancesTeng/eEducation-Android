@@ -249,6 +249,10 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     @Override
     public void onJoinSuccess(GlobalState state) {
+        Log.e(TAG, "onJoinSuccess->" + new Gson().toJson(state));
+        if (listener != null) {
+            listener.onGlobalStateChanged(state);
+        }
     }
 
     @Override

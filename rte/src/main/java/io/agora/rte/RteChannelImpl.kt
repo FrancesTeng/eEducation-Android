@@ -10,6 +10,7 @@ import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rte.listener.RteStatisticsReportListener
 import io.agora.rtm.*
+import io.agora.rtm.RtmStatusCode.JoinChannelError.JOIN_CHANNEL_ERR_ALREADY_JOINED
 
 internal class RteChannelImpl(
         channelId: String,
@@ -126,7 +127,11 @@ internal class RteChannelImpl(
             }
 
             override fun onFailure(p0: ErrorInfo?) {
-                callback.onFailure(p0)
+                if (p0?.errorCode == JOIN_CHANNEL_ERR_ALREADY_JOINED) {
+                    callback.onSuccess(p0 as Void)
+                } else {
+                    callback.onFailure(p0)
+                }
             }
         })
     }

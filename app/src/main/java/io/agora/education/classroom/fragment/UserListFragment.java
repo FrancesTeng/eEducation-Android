@@ -14,6 +14,8 @@ import java.util.List;
 import butterknife.BindView;
 import io.agora.education.R;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.stream.data.VideoSourceType;
+import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.base.BaseFragment;
@@ -35,8 +37,7 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
     @Override
     protected void initData() {
         if (context instanceof BaseClassActivity) {
-            BaseClassActivity baseClass = ((BaseClassActivity) context);
-            adapter = new UserListAdapter(baseClass.getLocalCameraStream());
+            adapter = new UserListAdapter();
             adapter.setOnItemChildClickListener(this);
         }
     }
@@ -48,17 +49,23 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
         rcv_users.setAdapter(adapter);
     }
 
-    public void setUserList(List<EduUserInfo> userList) {
+    public void setUserList(List<EduStreamInfo> userList) {
         getActivity().runOnUiThread(() -> {
-            /**过滤掉非学生的user*/
-            List<EduUserInfo> students = new ArrayList<>(userList.size());
-            for (EduUserInfo userInfo : userList) {
-                if (userInfo.getRole().equals(EduUserRole.STUDENT)) {
-                    students.add(userInfo);
+            /**过滤掉非学生和非摄像头流的user*/
+            List<EduStreamInfo> students = new ArrayList<>(userList.size());
+            for (EduStreamInfo streamInfo : userList) {
+                EduBaseUserInfo userInfo = streamInfo.getPublisher();
+                if (userInfo.getRole().equals(EduUserRole.STUDENT) &&
+                        streamInfo.getVideoSourceType().equals(VideoSourceType.CAMERA)) {
+                    students.add(streamInfo);
                 }
             }
             adapter.setNewData(students);
         });
+    }
+
+    public void setGrantedUuids(List<String> grantedUuids) {
+        adapter.setGrantedUuids(grantedUuids);
     }
 
     public void setLocalUserUuid(String userUuid) {
@@ -69,10 +76,10 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
         getActivity().runOnUiThread(() -> {
             if (rcv_users.isComputingLayout()) {
                 rcv_users.postDelayed(() -> {
-                    adapter.updateLocalCameraStream(streamInfo);
+                    adapter.refreshStreamStatus(streamInfo);
                 }, 300);
             } else {
-                rcv_users.post(() -> adapter.updateLocalCameraStream(streamInfo));
+                rcv_users.post(() -> adapter.refreshStreamStatus(streamInfo));
             }
         });
     }
