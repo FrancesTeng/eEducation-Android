@@ -32,7 +32,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
     : RoomSyncSession(roomInfo, roomStatus) {
 
     companion object {
-        val TAG = "RoomSyncHelper"
+        val TAG = RoomSyncHelper::class.java.simpleName
     }
 
     private var cache = Cache()
@@ -69,8 +69,8 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
      *         pair.second:count*/
     override fun updateSequenceId(cmdResponseBody: CMDResponseBody<Any>): Pair<Int, Int>? {
         val eduSequenceRes = Convert.convertCMDResponseBody(cmdResponseBody)
-        /**join过程中或者同步seq过程中收到的消息均加入缓存*/
         if (syncing || (eduRoom as EduRoomImpl).joining) {
+            AgoraLog.w("$TAG->join过程中或者同步seq过程中收到的消息均加入缓存")
             cache.add(cmdResponseBody)
         } else {
             when {

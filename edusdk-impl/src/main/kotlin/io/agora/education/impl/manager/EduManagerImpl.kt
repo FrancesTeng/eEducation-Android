@@ -181,13 +181,15 @@ internal class EduManagerImpl(
 
     override fun onConnectionStateChanged(p0: Int, p1: Int) {
         logMessage("${TAG}: RTM连接状态发生改变->state:$p0,reason:$p1", LogLevel.INFO)
-        /**断线重连之后，同步每一个教室的信息*/
+        /**断线重连之后，同步至每一个教室*/
         eduRooms?.forEach {
             if (rtmConnectState.isReconnecting() &&
                     p0 == RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED) {
                 logMessage("${TAG}: RTM断线重连，请求教室${it.getRoomInfo().roomUuid}内丢失的消息", LogLevel.INFO)
                 (it as EduRoomImpl).syncSession.fetchLostSequence(object : EduCallback<Unit> {
                     override fun onSuccess(res: Unit?) {
+                        /*断线重连之后，数据同步成功之后再把重连成功的事件回调出去*/
+                        it.eventListener?.onConnectionStateChanged(Convert.convertConnectionState(p0), it)
                     }
 
                     override fun onFailure(code: Int, reason: String?) {
@@ -195,9 +197,9 @@ internal class EduManagerImpl(
                         it.syncSession.fetchLostSequence(this)
                     }
                 })
+            } else {
+                it.eventListener?.onConnectionStateChanged(Convert.convertConnectionState(p0), it)
             }
-            /*连接状态回调出去*/
-            it.eventListener?.onConnectionStateChanged(Convert.convertConnectionState(p0), it)
         }
         rtmConnectState.lastConnectionState = p0
     }

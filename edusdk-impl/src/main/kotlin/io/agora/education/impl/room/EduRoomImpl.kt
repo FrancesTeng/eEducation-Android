@@ -419,14 +419,10 @@ internal class EduRoomImpl(
         p0?.text?.let {
             val cmdResponseBody = Gson().fromJson<CMDResponseBody<Any>>(p0.text, object :
                     TypeToken<CMDResponseBody<Any>>() {}.type)
-//
-//
-//
+
 //            if(cmdResponseBody.cmd == 3) {
 //                return
 //            }
-//
-//
 
             val pair = syncSession.updateSequenceId(cmdResponseBody)
             if (pair != null) {

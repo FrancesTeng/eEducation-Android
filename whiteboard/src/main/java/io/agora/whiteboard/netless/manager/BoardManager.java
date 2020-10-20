@@ -2,7 +2,9 @@ package io.agora.whiteboard.netless.manager;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
+import com.google.gson.Gson;
 import com.herewhite.sdk.Room;
 import com.herewhite.sdk.RoomCallbacks;
 import com.herewhite.sdk.RoomParams;
@@ -20,6 +22,8 @@ import io.agora.whiteboard.netless.annotation.Appliance;
 import io.agora.whiteboard.netless.listener.BoardEventListener;
 
 public class BoardManager extends NetlessManager<Room> implements RoomCallbacks {
+    private static final String TAG = "BoardManager";
+
     private final LogManager log = new LogManager(this.getClass().getSimpleName());
 
     private String appliance;
@@ -30,6 +34,7 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
 
     private Handler handler = new Handler(Looper.getMainLooper());
     private BoardEventListener listener;
+    private boolean joinSuccess = false;
 
     public void setListener(BoardEventListener listener) {
         this.listener = listener;
@@ -203,6 +208,7 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
 
     @Override
     public void onRoomStateChanged(RoomState modifyState) {
+        Log.e(TAG, "onRoomStateChanged->" + new Gson().toJson(modifyState));
         if (listener != null) {
             GlobalState state = modifyState.getGlobalState();
             if (state != null) {
@@ -243,6 +249,10 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
             setWritable(writable);
         }
         if (listener != null) {
+            if (!joinSuccess) {
+                joinSuccess = true;
+                listener.onJoinSuccess(getBoardState().getGlobalState());
+            }
             listener.onSceneStateChanged(room.getSceneState());
         }
     }

@@ -6,6 +6,8 @@ import com.herewhite.sdk.domain.RoomPhase;
 import com.herewhite.sdk.domain.SceneState;
 
 public interface BoardEventListener {
+    void onJoinSuccess(GlobalState state);
+
     void onRoomPhaseChanged(RoomPhase phase);
 
     void onGlobalStateChanged(GlobalState state);

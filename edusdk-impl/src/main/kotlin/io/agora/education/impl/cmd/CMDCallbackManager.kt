@@ -39,8 +39,10 @@ internal class CMDCallbackManager {
         classRoom.eventListener?.onRemoteStreamsAdded(streamEvents, classRoom)
     }
 
-    fun onRemoteUsersLeft(userEvent: EduUserEvent, classRoom: EduRoom) {
-        classRoom.eventListener?.onRemoteUserLeft(userEvent, classRoom)
+    fun onRemoteUsersLeft(userEvents: MutableList<EduUserEvent>, classRoom: EduRoom) {
+        userEvents.forEach {
+            classRoom.eventListener?.onRemoteUserLeft(it, classRoom)
+        }
     }
 
     fun onRemoteStreamsRemoved(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom) {

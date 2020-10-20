@@ -2,6 +2,7 @@ package io.agora.education.classroom;
 
 import android.content.res.Configuration;
 import android.util.Log;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -408,6 +409,20 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         }
     }
 
+    private void refreshStudentVideoZOrder() {
+        runOnUiThread(() -> {
+            removeFromParent(video_student);
+            layout_video_student.addView(video_student, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            FrameLayout frameLayout = video_student.getVideoLayout();
+            SurfaceView surfaceView = (SurfaceView) frameLayout.getChildAt(0);
+            if (surfaceView != null) {
+                surfaceView.setZOrderMediaOverlay(true);
+//            surfaceView.setZOrderOnTop(true);
+//            surfaceView.setZ(1000);
+            }
+        });
+    }
+
     @Override
     public void onTabSelected(TabLayout.Tab tab) {
         if (layout_materials == null) {
@@ -530,6 +545,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
 //                                RteEngineImpl.INSTANCE.unpublish(getMediaRoomUuid()), 300);
                         video_teacher.muteVideo(!streamInfo.getHasVideo());
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
+                        /**刷新学生的流的显示层级*/
+                        refreshStudentVideoZOrder();
                         break;
                     default:
                         break;
@@ -561,6 +578,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                     renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
                     video_teacher.muteAudio(!streamInfo.getHasAudio());
+                    /**刷新学生的流的显示层级*/
+                    refreshStudentVideoZOrder();
                     break;
                 default:
                     break;

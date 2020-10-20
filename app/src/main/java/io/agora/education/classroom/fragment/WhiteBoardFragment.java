@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.google.gson.Gson;
 import com.herewhite.sdk.RoomParams;
 import com.herewhite.sdk.WhiteSdk;
 import com.herewhite.sdk.WhiteSdkConfiguration;
@@ -247,13 +248,16 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     }
 
     @Override
+    public void onJoinSuccess(GlobalState state) {
+    }
+
+    @Override
     public void onRoomPhaseChanged(RoomPhase phase) {
         pb_loading.setVisibility(phase == RoomPhase.connected ? View.GONE : View.VISIBLE);
     }
 
     @Override
     public void onGlobalStateChanged(GlobalState state) {
-        Log.e(TAG, "onGlobalStateChanged");
         if (listener != null) {
             listener.onGlobalStateChanged(state);
         }
@@ -261,6 +265,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     @Override
     public void onSceneStateChanged(SceneState state) {
+        Log.e(TAG, "onSceneStateChanged");
         page_control_view.setPageIndex(state.getIndex(), state.getScenes().length);
     }
 

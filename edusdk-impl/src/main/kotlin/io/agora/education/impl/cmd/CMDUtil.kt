@@ -25,7 +25,6 @@ internal object CMDUtil {
         } else {
             Convert.convertUserInfo(rtmMsg.fromUser, (eduRoom as EduRoomImpl).getCurRoomType())
         }
-        Log.e("CMDDispatch", "构造buildEduMsg")
         return if (rtmMsg.type != null) {
             EduChatMsg(fromUser, rtmMsg.message, rtmMsg.type)
         } else {
