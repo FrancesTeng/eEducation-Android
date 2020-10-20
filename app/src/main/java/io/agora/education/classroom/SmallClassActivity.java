@@ -4,9 +4,6 @@ import android.graphics.Rect;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -21,7 +18,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,26 +27,20 @@ import butterknife.OnClick;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduActionMessage;
-import io.agora.education.api.message.EduActionType;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
-import io.agora.education.api.room.data.AutoPublishItem;
-import io.agora.education.api.room.data.EduRoomState;
-import io.agora.education.api.room.data.EduRoomStatus;
-import io.agora.education.api.room.data.RoomStatusEvent;
+import io.agora.education.api.room.data.EduRoomChangeType;
 import io.agora.education.api.statistics.ConnectionState;
-import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.user.EduStudent;
-import io.agora.education.api.user.data.EduBaseUserInfo;
-import io.agora.education.api.user.data.EduStartActionConfig;
-import io.agora.education.api.user.data.EduStopActionConfig;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
+import io.agora.education.api.user.data.EduUserStateChangeType;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.fragment.UserListFragment;
@@ -61,7 +51,6 @@ import io.agora.rte.listener.RteAudioMixingListener;
 import io.agora.rte.listener.RteMediaDeviceListener;
 import io.agora.rte.listener.RteSpeakerReportListener;
 import io.agora.rte.listener.RteStatisticsReportListener;
-import kotlin.Unit;
 
 public class SmallClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener,
         RteAudioMixingListener, RteMediaDeviceListener, RteSpeakerReportListener, RteStatisticsReportListener {
@@ -228,15 +217,16 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteUsersLeft(userEvents, classRoom);
+    public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
+        super.onRemoteUserLeft(userEvent, classRoom);
         userListFragment.setUserList(getCurFullUser());
         title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
-    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteUserUpdated(userEvents, classRoom);
+    public void onRemoteUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type,
+                                    @NotNull EduRoom classRoom) {
+        super.onRemoteUserUpdated(userEvent, type, classRoom);
     }
 
     @Override
@@ -302,18 +292,17 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteStreamsUpdated(streamEvents, classRoom);
+    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent,
+                                      @NotNull EduStreamStateChangeType type, @NotNull EduRoom classRoom) {
+        super.onRemoteStreamUpdated(streamEvent, type, classRoom);
         boolean notify = false;
-        for (EduStreamEvent streamEvent : streamEvents) {
-            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            switch (streamInfo.getVideoSourceType()) {
-                case CAMERA:
-                    notify = true;
-                    break;
-                default:
-                    break;
-            }
+        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+        switch (streamInfo.getVideoSourceType()) {
+            case CAMERA:
+                notify = true;
+                break;
+            default:
+                break;
         }
         /**有远端Camera流添加，刷新视频列表*/
         if (notify) {
@@ -344,7 +333,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
+    public void onRoomStatusChanged(@NotNull EduRoomChangeType event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
         super.onRoomStatusChanged(event, operatorUser, classRoom);
 //        EduRoomStatus roomStatus = classRoom.getRoomStatus();
 //        switch (event) {
@@ -366,24 +355,26 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
-        super.onRemoteUserPropertiesUpdated(userInfos, classRoom, cause);
+    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom,
+                                            @Nullable Map<String, Object> cause) {
+        super.onRemoteUserPropertyUpdated(userInfo, classRoom, cause);
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
-        super.onConnectionStateChanged(state, reason);
-    }
-
-    @Override
-    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
+    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user,
+                                        @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
         title_view.setNetworkQuality(quality);
     }
 
     @Override
-    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
-        super.onLocalUserUpdated(userEvent);
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull EduRoom classRoom) {
+        super.onConnectionStateChanged(state, classRoom);
+    }
+
+    @Override
+    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type) {
+        super.onLocalUserUpdated(userEvent, type);
         /**更新用户信息*/
         showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
@@ -402,8 +393,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
-        super.onLocalStreamUpdated(streamEvent);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
+        super.onLocalStreamUpdated(streamEvent, type);
         showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }

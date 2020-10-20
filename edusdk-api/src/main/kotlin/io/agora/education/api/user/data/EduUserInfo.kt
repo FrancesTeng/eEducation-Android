@@ -60,3 +60,7 @@ enum class EduChatState(var value: Int) {
     NotAllow(1),
     Allow(0)
 }
+
+enum class EduUserStateChangeType {
+    Chat,
+}

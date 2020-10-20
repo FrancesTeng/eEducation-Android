@@ -25,6 +25,11 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
+        ndk {
+            // 设置支持的SO库架构
+            abiFilters 'armeabi-v7a', 'arm64-v8a' //, 'x86', 'armeabi-v7a', 'x86_64'
+        }
+
 //        buildConfigField 'String', 'API_BASE_URL', '"https://api.agora.io"'
         buildConfigField 'String', 'API_BASE_URL', '"https://api-solutions-dev.sh.agoralab.co"'
         buildConfigField 'String', 'POLICY_URL', '"https://www.agora.io/privacy-policy"'
@@ -94,4 +99,7 @@ dependencies {
 
 
 //    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
+
+    implementation 'com.tencent.bugly:crashreport:latest.release' //其中latest.release指代最新Bugly SDK版本号，也可以指定明确的版本号，例如2.1.9
+    implementation 'com.tencent.bugly:nativecrashreport:latest.release' //其中latest.release指代最新Bugly NDK版本号，也可以指定明确的版本号，例如3.0
 }

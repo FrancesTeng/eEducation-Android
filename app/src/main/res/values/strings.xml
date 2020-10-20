@@ -43,4 +43,9 @@
     <string name="function_error">Function Error(code:%d;reason:%s)</string>
     <string name="there_is_no_teacher_disable_covideo">There is no teacher in this classroom, cannot apply coVideo.</string>
     <string name="replay_link">Replay Link</string>
+    <string name="upload_log">Log reporting</string>
+    <string name="teacher">Teacher</string>
+    <string name="student">Student</string>
+    <string name="assistant">Assistant</string>
+    <string name="msg_title" translatable="false">[%s]%s</string>
 </resources>

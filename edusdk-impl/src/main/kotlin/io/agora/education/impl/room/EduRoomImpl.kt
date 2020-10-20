@@ -91,6 +91,8 @@ internal class EduRoomImpl(
     /**entry接口返回的流信息(可能是上次遗留的也可能是本次autoPublish流也可能是在同步(或join)过程中添加的远端流)*/
     var defaultStreams: MutableList<EduStreamEvent> = mutableListOf()
 
+    lateinit var defaultUserName: String;
+
     internal fun getCurRoomType(): RoomType {
         return (getRoomInfo() as EduRoomInfoImpl).roomType
     }
@@ -129,7 +131,9 @@ internal class EduRoomImpl(
         this.curClassType = ClassType.Sub
         this.joining = true
         this.studentJoinCallback = callback
-        val localUserInfo = EduLocalUserInfoImpl(options.userUuid, options.userName, EduUserRole.STUDENT,
+        /**判断是否指定了用户名*/
+        options.userName?.let { options.userName = defaultUserName }
+        val localUserInfo = EduLocalUserInfoImpl(options.userUuid, options.userName!!, EduUserRole.STUDENT,
                 true, null, mutableListOf(), System.currentTimeMillis())
         /**此处需要把localUserInfo设置进localUser中*/
         syncSession.localUser = EduStudentImpl(localUserInfo)

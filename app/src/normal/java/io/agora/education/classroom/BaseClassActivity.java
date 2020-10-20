@@ -32,21 +32,20 @@ import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
-import io.agora.education.api.room.data.AutoPublishItem;
 import io.agora.education.api.room.data.EduRoomInfo;
 import io.agora.education.api.room.data.EduRoomState;
 import io.agora.education.api.room.data.EduRoomStatus;
 import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.room.data.RoomJoinOptions;
 import io.agora.education.api.room.data.RoomMediaOptions;
-import io.agora.education.api.room.data.RoomStatusEvent;
+import io.agora.education.api.room.data.EduRoomChangeType;
 import io.agora.education.api.room.data.RoomType;
 import io.agora.education.api.room.listener.EduRoomEventListener;
 import io.agora.education.api.statistics.ConnectionState;
-import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
@@ -54,6 +53,7 @@ import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
+import io.agora.education.api.user.data.EduUserStateChangeType;
 import io.agora.education.api.user.listener.EduUserEventListener;
 import io.agora.education.base.BaseActivity;
 import io.agora.education.classroom.bean.board.BoardBean;
@@ -61,6 +61,7 @@ import io.agora.education.classroom.bean.board.BoardFollowMode;
 import io.agora.education.classroom.bean.board.BoardInfo;
 import io.agora.education.classroom.bean.board.BoardState;
 import io.agora.education.classroom.bean.channel.Room;
+import io.agora.education.classroom.bean.channel.User;
 import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.bean.record.RecordBean;
 import io.agora.education.classroom.bean.record.RecordMsg;
@@ -221,7 +222,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             @Override
             public void onSuccess(@Nullable EduStreamInfo res) {
                 /**把更新后的流信息同步至服务器*/
-                room.getLocalUser().publishStream(res, new EduCallback<Boolean>() {
+                room.getLocalUser().muteStream(res, new EduCallback<Boolean>() {
                     @Override
                     public void onSuccess(@Nullable Boolean res) {
                     }
@@ -295,6 +296,23 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return null;
     }
 
+    protected String getRoleStr(int role) {
+        int resId;
+        switch (role) {
+            case User.Role.TEACHER:
+                resId = R.string.teacher;
+                break;
+            case User.Role.ASSISTANT:
+                resId = R.string.assistant;
+                break;
+            case User.Role.STUDENT:
+            default:
+                resId = R.string.student;
+                break;
+        }
+        return getString(resId);
+    }
+
     @Room.Type
     protected abstract int getClassType();
 
@@ -305,8 +323,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         /**退出activity之前释放eduRoom资源*/
         mainEduRoom = null;
         whiteboardFragment.releaseBoard();
-        /**退出RTM*/
-        getManager().logout();
         getManager().setEduManagerEventListener(null);
         super.onDestroy();
     }
@@ -444,12 +460,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
+    public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到远端用户离开的回调");
     }
 
     @Override
-    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
+    public void onRemoteUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type,
+                                    @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到远端用户修改的回调");
     }
 
@@ -493,20 +510,18 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent,
+                                      @NotNull EduStreamStateChangeType type, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到修改远端流的回调");
-        for (EduStreamEvent streamEvent : streamEvents) {
-            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            if (streamInfo.getPublisher().getRole() == EduUserRole.TEACHER
-                    && streamInfo.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
-                runOnUiThread(() -> {
-                    layout_whiteboard.setVisibility(View.GONE);
-                    layout_share_video.setVisibility(View.VISIBLE);
-                    layout_share_video.removeAllViews();
-                    renderStream(getMainEduRoom(), streamInfo, layout_share_video);
-                });
-                break;
-            }
+        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+        if (streamInfo.getPublisher().getRole() == EduUserRole.TEACHER
+                && streamInfo.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
+            runOnUiThread(() -> {
+                layout_whiteboard.setVisibility(View.GONE);
+                layout_share_video.setVisibility(View.VISIBLE);
+                layout_share_video.removeAllViews();
+                renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+            });
         }
     }
 
@@ -530,14 +545,14 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
+    public void onRoomStatusChanged(@NotNull EduRoomChangeType event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
         EduRoomStatus roomStatus = classRoom.getRoomStatus();
         switch (event) {
-            case COURSE_STATE:
+            case CourseState:
                 title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
                         System.currentTimeMillis() - roomStatus.getStartTime());
                 break;
-            case STUDENT_CHAT:
+            case AllStudentsChat:
                 chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
                 break;
             default:
@@ -590,7 +605,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
 
     }
 
@@ -599,9 +614,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 //        Log.e(TAG, "onNetworkQualityChanged->" + quality.getValue());
     }
 
+    @Override
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull EduRoom classRoom) {
+        Log.e(TAG, "onNetworkQualityChanged->" + state.getValue() + ",room:" + classRoom.getRoomInfo().getRoomUuid());
+    }
 
     @Override
-    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
+    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type) {
         /**更新用户信息*/
         EduUserInfo userInfo = userEvent.getModifiedUser();
         chatRoomFragment.setMuteLocal(!userInfo.isChatAllowed());
@@ -629,7 +648,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
         Log.e(TAG, "收到更新本地流的回调");
         switch (streamEvent.getModifiedStream().getVideoSourceType()) {
             case CAMERA:
@@ -673,11 +692,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onUserActionMessageReceived(@NotNull EduActionMessage actionMessage) {
-
-    }
-
-    @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
 
     }
 

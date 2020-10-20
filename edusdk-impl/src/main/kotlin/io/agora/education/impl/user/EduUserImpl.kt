@@ -6,14 +6,17 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
+import io.agora.Constants.Companion.AgoraLog
 import io.agora.education.impl.util.Convert
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.ResponseBody
 import io.agora.education.api.EduCallback
+import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduChatMsgType
 import io.agora.education.api.message.EduMsg
+import io.agora.education.api.room.data.EduError
 import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
@@ -66,29 +69,37 @@ internal open class EduUserImpl(
         callback.onSuccess(streamInfo)
     }
 
-    override fun switchCamera() {
-        RteEngineImpl.switchCamera()
+    override fun switchCamera(): EduError {
+        val code = RteEngineImpl.switchCamera()
+        return EduError(code, RteEngineImpl.getError(code))
     }
 
-    override fun subscribeStream(stream: EduStreamInfo, options: StreamSubscribeOptions) {
+    override fun subscribeStream(stream: EduStreamInfo, options: StreamSubscribeOptions,
+                                 callback: EduCallback<Unit>) {
         /**订阅远端流*/
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
         Log.e(TAG, "muteRemoteStream->audio:${options.subscribeAudio},video:${options.subscribeVideo}")
-        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, !options.subscribeAudio,
+        val code = RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, !options.subscribeAudio,
                 !options.subscribeVideo)
+        if (code == RteEngineImpl.ok()) {
+            callback.onSuccess(Unit)
+        } else {
+            callback.onFailure(code, RteEngineImpl.getError(code))
+        }
     }
 
-    override fun unSubscribeStream(stream: EduStreamInfo) {
+    override fun unSubscribeStream(stream: EduStreamInfo, options: StreamSubscribeOptions,
+                                   callback: EduCallback<Unit>) {
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-        RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, muteAudio = true,
-                muteVideo = true)
+        val code = RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, !options.subscribeAudio,
+                !options.subscribeVideo)
+        if (code == RteEngineImpl.ok()) {
+            callback.onSuccess(Unit)
+        } else {
+            callback.onFailure(code, RteEngineImpl.getError(code))
+        }
     }
 
-    /**
-     * 修改本地流状态流程（新建流的情况下先走接口再走SDK本地mute）
-     * 如果mute自己的时候，对应是先mute本地，再网络请求， 如果请求失败，提示客户。  客户自己手动重试。
-     * 如果unmute自己的时候，对应先网络请求， 如果请求失败，提示客户。  否则开启推流。
-     * */
     override fun publishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
         /**设置角色*/
         RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
@@ -96,74 +107,59 @@ internal open class EduUserImpl(
         val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
                 if (streamInfo.hasAudio) 1 else 0)
-//        var pos = eduRoom.streamExistsInLocal(streamInfo)
-        var pos = Convert.streamExistsInList(streamInfo, eduRoom.getCurStreamList())
-        if (pos > -1) {
-            /**流信息存在于本地，说明是更新*/
-            if (eduRoom.getCurStreamList()[pos].hasAudio || eduRoom.getCurStreamList()[pos].hasVideo) {
-                /**unMute*/
-                Log.e("EduUserImpl", "开始更新本地流信息-unMute")
-                RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                        .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
-                                streamInfo.streamUuid, eduStreamStatusReq)
-                        .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
-                            override fun onSuccess(res: ResponseBody<String>?) {
-                                /**更新流信息的更新时间*/
-                                Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
-//                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
-                                RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                                RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
-                                callback.onSuccess(true)
-                            }
+        AgoraLog.logMsg("$TAG->新建本地流信息", LogLevel.INFO.value)
+        RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
+                .createStream(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
+                        streamInfo.streamUuid, eduStreamStatusReq)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
+                    override fun onSuccess(res: ResponseBody<String>?) {
+                        AgoraLog.logMsg("$TAG->发流状态:${streamInfo.hasAudio},${streamInfo.hasVideo}",
+                                LogLevel.INFO.value)
+                        RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
+                        RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
+                        callback.onSuccess(true)
+                    }
 
-                            override fun onFailure(throwable: Throwable?) {
-                                var error = throwable as? BusinessException
-                                callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                        error?.message ?: throwable?.message)
-                            }
-                        }))
-            } else {
-                /**mute*/
-                Log.e("EduUserImpl", "开始初始化和更新本地流-mute")
-                Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
-                RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
-                RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                        .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
-                                streamInfo.streamUuid, eduStreamStatusReq)
-                        .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
-                            override fun onSuccess(res: ResponseBody<String>?) {
-//                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
-                                callback.onSuccess(true)
-                            }
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message)
+                    }
+                }))
+    }
 
-                            override fun onFailure(throwable: Throwable?) {
-                                var error = throwable as? BusinessException
-                                callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                        error?.message ?: throwable?.message)
-                            }
-                        }))
-            }
-        } else {
-            /**流信息不存在于本地，说明是新建*/
-            Log.e("EduUserImpl", "新建本地流信息")
+    override fun muteStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
+        /**设置角色*/
+        RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
+        /**改变流状态的参数*/
+        val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
+                AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
+                if (streamInfo.hasAudio) 1 else 0)
+        val index = Convert.streamExistsInList(streamInfo, eduRoom.getCurStreamList())
+        if (index > -1) {
+            AgoraLog.i("$TAG->开始更新本地存在的流信息,streamUuid: + ${streamInfo.streamUuid}," +
+                    "流状态:${streamInfo.hasAudio},${streamInfo.hasVideo}")
+            RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
+            RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
             RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                    .createStream(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
+                    .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
                             streamInfo.streamUuid, eduStreamStatusReq)
                     .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                         override fun onSuccess(res: ResponseBody<String>?) {
-                            Log.e("EduUserImpl", "发流状态：" + streamInfo.hasAudio + "," + streamInfo.hasVideo)
-                            RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-                            RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
+//                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
+                            AgoraLog.i("$TAG->流信息更新成功,streamUuid: + ${streamInfo.streamUuid}")
                             callback.onSuccess(true)
                         }
 
                         override fun onFailure(throwable: Throwable?) {
+                            AgoraLog.e("$TAG->流信息更新失败,streamUuid: + ${streamInfo.streamUuid}")
                             var error = throwable as? BusinessException
                             callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
                                     error?.message ?: throwable?.message)
                         }
                     }))
+        } else {
+            AgoraLog.e("$TAG->流信息不存在于本地,streamUuid: + ${streamInfo.streamUuid}")
         }
     }
 
@@ -299,7 +295,8 @@ internal open class EduUserImpl(
 
     /**
      * @param viewGroup 视频画面的父布局(在UI布局上最好保持独立)*/
-    override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?, config: VideoRenderConfig) {
+    override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?,
+                               config: VideoRenderConfig): EduError {
         val videoCanvas: VideoCanvas
         if (viewGroup == null) {
             /**remove掉当前流对应的surfaceView*/
@@ -328,24 +325,26 @@ internal open class EduUserImpl(
             viewGroup.addView(surfaceView)
             surfaceViewList.add(surfaceView)
         }
+        var code: Int
         if (stream.publisher.userUuid == this.userInfo.userUuid) {
-            val code = RteEngineImpl.setupLocalVideo(videoCanvas)
+            code = RteEngineImpl.setupLocalVideo(videoCanvas)
             if (code == 0) {
                 Log.e("EduUserImpl", "setupLocalVideo成功")
             }
         } else {
-            val code = RteEngineImpl.setupRemoteVideo(videoCanvas)
+            code = RteEngineImpl.setupRemoteVideo(videoCanvas)
             if (code == 0) {
                 Log.e("EduUserImpl", "setupRemoteVideo成功")
             }
         }
+        return EduError(code, RteEngineImpl.getError(code))
     }
 
-    override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?) {
+    override fun setStreamView(stream: EduStreamInfo, channelId: String, viewGroup: ViewGroup?): EduError {
         /*屏幕分享使用fit模式，尽可能的保持画面完整*/
         val config = if (stream.videoSourceType == VideoSourceType.SCREEN) RenderMode.FIT else
             RenderMode.HIDDEN
-        setStreamView(stream, channelId, viewGroup, VideoRenderConfig(config))
+        return setStreamView(stream, channelId, viewGroup, VideoRenderConfig(config))
     }
 
     internal fun removeAllSurfaceView() {
@@ -369,8 +368,8 @@ internal open class EduUserImpl(
         return null
     }
 
-    override fun updateRoomProperty(property: MutableMap.MutableEntry<String, String>,
-                                    cause: MutableMap<String, String>, callback: EduCallback<Unit>) {
+    override fun setRoomProperty(property: MutableMap.MutableEntry<String, String>,
+                                 cause: MutableMap<String, String>, callback: EduCallback<Unit>) {
         val req = EduUpdateRoomPropertyReq(property.value, cause)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .addRoomProperty(APPID, eduRoom.getRoomInfo().roomUuid, property.key, req)
@@ -387,9 +386,9 @@ internal open class EduUserImpl(
                 }))
     }
 
-    override fun updateUserProperty(property: MutableMap.MutableEntry<String, String>,
-                                    cause: MutableMap<String, String>, targetUser: EduUserInfo,
-                                    callback: EduCallback<Unit>) {
+    override fun setUserProperty(property: MutableMap.MutableEntry<String, String>,
+                                 cause: MutableMap<String, String>, targetUser: EduUserInfo,
+                                 callback: EduCallback<Unit>) {
         val req = EduUpdateUserPropertyReq(property.value, cause)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .addProperty(APPID, eduRoom.getRoomInfo().roomUuid, targetUser.userUuid, property.key,

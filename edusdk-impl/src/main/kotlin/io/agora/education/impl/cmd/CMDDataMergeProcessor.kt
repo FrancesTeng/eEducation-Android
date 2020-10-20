@@ -6,19 +6,15 @@ import io.agora.education.impl.util.Convert
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.room.data.RoomType
-import io.agora.education.api.stream.data.EduAudioState
-import io.agora.education.api.stream.data.EduStreamEvent
-import io.agora.education.api.stream.data.EduStreamInfo
-import io.agora.education.api.stream.data.EduVideoState
-import io.agora.education.api.user.data.EduBaseUserInfo
-import io.agora.education.api.user.data.EduChatState
-import io.agora.education.api.user.data.EduUserEvent
-import io.agora.education.api.user.data.EduUserInfo
+import io.agora.education.api.stream.data.*
+import io.agora.education.api.user.data.*
 import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.response.EduSnapshotRes
 import io.agora.education.impl.stream.EduStreamInfoImpl
+import io.agora.education.impl.stream.data.base.EduStreamStateChangeEvent
 import io.agora.education.impl.user.data.EduUserInfoImpl
+import io.agora.education.impl.user.data.base.EduUserStateChangeEvent
 
 internal class CMDDataMergeProcessor : CMDProcessor() {
     companion object {
@@ -88,10 +84,10 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
 
         fun updateUserWithUserStateChange(cmdUserStateMsg: CMDUserStateMsg,
                                           eduUserInfos: MutableList<EduUserInfo>, roomType: RoomType)
-                : MutableList<EduUserEvent> {
+                : MutableList<EduUserStateChangeEvent> {
             val userStateChangedList = mutableListOf<EduUserInfo>()
             userStateChangedList.add(Convert.convertUserInfo(cmdUserStateMsg, roomType))
-            val validUserEventList = mutableListOf<EduUserEvent>()
+            val validUserEventList = mutableListOf<EduUserStateChangeEvent>()
             synchronized(eduUserInfos) {
                 for (element in userStateChangedList) {
                     if (eduUserInfos.contains(element)) {
@@ -100,12 +96,17 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                         /**获取已存在于集合中的用户*/
                         val userInfo2 = eduUserInfos[index]
                         if (compareUserInfoTime(element, userInfo2) > 0) {
+                            var type = EduUserStateChangeType.Chat
+                            /**确认changeType*/
+                            if (element.isChatAllowed != userInfo2.isChatAllowed) {
+                                type = EduUserStateChangeType.Chat
+                            }
                             /**更新用户的数据为最新数据*/
                             eduUserInfos[index] = element
                             /**构造userEvent并返回*/
                             val operator = getOperator(cmdUserStateMsg.operator, element, roomType)
                             val userEvent = EduUserEvent(element, operator)
-                            validUserEventList.add(userEvent)
+                            validUserEventList.add(EduUserStateChangeEvent(userEvent, type))
                         }
                     }
                 }
@@ -241,37 +242,80 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             }
         }
 
+//        fun updateStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
+//                                   streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType):
+//                MutableList<EduStreamEvent> {
+//            val validStreamList = mutableListOf<EduStreamEvent>()
+//            val streamInfos = mutableListOf<EduStreamInfo>()
+//            streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
+//            Log.e(TAG, "本地流缓存:" + Gson().toJson(streamInfoList))
+//            synchronized(streamInfoList) {
+//                for (element in streamInfos) {
+////                    if (streamInfoList.contains(element)) {
+//                    val index = Convert.streamExistsInList(element, streamInfoList)
+//                    Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
+//                    if (index > -1) {
+//                        /**获取已存在于集合中的用户*/
+//                        val userInfo2 = streamInfoList[index]
+//                        if (compareStreamInfoTime(element, userInfo2) > 0) {
+//                            /**更新用户的数据为最新数据*/
+//                            streamInfoList[index] = element
+//                            /**构造userEvent并返回*/
+//                            val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
+//                            val userEvent = EduStreamEvent(element, operator)
+//                            validStreamList.add(userEvent)
+//                        }
+//                    } else {
+//                        /**发现是修改流而且本地又没有那么直接添加到本地并作为有效数据；
+//                         * 服务端保证顺序，不会出现remove先到，modify后到的情况（modify先发生，remove后发生）*/
+//                        streamInfoList.add(element)
+//                        /**构造userEvent并返回*/
+//                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
+//                        val userEvent = EduStreamEvent(element, operator)
+//                        validStreamList.add(userEvent)
+//                    }
+//                }
+//                return validStreamList
+//            }
+//        }
+
         fun updateStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
                                    streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType):
-                MutableList<EduStreamEvent> {
-            val validStreamList = mutableListOf<EduStreamEvent>()
+                MutableList<EduStreamStateChangeEvent> {
+            val validStreamList = mutableListOf<EduStreamStateChangeEvent>()
             val streamInfos = mutableListOf<EduStreamInfo>()
             streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
             Log.e(TAG, "本地流缓存:" + Gson().toJson(streamInfoList))
             synchronized(streamInfoList) {
                 for (element in streamInfos) {
-//                    if (streamInfoList.contains(element)) {
                     val index = Convert.streamExistsInList(element, streamInfoList)
                     Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
                     if (index > -1) {
                         /**获取已存在于集合中的用户*/
                         val userInfo2 = streamInfoList[index]
                         if (compareStreamInfoTime(element, userInfo2) > 0) {
+                            /*确认改变类型*/
+                            var type = EduStreamStateChangeType.Audio
+                            val audio = element.hasAudio != userInfo2.hasAudio
+                            val video = element.hasVideo != userInfo2.hasVideo
+                            if (audio) {
+                                type = EduStreamStateChangeType.Audio
+                            } else if (video) {
+                                type = EduStreamStateChangeType.Video
+                            } else if (audio && video) {
+                                type = EduStreamStateChangeType.VideoAudio
+                            }
                             /**更新用户的数据为最新数据*/
                             streamInfoList[index] = element
                             /**构造userEvent并返回*/
                             val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
                             val userEvent = EduStreamEvent(element, operator)
-                            validStreamList.add(userEvent)
+                            validStreamList.add(EduStreamStateChangeEvent(userEvent, type))
                         }
                     } else {
-                        /**发现是修改流而且本地又没有那么直接添加到本地并作为有效数据；
-                         * 服务端保证顺序，不会出现remove先到，modify后到的情况（modify先发生，remove后发生）*/
-                        streamInfoList.add(element)
-                        /**构造userEvent并返回*/
-                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                        val userEvent = EduStreamEvent(element, operator)
-                        validStreamList.add(userEvent)
+                        /**
+                         * 发现是修改流而且本地又没有那么直接不处理
+                         * */
                     }
                 }
                 return validStreamList

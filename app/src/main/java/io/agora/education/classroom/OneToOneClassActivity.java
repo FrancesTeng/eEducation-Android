@@ -3,46 +3,32 @@ package io.agora.education.classroom;
 import android.util.Log;
 import android.view.View;
 
-import com.google.gson.Gson;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.OnClick;
-import io.agora.base.network.ResponseBody;
-import io.agora.base.network.RetrofitManager;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
-import io.agora.education.api.message.EduActionMessage;
-import io.agora.education.api.message.EduActionType;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
-import io.agora.education.api.room.data.AutoPublishItem;
-import io.agora.education.api.room.data.RoomStatusEvent;
+import io.agora.education.api.room.data.EduRoomChangeType;
 import io.agora.education.api.statistics.ConnectionState;
-import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.user.EduStudent;
-import io.agora.education.api.user.data.EduBaseUserInfo;
-import io.agora.education.api.user.data.EduStartActionConfig;
-import io.agora.education.api.user.data.EduStopActionConfig;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
-import io.agora.education.api.user.data.EduUserRole;
+import io.agora.education.api.user.data.EduUserStateChangeType;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.widget.RtcVideoView;
-import io.agora.rte.RteEngineImpl;
-import kotlin.Unit;
 
 
 public class OneToOneClassActivity extends BaseClassActivity {
@@ -117,14 +103,15 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteUsersLeft(userEvents, classRoom);
+    public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
+        super.onRemoteUserLeft(userEvent, classRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
     }
 
     @Override
-    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteUserUpdated(userEvents, classRoom);
+    public void onRemoteUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type,
+                                    @NotNull EduRoom classRoom) {
+        super.onRemoteUserUpdated(userEvent, type, classRoom);
 
     }
 
@@ -161,7 +148,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
+    public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams,
+                                           @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
         Log.e(TAG, "onRemoteStreamsInitialized");
 //        EduStreamInfo streamInfo = getTeacherStream();
@@ -225,29 +213,20 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteStreamsUpdated(streamEvents, classRoom);
-        for (EduStreamEvent streamEvent : streamEvents) {
-            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            switch (streamInfo.getVideoSourceType()) {
-                case CAMERA:
-                    /**一对一场景下，远端流就是老师的流*/
-                    video_teacher.setName(streamInfo.getPublisher().getUserName());
-                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                    video_teacher.muteVideo(!streamInfo.getHasVideo());
-                    video_teacher.muteAudio(!streamInfo.getHasAudio());
-                    break;
-//                case SCREEN:
-//                    runOnUiThread(() -> {
-//                        layout_whiteboard.setVisibility(View.GONE);
-//                        layout_share_video.setVisibility(View.VISIBLE);
-//                        layout_share_video.removeAllViews();
-//                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
-//                    });
-//                    break;
-                default:
-                    break;
-            }
+    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type,
+                                      @NotNull EduRoom classRoom) {
+        super.onRemoteStreamUpdated(streamEvent, type, classRoom);
+        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+        switch (streamInfo.getVideoSourceType()) {
+            case CAMERA:
+                /**一对一场景下，远端流就是老师的流*/
+                video_teacher.setName(streamInfo.getPublisher().getUserName());
+                renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+                video_teacher.muteVideo(!streamInfo.getHasVideo());
+                video_teacher.muteAudio(!streamInfo.getHasAudio());
+                break;
+            default:
+                break;
         }
     }
 
@@ -280,7 +259,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
+    public void onRoomStatusChanged(@NotNull EduRoomChangeType event, @NotNull EduUserInfo operatorUser,
+                                    @NotNull EduRoom classRoom) {
         super.onRoomStatusChanged(event, operatorUser, classRoom);
     }
 
@@ -295,24 +275,25 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom,
+                                            @Nullable Map<String, Object> cause) {
     }
 
     @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
-        super.onConnectionStateChanged(state, reason);
-    }
-
-    @Override
-    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
+    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user,
+                                        @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
         title_view.setNetworkQuality(quality);
     }
 
+    @Override
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull EduRoom classRoom) {
+        super.onConnectionStateChanged(state, classRoom);
+    }
 
     @Override
-    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
-        super.onLocalUserUpdated(userEvent);
+    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type) {
+        super.onLocalUserUpdated(userEvent, type);
     }
 
     @Override
@@ -331,8 +312,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
-        super.onLocalStreamUpdated(streamEvent);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
+        super.onLocalStreamUpdated(streamEvent, type);
         EduStreamInfo streamInfo = streamEvent.getModifiedStream();
         video_student.muteVideo(!streamInfo.getHasVideo());
         video_student.muteAudio(!streamInfo.getHasAudio());

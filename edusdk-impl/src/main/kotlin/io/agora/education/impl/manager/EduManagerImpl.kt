@@ -88,13 +88,16 @@ internal class EduManagerImpl(
     override fun createClassroom(config: RoomCreateOptions): EduRoom {
         val eduRoomInfo = EduRoomInfoImpl(config.roomType, config.roomUuid, config.roomName)
         val status = EduRoomStatus(EduRoomState.INIT, 0, true, 0)
-        return EduRoomImpl(eduRoomInfo, status)
+        val room = EduRoomImpl(eduRoomInfo, status)
+        /**设置默认用户名*/
+        room.defaultUserName = options.userName
+        return room
     }
 
-    override fun login(loginOptions: EduLoginOptions, callback: EduCallback<Unit>) {
+    fun login(userUuid: String, callback: EduCallback<Unit>) {
         logMessage("${TAG}: 调用login接口", LogLevel.INFO)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .login(APPID, loginOptions.userUuid)
+                .login(APPID, userUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduLoginRes>> {
                     override fun onSuccess(res: ResponseBody<EduLoginRes>?) {
                         logMessage("${TAG}: 成功调用login接口->${Gson().toJson(res)}", LogLevel.INFO)
@@ -127,17 +130,12 @@ internal class EduManagerImpl(
                 }))
     }
 
-    override fun logout() {
-        logMessage("${TAG}: 调用logout函数退出RTM", LogLevel.INFO)
-        RteEngineImpl.logoutRtm()
-    }
-
     override fun release() {
         logMessage("${TAG}: 调用release函数释放数据", LogLevel.INFO)
         eduRooms.clear()
     }
 
-    override fun logMessage(message: String, level: LogLevel): AgoraError {
+    override fun logMessage(message: String, level: LogLevel): EduError {
         when (level) {
             LogLevel.NONE -> {
                 AgoraLog.d(message)
@@ -152,10 +150,10 @@ internal class EduManagerImpl(
                 AgoraLog.e(message)
             }
         }
-        return AgoraError.NONE
+        return EduError(-1, "")
     }
 
-    override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): AgoraError {
+    override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): EduError {
         val uploadParam = UploadManager.UploadParam(APPID, BuildConfig.VERSION_NAME, Build.DEVICE,
                 Build.VERSION.SDK, "ZIP", "Android", null)
         logMessage("${TAG}: 调用uploadDebugItem函数上传日志，参数->${Gson().toJson(uploadParam)}", LogLevel.INFO)
@@ -178,11 +176,9 @@ internal class EduManagerImpl(
                         }
                     }
                 })
-        return AgoraError.NONE
+        return EduError(-1, "")
     }
 
-
-    /***/
     override fun onConnectionStateChanged(p0: Int, p1: Int) {
         logMessage("${TAG}: RTM连接状态发生改变->state:$p0,reason:$p1", LogLevel.INFO)
         /**断线重连之后，同步每一个教室的信息*/
@@ -199,10 +195,9 @@ internal class EduManagerImpl(
                         it.syncSession.fetchLostSequence(this)
                     }
                 })
-            } else {
-                eduManagerEventListener?.onConnectionStateChanged(Convert.convertConnectionState(p0),
-                        Convert.convertConnectionStateChangeReason(p1))
             }
+            /*连接状态回调出去*/
+            it.eventListener?.onConnectionStateChanged(Convert.convertConnectionState(p0), it)
         }
         rtmConnectState.lastConnectionState = p0
     }
@@ -215,14 +210,5 @@ internal class EduManagerImpl(
                 (it as EduRoomImpl).cmdDispatch.dispatchPeerMsg(p0.text, eduManagerEventListener)
             }
         }
-    }
-
-    private fun findRoom(roomInfo: EduRoomInfo): EduRoom? {
-        eduRooms?.forEach {
-            if (roomInfo == it.getRoomInfo()) {
-                return it
-            }
-        }
-        return null
     }
 }

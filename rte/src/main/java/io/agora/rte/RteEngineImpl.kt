@@ -2,6 +2,7 @@ package io.agora.rte
 
 import android.content.Context
 import android.util.Log
+import io.agora.rtc.Constants
 import io.agora.rtc.Constants.CHANNEL_PROFILE_LIVE_BROADCASTING
 import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcEngineEventHandler
@@ -126,27 +127,27 @@ object RteEngineImpl : IRteEngine {
 
     override fun loginRtm(rtmUid: String, rtmToken: String, callback: RteCallback<Unit>) {
         /**rtm不能重复登录*/
-        if (!rtmLoginSuccess) {
-            rtmClient.login(rtmToken, rtmUid, object : ResultCallback<Void> {
-                override fun onSuccess(p0: Void?) {
-                    rtmLoginSuccess = true
-                    callback.onSuccess(Unit)
-                }
+//        if (!rtmLoginSuccess) {
+        rtmClient.login(rtmToken, rtmUid, object : ResultCallback<Void> {
+            override fun onSuccess(p0: Void?) {
+                rtmLoginSuccess = true
+                callback.onSuccess(Unit)
+            }
 
-                override fun onFailure(p0: ErrorInfo?) {
-                    rtmLoginSuccess = false
-                    p0?.let {
-                        if (p0.errorCode == LOGIN_ERR_ALREADY_LOGIN) {
-                            callback.onSuccess(Unit)
-                        } else {
-                            callback.onFailure(p0.errorCode, p0.errorDescription)
-                        }
+            override fun onFailure(p0: ErrorInfo?) {
+                rtmLoginSuccess = false
+                p0?.let {
+                    if (p0.errorCode == LOGIN_ERR_ALREADY_LOGIN) {
+                        callback.onSuccess(Unit)
+                    } else {
+                        callback.onFailure(p0.errorCode, p0.errorDescription)
                     }
                 }
-            })
-        } else {
-            callback.onSuccess(Unit)
-        }
+            }
+        })
+//        } else {
+//            callback.onSuccess(Unit)
+//        }
     }
 
     override fun logoutRtm() {
@@ -305,5 +306,13 @@ object RteEngineImpl : IRteEngine {
             return 0
         }
         return -1
+    }
+
+    override fun getError(code: Int): String {
+        return RtcEngine.getErrorDescription(code)
+    }
+
+    override fun ok(): Int {
+        return Constants.ERR_OK
     }
 }

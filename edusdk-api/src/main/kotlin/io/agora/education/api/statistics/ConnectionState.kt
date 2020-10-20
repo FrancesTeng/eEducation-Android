@@ -7,14 +7,3 @@ enum class ConnectionState(var value: Int) {
     RECONNECTING(4),
     ABORTED(5)
 }
-
-enum class ConnectionStateChangeReason(var value: Int) {
-    LOGIN(1),
-    LOGIN_SUCCESS(2),
-    LOGIN_FAILURE(3),
-    LOGIN_TIMEOUT(4),
-    INTERRUPTED(5),
-    LOGOUT(6),
-    BANNED_BY_SERVER(7),
-    REMOTE_LOGIN(8),
-}

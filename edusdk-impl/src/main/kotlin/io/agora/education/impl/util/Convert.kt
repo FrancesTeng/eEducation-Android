@@ -6,11 +6,7 @@ import io.agora.education.api.message.EduActionMessage
 import io.agora.education.api.message.EduActionType
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
-import io.agora.education.api.room.data.Property.Companion.KEY_ASSISTANT_LIMIT
-import io.agora.education.api.room.data.Property.Companion.KEY_STUDENT_LIMIT
-import io.agora.education.api.room.data.Property.Companion.KEY_TEACHER_LIMIT
 import io.agora.education.api.statistics.ConnectionState
-import io.agora.education.api.statistics.ConnectionStateChangeReason
 import io.agora.education.api.statistics.NetworkQuality
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.data.EduChatState
@@ -28,7 +24,6 @@ import io.agora.education.impl.user.data.EduLocalUserInfoImpl
 import io.agora.education.impl.user.data.request.RoleMuteConfig
 import io.agora.rtc.Constants.*
 import io.agora.rtc.video.VideoEncoderConfiguration
-import io.agora.rtm.RtmStatusCode.ConnectionChangeReason.*
 import io.agora.rtm.RtmStatusCode.ConnectionState.CONNECTION_STATE_DISCONNECTED
 
 internal class Convert {
@@ -40,7 +35,7 @@ internal class Convert {
                     videoEncoderConfig.videoDimensionHeight)
             var videoEncoderConfiguration = VideoEncoderConfiguration()
             videoEncoderConfiguration.dimensions = videoDimensions
-            videoEncoderConfiguration.frameRate = videoEncoderConfig.fps
+            videoEncoderConfiguration.frameRate = videoEncoderConfig.frameRate
             when (videoEncoderConfig.orientationMode) {
                 OrientationMode.ADAPTIVE -> {
                     videoEncoderConfiguration.orientationMode = VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE
@@ -117,6 +112,9 @@ internal class Convert {
             when (role) {
                 EduUserRoleStr.host.name -> {
                     return EduUserRole.TEACHER
+                }
+                EduUserRoleStr.assistant.name -> {
+                    return EduUserRole.ASSISTANT
                 }
                 EduUserRoleStr.broadcaster.name -> {
                     if (roomType == RoomType.ONE_ON_ONE || roomType == RoomType.SMALL_CLASS ||
@@ -307,38 +305,6 @@ internal class Convert {
                 }
                 else -> {
                     ConnectionState.DISCONNECTED
-                }
-            }
-        }
-
-        fun convertConnectionStateChangeReason(changeReason: Int): ConnectionStateChangeReason {
-            return when (changeReason) {
-                CONNECTION_CHANGE_REASON_LOGIN -> {
-                    ConnectionStateChangeReason.LOGIN
-                }
-                CONNECTION_CHANGE_REASON_LOGIN_SUCCESS -> {
-                    ConnectionStateChangeReason.LOGIN_SUCCESS
-                }
-                CONNECTION_CHANGE_REASON_LOGIN_FAILURE -> {
-                    ConnectionStateChangeReason.LOGIN_FAILURE
-                }
-                CONNECTION_CHANGE_REASON_LOGIN_TIMEOUT -> {
-                    ConnectionStateChangeReason.LOGIN_TIMEOUT
-                }
-                CONNECTION_CHANGE_REASON_INTERRUPTED -> {
-                    ConnectionStateChangeReason.INTERRUPTED
-                }
-                CONNECTION_CHANGE_REASON_LOGOUT -> {
-                    ConnectionStateChangeReason.LOGOUT
-                }
-                CONNECTION_CHANGE_REASON_BANNED_BY_SERVER -> {
-                    ConnectionStateChangeReason.BANNED_BY_SERVER
-                }
-                CONNECTION_CHANGE_REASON_REMOTE_LOGIN -> {
-                    ConnectionStateChangeReason.REMOTE_LOGIN
-                }
-                else -> {
-                    ConnectionStateChangeReason.LOGIN
                 }
             }
         }

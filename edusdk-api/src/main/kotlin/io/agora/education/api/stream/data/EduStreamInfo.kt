@@ -68,3 +68,9 @@ enum class EduAudioState(var value: Int) {
     Open(1),
     Disable(2)
 }
+
+enum class EduStreamStateChangeType {
+    Video,
+    Audio,
+    VideoAudio
+}

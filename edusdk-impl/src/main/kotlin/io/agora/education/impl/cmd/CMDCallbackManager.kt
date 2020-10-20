@@ -5,18 +5,18 @@ import io.agora.education.api.message.EduActionMessage
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.EduRoom
-import io.agora.education.api.room.data.RoomStatusEvent
+import io.agora.education.api.room.data.EduRoomChangeType
 import io.agora.education.api.stream.data.EduStreamEvent
+import io.agora.education.api.stream.data.EduStreamStateChangeType
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
-import io.agora.education.impl.cmd.bean.CMDActionMsgRes
-import io.agora.education.impl.cmd.bean.CMDStreamActionMsg
+import io.agora.education.api.user.data.EduUserStateChangeType
 
 internal class CMDCallbackManager {
 
-    fun onRoomStatusChanged(event: RoomStatusEvent, operatorUser: EduUserInfo?, classRoom: EduRoom) {
-        classRoom.eventListener?.onRoomStatusChanged(event, operatorUser, classRoom)
+    fun onRoomStatusChanged(eventEdu: EduRoomChangeType, operatorUser: EduUserInfo?, classRoom: EduRoom) {
+        classRoom.eventListener?.onRoomStatusChanged(eventEdu, operatorUser, classRoom)
     }
 
     fun onRoomPropertyChanged(classRoom: EduRoom, cause: MutableMap<String, Any>?) {
@@ -39,33 +39,33 @@ internal class CMDCallbackManager {
         classRoom.eventListener?.onRemoteStreamsAdded(streamEvents, classRoom)
     }
 
-    fun onRemoteUsersLeft(userEvents: MutableList<EduUserEvent>, classRoom: EduRoom) {
-        classRoom.eventListener?.onRemoteUsersLeft(userEvents, classRoom)
+    fun onRemoteUsersLeft(userEvent: EduUserEvent, classRoom: EduRoom) {
+        classRoom.eventListener?.onRemoteUserLeft(userEvent, classRoom)
     }
 
     fun onRemoteStreamsRemoved(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom) {
         classRoom.eventListener?.onRemoteStreamsRemoved(streamEvents, classRoom)
     }
 
-    fun onRemoteUserPropertiesUpdated(userInfos: MutableList<EduUserInfo>, classRoom: EduRoom,
+    fun onRemoteUserPropertiesUpdated(userInfo: EduUserInfo, classRoom: EduRoom,
                                       cause: MutableMap<String, Any>?) {
-        classRoom.eventListener?.onRemoteUserPropertiesUpdated(userInfos, classRoom, cause)
+        classRoom.eventListener?.onRemoteUserPropertyUpdated(userInfo, classRoom, cause)
     }
 
-    fun onRemoteStreamsUpdated(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom) {
-        classRoom.eventListener?.onRemoteStreamsUpdated(streamEvents, classRoom)
+    fun onRemoteStreamsUpdated(streamEvent: EduStreamEvent, type: EduStreamStateChangeType, classRoom: EduRoom) {
+        classRoom.eventListener?.onRemoteStreamUpdated(streamEvent, type, classRoom)
     }
 
-    fun onRemoteUserUpdated(userEvents: MutableList<EduUserEvent>, classRoom: EduRoom) {
-        classRoom.eventListener?.onRemoteUserUpdated(userEvents, classRoom)
+    fun onRemoteUserUpdated(userEvent: EduUserEvent, type: EduUserStateChangeType, classRoom: EduRoom) {
+        classRoom.eventListener?.onRemoteUserUpdated(userEvent, type, classRoom)
     }
 
     fun onLocalUserAdded(userInfo: EduUserInfo, eduUser: EduUser) {
         /**本地用户的online数据不回调出去，仅内部处理*/
     }
 
-    fun onLocalUserUpdated(userEvent: EduUserEvent, eduUser: EduUser) {
-        eduUser.eventListener?.onLocalUserUpdated(userEvent)
+    fun onLocalUserUpdated(userEvent: EduUserEvent, type: EduUserStateChangeType, eduUser: EduUser) {
+        eduUser.eventListener?.onLocalUserUpdated(userEvent, type)
     }
 
     fun onLocalUserRemoved(userEvent: EduUserEvent, eduUser: EduUser) {
@@ -81,8 +81,8 @@ internal class CMDCallbackManager {
         eduUser.eventListener?.onLocalStreamAdded(streamEvent)
     }
 
-    fun onLocalStreamUpdated(streamEvent: EduStreamEvent, eduUser: EduUser) {
-        eduUser.eventListener?.onLocalStreamUpdated(streamEvent)
+    fun onLocalStreamUpdated(streamEvent: EduStreamEvent, type: EduStreamStateChangeType, eduUser: EduUser) {
+        eduUser.eventListener?.onLocalStreamUpdated(streamEvent, type)
     }
 
     fun onLocalStreamRemoved(streamEvent: EduStreamEvent, eduUser: EduUser) {

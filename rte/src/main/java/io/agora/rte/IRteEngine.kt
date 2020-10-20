@@ -2,6 +2,7 @@ package io.agora.rte
 
 import android.content.Context
 import androidx.annotation.NonNull
+import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rte.data.RteAudioReverbPreset
@@ -79,4 +80,8 @@ interface IRteEngine {
     fun enableAudioVolumeIndication(interval: Int, smooth: Int, report_vad: Boolean)
 
     fun setStatisticsReportListener(channelId: String, listener: RteStatisticsReportListener): Int
+
+    fun getError(code: Int): String
+
+    fun ok(): Int
 }

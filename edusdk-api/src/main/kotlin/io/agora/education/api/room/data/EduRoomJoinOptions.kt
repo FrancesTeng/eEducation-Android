@@ -33,7 +33,8 @@ data class RoomMediaOptions(
 
 data class RoomJoinOptions(
         val userUuid: String,
-        val userName: String,
+        /**用户可以传空,为空则使用roomImpl中默认的userName*/
+        var userName: String?,
         val roleType: EduUserRole,
         val mediaOptions: RoomMediaOptions
 ) {

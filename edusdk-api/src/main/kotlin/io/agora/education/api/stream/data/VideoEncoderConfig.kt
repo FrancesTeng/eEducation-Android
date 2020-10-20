@@ -15,7 +15,8 @@ enum class DegradationPreference {
 data class VideoEncoderConfig(
         var videoDimensionWidth: Int = 360,
         var videoDimensionHeight: Int = 360,
-        var fps: Int = 15,
+        var frameRate: Int = 15,
+        var bitrate: Int = 0,
         var orientationMode: OrientationMode = OrientationMode.ADAPTIVE,
         var degradationPreference: DegradationPreference = DegradationPreference.MAINTAIN_QUALITY
 )

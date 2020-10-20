@@ -1,7 +1,6 @@
 package io.agora.education.classroom;
 
 import android.content.res.Configuration;
-import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,8 +13,6 @@ import androidx.appcompat.widget.AppCompatTextView;
 import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
-import com.google.android.material.badge.BadgeDrawable;
-import com.google.android.material.tabs.TabItem;
 import com.google.android.material.tabs.TabLayout;
 
 import org.jetbrains.annotations.NotNull;
@@ -33,28 +30,23 @@ import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
-import io.agora.education.api.room.data.AutoPublishItem;
-import io.agora.education.api.room.data.EduRoomState;
-import io.agora.education.api.room.data.EduRoomStatus;
-import io.agora.education.api.room.data.RoomStatusEvent;
+import io.agora.education.api.room.data.EduRoomChangeType;
 import io.agora.education.api.statistics.ConnectionState;
-import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
-import io.agora.education.api.stream.data.StreamSubscribeOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
-import io.agora.education.api.stream.data.VideoStreamType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
+import io.agora.education.api.user.data.EduUserStateChangeType;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.bean.msg.PeerMsg;
 import io.agora.education.classroom.widget.RtcVideoView;
-import io.agora.rte.RteEngineImpl;
 
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Status.Applying;
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Status.CoVideoing;
@@ -348,6 +340,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             /**连麦中，发流*/
             EduStreamInfo streamInfo = new EduStreamInfo(getLocalUserInfo().getStreamUuid(), null,
                     VideoSourceType.CAMERA, true, true, getLocalUserInfo());
+            /**举手连麦，需要新建流信息*/
             getLocalUser().publishStream(streamInfo, new EduCallback<Boolean>() {
                 @Override
                 public void onSuccess(@Nullable Boolean res) {
@@ -403,11 +396,11 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             unReadCount = 0;
         } else {
             unReadCount++;
-            if(textView_unRead != null) {
+            if (textView_unRead != null) {
                 textView_unRead.setText(String.valueOf(unReadCount));
             }
         }
-        if(textView_unRead != null) {
+        if (textView_unRead != null) {
             textView_unRead.setVisibility(gone ? View.GONE : View.VISIBLE);
         }
     }
@@ -454,16 +447,17 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteUsersLeft(userEvents, classRoom);
+    public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
+        super.onRemoteUserLeft(userEvent, classRoom);
         title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
         /**老师不在的时候不能举手*/
         resetHandState();
     }
 
     @Override
-    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteUserUpdated(userEvents, classRoom);
+    public void onRemoteUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type,
+                                    @NotNull EduRoom classRoom) {
+        super.onRemoteUserUpdated(userEvent, type, classRoom);
     }
 
     @Override
@@ -551,32 +545,31 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteStreamsUpdated(streamEvents, classRoom);
-        /**屏幕分享流只有新建和移除，不会有修改行为，所以此处的流都是Camera类型的*/
-        for (EduStreamEvent streamEvent : streamEvents) {
-            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            EduBaseUserInfo userInfo = streamInfo.getPublisher();
-            if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                switch (streamInfo.getVideoSourceType()) {
-                    case CAMERA:
-                        video_teacher.setName(userInfo.getUserName());
-                        renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                        video_teacher.muteVideo(!streamInfo.getHasVideo());
-                        video_teacher.muteAudio(!streamInfo.getHasAudio());
-                        break;
-                    default:
-                        break;
-                }
-            } else {
-                video_student.setViewVisibility(View.VISIBLE);
-                video_student.setName(streamInfo.getPublisher().getUserName());
-                renderStream(getMainEduRoom(), streamInfo, video_student.getVideoLayout());
-                video_student.muteVideo(!streamInfo.getHasVideo());
-                video_student.muteAudio(!streamInfo.getHasAudio());
-                curLinkedUser = streamInfo.getPublisher();
-                resetHandState();
+    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type,
+                                      @NotNull EduRoom classRoom) {
+        super.onRemoteStreamUpdated(streamEvent, type, classRoom);
+        /**屏幕分享流暂时只有新建和移除，不会有修改行为，所以此处的流都是Camera类型的*/
+        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+        EduBaseUserInfo userInfo = streamInfo.getPublisher();
+        if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    video_teacher.setName(userInfo.getUserName());
+                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+                    video_teacher.muteVideo(!streamInfo.getHasVideo());
+                    video_teacher.muteAudio(!streamInfo.getHasAudio());
+                    break;
+                default:
+                    break;
             }
+        } else {
+            video_student.setViewVisibility(View.VISIBLE);
+            video_student.setName(streamInfo.getPublisher().getUserName());
+            renderStream(getMainEduRoom(), streamInfo, video_student.getVideoLayout());
+            video_student.muteVideo(!streamInfo.getHasVideo());
+            video_student.muteAudio(!streamInfo.getHasAudio());
+            curLinkedUser = streamInfo.getPublisher();
+            resetHandState();
         }
     }
 
@@ -612,7 +605,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
+    public void onRoomStatusChanged(@NotNull EduRoomChangeType event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
         super.onRoomStatusChanged(event, operatorUser, classRoom);
     }
 
@@ -629,18 +622,25 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfos, @NotNull EduRoom classRoom,
+                                            @Nullable Map<String, Object> cause) {
     }
 
     @Override
-    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
+    public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user,
+                                        @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
         title_view.setNetworkQuality(quality);
     }
 
     @Override
-    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
-        super.onLocalUserUpdated(userEvent);
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull EduRoom classRoom) {
+        super.onConnectionStateChanged(state, classRoom);
+    }
+
+    @Override
+    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type) {
+        super.onLocalUserUpdated(userEvent, type);
     }
 
     @Override
@@ -654,8 +654,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
-        super.onLocalStreamUpdated(streamEvent);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
+        super.onLocalStreamUpdated(streamEvent, type);
         if (localCoVideoStatus == CoVideoing) {
             /**本地流(连麦的Camera流)被修改*/
             video_student.setViewVisibility(View.VISIBLE);
@@ -697,10 +697,5 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg) {
         super.onUserChatMessageReceived(chatMsg);
-    }
-
-    @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
-        super.onConnectionStateChanged(state, reason);
     }
 }

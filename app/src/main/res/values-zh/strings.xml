@@ -40,4 +40,8 @@
     <string name="function_error">功能出错（code：%d；原因：%s）</string>
     <string name="there_is_no_teacher_disable_covideo">老师不在线，无法连麦</string>
     <string name="replay_link">回放链接</string>
+    <string name="upload_log">日志上报</string>
+    <string name="teacher">老师</string>
+    <string name="student">学生</string>
+    <string name="assistant">助教</string>
 </resources>

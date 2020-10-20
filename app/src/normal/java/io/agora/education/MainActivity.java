@@ -24,7 +24,8 @@ import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.BusinessException;
 import io.agora.base.network.RetrofitManager;
 import io.agora.education.api.EduCallback;
-import io.agora.education.api.room.data.EduLoginOptions;
+import io.agora.education.api.manager.EduManager;
+import io.agora.education.api.manager.EduManagerOptions;
 import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.room.data.RoomType;
 import io.agora.education.api.statistics.AgoraError;
@@ -50,6 +51,7 @@ import static io.agora.education.BuildConfig.API_BASE_URL;
 import static io.agora.education.EduApplication.LogError;
 import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.EduApplication.getManager;
+import static io.agora.education.EduApplication.setManager;
 import static io.agora.education.classroom.BaseClassActivity.RESULT_CODE;
 
 public class MainActivity extends BaseActivity {
@@ -82,7 +84,6 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initData() {
-        LogError(TAG, "initData");
         receiver = new DownloadReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
@@ -243,7 +244,28 @@ public class MainActivity extends BaseActivity {
         int roomType = getClassType(roomTypeStr);
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
         String roomUuid = roomNameStr + roomType;
-        createRoom(yourNameStr, userUuid, roomNameStr, roomUuid, roomType);
+        String customerId = getString(R.string.agora_app_id);
+        String customerCertificate = getString(R.string.agora_app_id);
+        EduManagerOptions options = new EduManagerOptions(this, getAppId(), userUuid, yourNameStr);
+        options.setCustomerId(customerId);
+        options.setCustomerCertificate(customerCertificate);
+        options.setLogFileDir(getCacheDir().getAbsolutePath());
+        options.setTag(EDULOGINTAG);
+        EduManager.init(options, new EduCallback<EduManager>() {
+            @Override
+            public void onSuccess(@Nullable EduManager res) {
+                if (res != null) {
+                    Log.e(TAG, "初始化EduManager成功");
+                    setManager(res);
+                    createRoom(yourNameStr, userUuid, roomNameStr, roomUuid, roomType);
+                }
+            }
+
+            @Override
+            public void onFailure(int code, @Nullable String reason) {
+                Log.e(TAG, "初始化EduManager失败-> code:" + code + ",reason:" + reason);
+            }
+        });
     }
 
     @Room.Type
@@ -263,7 +285,6 @@ public class MainActivity extends BaseActivity {
         /**createClassroom时，room不存在则新建，存在则返回room信息(此接口非必须调用)，
          * 只要保证在调用joinClassroom之前，classroom在服务端存在即可*/
         RoomCreateOptions options = new RoomCreateOptions(roomUuid, roomNameStr, roomType);
-
         Log.e(TAG, "调用scheduleClass函数");
         RetrofitManager.instance().getService(API_BASE_URL, CommonService.class)
                 .createClassroom(getAppId(), options.getRoomUuid(),
@@ -273,7 +294,7 @@ public class MainActivity extends BaseActivity {
                     public void onSuccess(@Nullable ResponseBody<String> res) {
                         Log.e(TAG, "调用scheduleClass函数成功");
                         Intent intent = createIntent(yourNameStr, yourUuid, roomNameStr, roomUuid, roomType);
-                        login(yourUuid, intent);
+                        startActivityForResult(intent, REQUEST_CODE_RTE);
                     }
 
                     @Override
@@ -288,27 +309,12 @@ public class MainActivity extends BaseActivity {
                                 error.getMessage());
                         if (error.getCode() == AgoraError.ROOM_ALREADY_EXISTS.getValue()) {
                             Intent intent = createIntent(yourNameStr, yourUuid, roomNameStr, roomUuid, roomType);
-                            login(yourUuid, intent);
+                            startActivityForResult(intent, REQUEST_CODE_RTE);
                         } else {
                             Log.e(TAG, "排课失败");
                         }
                     }
                 }));
-    }
-
-    private void login(String yourUuid, Intent intent) {
-        EduLoginOptions loginOptions = new EduLoginOptions(yourUuid, EDULOGINTAG);
-        getManager().login(loginOptions, new EduCallback<Unit>() {
-            @Override
-            public void onSuccess(@Nullable Unit res) {
-                startActivityForResult(intent, REQUEST_CODE_RTE);
-            }
-
-            @Override
-            public void onFailure(int code, @Nullable String reason) {
-                Log.e(TAG, "登录失败-> code:" + code + ",reason:" + reason);
-            }
-        });
     }
 
     private Intent createIntent(String yourNameStr, String yourUuid, String roomNameStr,

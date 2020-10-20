@@ -17,9 +17,9 @@ data class EduRoomStatus(
         var onlineUsersCount: Int
 )
 
-enum class RoomStatusEvent {
-    STUDENT_CHAT,
-    COURSE_STATE
+enum class EduRoomChangeType {
+    AllStudentsChat,
+    CourseState
 }
 
 enum class EduMuteState(var value: Int) {

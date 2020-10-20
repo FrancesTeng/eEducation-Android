@@ -35,24 +35,24 @@ import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
-import io.agora.education.api.room.data.AutoPublishItem;
 import io.agora.education.api.room.data.EduRoomInfo;
 import io.agora.education.api.room.data.EduRoomState;
 import io.agora.education.api.room.data.EduRoomStatus;
 import io.agora.education.api.room.data.RoomCreateOptions;
-import io.agora.education.api.room.data.RoomStatusEvent;
+import io.agora.education.api.room.data.EduRoomChangeType;
 import io.agora.education.api.room.data.RoomType;
 import io.agora.education.api.statistics.AgoraError;
 import io.agora.education.api.statistics.ConnectionState;
-import io.agora.education.api.statistics.ConnectionStateChangeReason;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
+import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
+import io.agora.education.api.user.data.EduUserStateChangeType;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
 import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.board.BoardInfo;
@@ -62,7 +62,6 @@ import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.bean.record.RecordBean;
 import io.agora.education.classroom.bean.record.RecordMsg;
 import io.agora.education.classroom.fragment.UserListFragment;
-import io.agora.education.impl.role.data.EduUserRoleStr;
 import io.agora.education.service.CommonService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.service.bean.request.AllocateGroupReq;
@@ -219,12 +218,13 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
         /**消息需要添加roomUuid*/
         /**调用super方法把消息发送到大房间中去；但是fromRoomUuid是小房间的-Web端需要*/
+        EduRoomInfo subRoomInfo = subEduRoom.getRoomInfo();
         super.sendRoomChatMsg(new ChannelMsg.BreakoutChatMsgContent(EduUserRole.STUDENT.getValue(),
-                msg, subEduRoom.getRoomInfo().getRoomUuid()).toJsonString(), callback);
+                msg, subRoomInfo.getRoomUuid(), subRoomInfo.getRoomName()).toJsonString(), callback);
         /**把消息发送到小房间去*/
         subEduRoom.getLocalUser().sendRoomChatMessage(new ChannelMsg.BreakoutChatMsgContent(
                 EduUserRole.STUDENT.getValue(),
-                msg, subEduRoom.getRoomInfo().getRoomUuid()).toJsonString(), callback);
+                msg, subRoomInfo.getRoomUuid(), subRoomInfo.getRoomName()).toJsonString(), callback);
     }
 
     @Override
@@ -379,8 +379,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onRemoteUsersLeft(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteUsersLeft(userEvents, classRoom);
+    public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
+        super.onRemoteUserLeft(userEvent, classRoom);
         if (classRoom.equals(subEduRoom)) {
             userListFragment.setUserList(getCurAllStudent());
             title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
@@ -388,8 +388,9 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onRemoteUserUpdated(@NotNull List<EduUserEvent> userEvents, @NotNull EduRoom classRoom) {
-        super.onRemoteUserUpdated(userEvents, classRoom);
+    public void onRemoteUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type,
+                                    @NotNull EduRoom classRoom) {
+        super.onRemoteUserUpdated(userEvent, type, classRoom);
         if (classRoom.equals(subEduRoom)) {
         }
     }
@@ -404,24 +405,21 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     public void onUserMessageReceived(@NotNull EduMsg message) {
         super.onUserMessageReceived(message);
-//        if (classRoom.equals(subEduRoom)) {
-//        }
     }
 
     @Override
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
         /**收到群聊消息，进行处理并展示*/
-        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(),
-                eduChatMsg.getMessage(), eduChatMsg.getType());
-        EduUserInfo fromUser = chatMsg.getFromUser();
+        EduUserInfo fromUser = eduChatMsg.getFromUser();
+        ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(fromUser, eduChatMsg.getMessage(),
+                eduChatMsg.getType(), true, getRoleStr(fromUser.getRole().getValue()));
         chatMsg.isMe = fromUser.equals(classRoom.getLocalUser().getUserInfo());
         ChannelMsg.BreakoutChatMsgContent msgContent = new Gson().fromJson(chatMsg.getMessage(),
                 ChannelMsg.BreakoutChatMsgContent.class);
         chatMsg.setMessage(msgContent.getContent());
         boolean isTeacherMsg = classRoom.equals(getMainEduRoom()) && fromUser.getRole()
                 .equals(EduUserRole.TEACHER);
-        boolean isGroupMsg = classRoom.equals(subEduRoom) && fromUser.getRole()
-                .equals(EduUserRole.STUDENT);
+        boolean isGroupMsg = classRoom.equals(subEduRoom);
         if (isTeacherMsg || isGroupMsg) {
             chatRoomFragment.addMessage(chatMsg);
             Log.e(TAG, "成功添加一条聊天消息");
@@ -496,20 +494,19 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onRemoteStreamsUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type,
+                                      @NotNull EduRoom classRoom) {
         /**老师的屏幕分享流在super方法中处理*/
-        super.onRemoteStreamsUpdated(streamEvents, classRoom);
+        super.onRemoteStreamUpdated(streamEvent, type, classRoom);
         /**处理摄像头流*/
         boolean notify = false;
-        for (EduStreamEvent streamEvent : streamEvents) {
-            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            switch (streamInfo.getVideoSourceType()) {
-                case CAMERA:
-                    notify = true;
-                    break;
-                default:
-                    break;
-            }
+        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+        switch (streamInfo.getVideoSourceType()) {
+            case CAMERA:
+                notify = true;
+                break;
+            default:
+                break;
         }
         /**有远端Camera流添加，刷新视频列表*/
         if (notify) {
@@ -542,18 +539,18 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onRoomStatusChanged(@NotNull RoomStatusEvent event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
+    public void onRoomStatusChanged(@NotNull EduRoomChangeType event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
         /**不调用父类中的super方法*/
         if (classRoom.equals(getMainEduRoom())) {
             EduRoomStatus roomStatus = classRoom.getRoomStatus();
             switch (event) {
-                case COURSE_STATE:
+                case CourseState:
                     Log.e(TAG, "班级:" + getMainEduRoom().getRoomInfo().getRoomUuid() + "内的课堂状态->"
                             + roomStatus.getCourseState());
                     title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
                             System.currentTimeMillis() - roomStatus.getStartTime());
                     break;
-                case STUDENT_CHAT:
+                case AllStudentsChat:
                     chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
                     break;
                 default:
@@ -603,17 +600,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onRemoteUserPropertiesUpdated(@NotNull List<EduUserInfo> userInfos, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
-        super.onRemoteUserPropertiesUpdated(userInfos, classRoom, cause);
+    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRemoteUserPropertyUpdated(userInfo, classRoom, cause);
         if (classRoom.equals(subEduRoom)) {
         }
-    }
-
-    @Override
-    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull ConnectionStateChangeReason reason) {
-        super.onConnectionStateChanged(state, reason);
-//        if (classRoom.equals(subEduRoom)) {
-//        }
     }
 
     @Override
@@ -625,8 +615,13 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent) {
-        super.onLocalUserUpdated(userEvent);
+    public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull EduRoom classRoom) {
+        super.onConnectionStateChanged(state, classRoom);
+    }
+
+    @Override
+    public void onLocalUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type) {
+        super.onLocalUserUpdated(userEvent, type);
         /**更新用户信息*/
         showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
@@ -645,8 +640,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
-        super.onLocalStreamUpdated(streamEvent);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
+        super.onLocalStreamUpdated(streamEvent, type);
         showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
     }

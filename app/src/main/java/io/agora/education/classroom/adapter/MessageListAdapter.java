@@ -53,14 +53,19 @@ public class MessageListAdapter extends BaseProviderMultiAdapter<ChannelMsg.Chat
         }
 
         void convert(ChannelMsg.ChatMsg msg) {
-            Resources resources = getContext().getResources();
-            tv_name.setText(msg.getFromUser().getUserName());
+            Resources res = getContext().getResources();
+            if (msg.showRole) {
+                tv_name.setText(String.format(res.getString(R.string.msg_title), msg.role,
+                        msg.getFromUser().getUserName()));
+            } else {
+                tv_name.setText(msg.getFromUser().getUserName());
+            }
             tv_content.setText(msg.getMessage());
             if (msg instanceof RecordMsg) {
-                tv_content.setTextColor(resources.getColor(R.color.blue_1F3DE8));
+                tv_content.setTextColor(res.getColor(R.color.blue_1F3DE8));
                 tv_content.getPaint().setFlags(Paint.UNDERLINE_TEXT_FLAG);
             } else {
-                tv_content.setTextColor(resources.getColor(R.color.gray_666666));
+                tv_content.setTextColor(res.getColor(R.color.gray_666666));
                 tv_content.getPaint().setFlags(0);
             }
         }

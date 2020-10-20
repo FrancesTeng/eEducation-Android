@@ -33,10 +33,25 @@ public class ChannelMsg extends JsonBean {
     }
 
     public static class ChatMsg extends EduChatMsg {
+        /**
+         * 是否是自己发送的消息
+         */
         public transient boolean isMe;
+        /**
+         * 是否显示消息发送者的角色
+         */
+        public transient boolean showRole = false;
+        public String role;
 
         public ChatMsg(@NotNull EduUserInfo fromUser, @NotNull String message, int type) {
             super(fromUser, message, type);
+        }
+
+        public ChatMsg(@NotNull EduUserInfo fromUser, @NotNull String message, int type,
+                       boolean showRole, String role) {
+            super(fromUser, message, type);
+            this.showRole = showRole;
+            this.role = role;
         }
     }
 
@@ -47,11 +62,13 @@ public class ChannelMsg extends JsonBean {
         private String content;
         /*消息来自哪个班级(目前此值约定为小班级的roomUuid)*/
         private String fromRoomUuid;
+        private String fromRoomName;
 
-        public BreakoutChatMsgContent(int role, String content, String fromRoomUuid) {
+        public BreakoutChatMsgContent(int role, String content, String fromRoomUuid, String fromRoomName) {
             this.role = role;
             this.content = content;
             this.fromRoomUuid = fromRoomUuid;
+            this.fromRoomName = fromRoomName;
         }
 
         public int getRole() {
@@ -76,6 +93,14 @@ public class ChannelMsg extends JsonBean {
 
         public void setFromRoomUuid(String fromRoomUuid) {
             this.fromRoomUuid = fromRoomUuid;
+        }
+
+        public String getFromRoomName() {
+            return fromRoomName;
+        }
+
+        public void setFromRoomName(String fromRoomName) {
+            this.fromRoomName = fromRoomName;
         }
 
         @Override

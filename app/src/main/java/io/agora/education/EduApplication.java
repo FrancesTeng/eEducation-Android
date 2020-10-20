@@ -6,6 +6,8 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.tencent.bugly.crashreport.CrashReport;
+
 import java.util.Map;
 
 import io.agora.base.PreferenceManager;
@@ -36,6 +38,7 @@ public class EduApplication extends Application {
         super.onCreate();
         instance = this;
 
+        CrashReport.initCrashReport(getApplicationContext(), "04948355be", true);
         PreferenceManager.init(this);
         ToastManager.init(this);
 
@@ -43,27 +46,14 @@ public class EduApplication extends Application {
         EduApplication.setAppId(appId);
         String customerId = getString(R.string.agora_app_id);
         String customerCertificate = getString(R.string.agora_app_id);
-        EduManagerOptions options = new EduManagerOptions(this, appId);
-        options.setCustomerId(customerId);
-        options.setCustomerCertificate(customerCertificate);
-        options.setLogFileDir(getCacheDir().getAbsolutePath());
-        eduManager = EduManager.init(options);
-        /**上传log*/
-        eduManager.uploadDebugItem(DebugItem.LOG, new EduCallback<String>() {
-            @Override
-            public void onSuccess(@Nullable String res) {
-                Log.e(TAG, "日志上传成功->" + res);
-            }
-
-            @Override
-            public void onFailure(int code, @Nullable String reason) {
-                Log.e(TAG, "日志上传错误->code:" + code + ", reason:" + reason);
-            }
-        });
         /**为OKHttp添加Authorization的header*/
         String auth = Base64.encodeToString((customerId + ":" + customerCertificate)
                 .getBytes(Charsets.UTF_8), Base64.DEFAULT).replace("\n", "").trim();
         RetrofitManager.instance().addHeader("Authorization", CryptoUtil.getAuth(auth));
+    }
+
+    public static void setManager(EduManager eduManager) {
+        instance.eduManager = eduManager;
     }
 
     public static EduManager getManager() {
@@ -105,7 +95,7 @@ public class EduApplication extends Application {
     }
 
     public static EduRoom buildEduRoom(RoomCreateOptions options) {
-        if(instance.config == null) {
+        if (instance.config == null) {
             return null;
         }
         return instance.eduManager.createClassroom(options);

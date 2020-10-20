@@ -31,11 +31,12 @@ public class User extends JsonBean {
     @CoVideo
     public int coVideo = CoVideo.ENABLE;
 
-    @IntDef({Role.TEACHER, Role.STUDENT})
+    @IntDef({Role.TEACHER, Role.STUDENT, Role.ASSISTANT})
     @Retention(RetentionPolicy.SOURCE)
     public @interface Role {
         int TEACHER = 1;
         int STUDENT = 2;
+        int ASSISTANT = 3;
     }
 
     @IntDef({Chat.DISABLE, Chat.ENABLE})
