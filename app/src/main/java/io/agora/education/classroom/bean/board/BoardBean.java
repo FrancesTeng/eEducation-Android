@@ -7,7 +7,7 @@ import androidx.annotation.Nullable;
 
 import io.agora.education.classroom.bean.JsonBean;
 
-public class BoardBean extends JsonBean implements Parcelable {
+public class BoardBean /*extends JsonBean*/ implements Parcelable {
     public static String BOARD = "board";
 
     private BoardInfo info;
@@ -48,7 +48,6 @@ public class BoardBean extends JsonBean implements Parcelable {
         BoardBean boardBean = (BoardBean) obj;
         return boardBean.getInfo().equals(this.info) && boardBean.getState().equals(this.state);
     }
-
 
     @Override
     public int describeContents() {

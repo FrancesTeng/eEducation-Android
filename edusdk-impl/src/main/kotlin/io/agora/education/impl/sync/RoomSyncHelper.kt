@@ -144,13 +144,14 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
      * @param nextId 查询的起始sequence(当前本地最新的sequence的下一个)
      * @param count 需要查询的条数(为空则是请求全部)*/
     override fun fetchLostSequence(nextId: Int, count: Int?, callback: EduCallback<Unit>) {
+        AgoraLog.i("$TAG->根据${nextId}请求丢失数据}")
         syncing = true
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .fetchLostSequences(eduRoom.getLocalUser().userInfo.userToken!!, APPID,
                         roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceListRes<Any>>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceListRes<Any>>?) {
-                        Log.e(TAG, "根据${nextId}请求到的丢失数据:${Gson().toJson(res)}")
+                        AgoraLog.i("$TAG->根据${nextId}请求到的丢失数据:${Gson().toJson(res)}")
                         res?.data?.let {
                             /**把缺失的seq数据添加到集合中*/
                             addSequenceData(res.data as EduSequenceListRes<Any>)
@@ -169,7 +170,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                         var error = throwable as? BusinessException
                         error?.code?.let {
                             if (error?.code == AgoraError.SEQUENCE_NOT_EXISTS.value) {
-                                /**被请求的sequence不存在，清空本地旧缓存，拉全量数据*/
+                                AgoraLog.e("$TAG->被请求的sequence不存在，清空本地旧缓存，拉全量数据")
                                 (eduRoom as EduRoomImpl).clearData()
                                 clearSequence()
                                 fetchSnapshot(callback)
@@ -177,9 +178,11 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                                 /**请求失败重试*/
                                 if (sequenceRetryCount <= maxRetry) {
                                     sequenceRetryCount++
+                                    AgoraLog.e("$TAG->请求缺失数据失败,第$snapshotRetryCount 次重试")
                                     fetchLostSequence(nextId, count, callback)
                                 } else {
                                     /**彻底失败，恢复原值*/
+                                    AgoraLog.e("$TAG->请求缺失数据彻底失败")
                                     sequenceRetryCount = 0
                                     callback.onFailure(error.code, error.message)
                                 }
@@ -192,6 +195,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
 
     /**请求快照（拉全量数据）*/
     override fun fetchSnapshot(callback: EduCallback<Unit>) {
+        AgoraLog.w("$TAG->请求快照（拉全量数据）")
         syncing = true
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .fetchSnapshot(eduRoom.getLocalUser().userInfo.userToken!!, APPID, roomInfo.roomUuid)
@@ -213,13 +217,14 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                             /**请求失败重试*/
                             if (snapshotRetryCount <= maxRetry) {
                                 snapshotRetryCount++
+                                AgoraLog.e("$TAG->请求快照失败,第$snapshotRetryCount 次重试")
                                 fetchSnapshot(callback)
                             } else {
                                 /**彻底失败，恢复原值*/
+                                AgoraLog.e("$TAG->请求快照彻底失败")
                                 snapshotRetryCount = 0
                                 callback.onFailure(error.code, error.message)
                             }
-                            callback.onFailure(error.code, error.message)
                         }
                         syncing = true
                     }

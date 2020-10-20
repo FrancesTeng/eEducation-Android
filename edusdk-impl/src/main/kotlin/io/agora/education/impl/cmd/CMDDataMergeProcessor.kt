@@ -313,9 +313,13 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                             validStreamList.add(EduStreamStateChangeEvent(userEvent, type))
                         }
                     } else {
-                        /**
-                         * 发现是修改流而且本地又没有那么直接不处理
-                         * */
+                        /**发现是修改流而且本地又没有那么直接添加到本地并作为有效数据;
+                         * changeType设置为VideoAudio*/
+                        streamInfoList.add(element)
+                        /**构造userEvent并返回*/
+                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
+                        val userEvent = EduStreamEvent(element, operator)
+                        validStreamList.add(EduStreamStateChangeEvent(userEvent, EduStreamStateChangeType.VideoAudio))
                     }
                 }
                 return validStreamList

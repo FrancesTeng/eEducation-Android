@@ -38,7 +38,8 @@ import io.agora.education.util.ColorUtil;
 import io.agora.whiteboard.netless.listener.BoardEventListener;
 import io.agora.whiteboard.netless.manager.BoardManager;
 
-public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnCheckedChangeListener, PageControlView.PageControlListener, BoardEventListener {
+public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnCheckedChangeListener,
+        PageControlView.PageControlListener, BoardEventListener {
     private static final String TAG = "WhiteBoardFragment";
 
     @BindView(R.id.white_board_view)

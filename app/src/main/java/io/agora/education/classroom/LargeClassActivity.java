@@ -164,9 +164,12 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         whiteboardFragment.disableDeviceInputs(true);
         whiteboardFragment.setWritable(false);
 
-        if (surface_share_video != null) {
-            removeFromParent(surface_share_video);
-            layout_share_video.addView(surface_share_video, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        EduStreamInfo streamInfo = getScreenShareStream();
+        if (streamInfo != null) {
+            layout_whiteboard.setVisibility(View.GONE);
+            layout_share_video.setVisibility(View.VISIBLE);
+            layout_share_video.removeAllViews();
+            renderStream(getMainEduRoom(), streamInfo, layout_share_video);
         }
 
         resetHandState();

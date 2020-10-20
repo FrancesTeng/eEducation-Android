@@ -94,7 +94,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     @BindView(R.id.layout_share_video)
     protected FrameLayout layout_share_video;
 
-    protected SurfaceView surface_share_video;
     protected WhiteBoardFragment whiteboardFragment = new WhiteBoardFragment();
     protected ChatRoomFragment chatRoomFragment = new ChatRoomFragment();
 
@@ -311,6 +310,15 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                 break;
         }
         return getString(resId);
+    }
+
+    protected EduStreamInfo getScreenShareStream() {
+        for (EduStreamInfo stream : getCurFullStream()) {
+            if (stream.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
+                return stream;
+            }
+        }
+        return null;
     }
 
     @Room.Type

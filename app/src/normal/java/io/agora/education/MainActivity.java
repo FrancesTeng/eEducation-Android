@@ -150,6 +150,9 @@ public class MainActivity extends BaseActivity {
                 startActivity(new Intent(this, SettingActivity.class));
                 break;
             case R.id.btn_join:
+                if(AppUtil.isFastClick()) {
+                    return;
+                }
                 if (AppUtil.checkAndRequestAppPermission(this, new String[]{
                         Manifest.permission.RECORD_AUDIO,
                         Manifest.permission.CAMERA,
@@ -244,28 +247,33 @@ public class MainActivity extends BaseActivity {
         int roomType = getClassType(roomTypeStr);
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
         String roomUuid = roomNameStr + roomType;
-        String customerId = getString(R.string.agora_app_id);
-        String customerCertificate = getString(R.string.agora_app_id);
-        EduManagerOptions options = new EduManagerOptions(this, getAppId(), userUuid, yourNameStr);
-        options.setCustomerId(customerId);
-        options.setCustomerCertificate(customerCertificate);
-        options.setLogFileDir(getCacheDir().getAbsolutePath());
-        options.setTag(EDULOGINTAG);
-        EduManager.init(options, new EduCallback<EduManager>() {
-            @Override
-            public void onSuccess(@Nullable EduManager res) {
-                if (res != null) {
-                    Log.e(TAG, "初始化EduManager成功");
-                    setManager(res);
-                    createRoom(yourNameStr, userUuid, roomNameStr, roomUuid, roomType);
-                }
-            }
 
-            @Override
-            public void onFailure(int code, @Nullable String reason) {
-                Log.e(TAG, "初始化EduManager失败-> code:" + code + ",reason:" + reason);
-            }
-        });
+        if (getManager() == null) {
+            String customerId = getString(R.string.agora_app_id);
+            String customerCertificate = getString(R.string.agora_app_id);
+            EduManagerOptions options = new EduManagerOptions(this, getAppId(), userUuid, yourNameStr);
+            options.setCustomerId(customerId);
+            options.setCustomerCertificate(customerCertificate);
+            options.setLogFileDir(getCacheDir().getAbsolutePath());
+            options.setTag(EDULOGINTAG);
+            EduManager.init(options, new EduCallback<EduManager>() {
+                @Override
+                public void onSuccess(@Nullable EduManager res) {
+                    if (res != null) {
+                        Log.e(TAG, "初始化EduManager成功");
+                        setManager(res);
+                        createRoom(yourNameStr, userUuid, roomNameStr, roomUuid, roomType);
+                    }
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+                    Log.e(TAG, "初始化EduManager失败-> code:" + code + ",reason:" + reason);
+                }
+            });
+        } else {
+            createRoom(yourNameStr, userUuid, roomNameStr, roomUuid, roomType);
+        }
     }
 
     @Room.Type

@@ -43,11 +43,11 @@ public class RtcVideoView extends ConstraintLayout {
         super(context, attrs, defStyleAttr);
     }
 
-    public void init(@LayoutRes int layoutResId, boolean isShowVideo) {
+    public void init(@LayoutRes int layoutResId, boolean showVideo) {
         inflate(getContext(), layoutResId, this);
         ButterKnife.bind(this);
         if (ic_video != null) {
-            ic_video.setVisibility(isShowVideo ? VISIBLE : GONE);
+            ic_video.setVisibility(showVideo ? VISIBLE : GONE);
         }
     }
 

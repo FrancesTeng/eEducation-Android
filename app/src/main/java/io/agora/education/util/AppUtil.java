@@ -38,4 +38,17 @@ public class AppUtil {
         return false;
     }
 
+    /**
+     * 防止按钮连续点击
+     */
+    private static long lastClickTime;
+
+    public synchronized static boolean isFastClick() {
+        long time = System.currentTimeMillis();
+        if (time - lastClickTime < 700) {
+            return true;
+        }
+        lastClickTime = time;
+        return false;
+    }
 }

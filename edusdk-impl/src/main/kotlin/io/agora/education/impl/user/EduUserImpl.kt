@@ -348,6 +348,7 @@ internal open class EduUserImpl(
     }
 
     internal fun removeAllSurfaceView() {
+        AgoraLog.w("$TAG->清除所有SurfaceView")
         if (surfaceViewList.size > 0) {
             surfaceViewList.forEach {
                 val parent = it.parent;
