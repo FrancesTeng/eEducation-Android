@@ -367,10 +367,10 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     private final void showLogId(String logId) {
-        ConfirmDialog.single(getString(R.string.uploadlog_success).concat(logId), confirm -> {
-            if (confirm) {
-            }
-        }).show(getSupportFragmentManager(), null);
+        if (!this.isFinishing() || !this.isDestroyed()) {
+            ConfirmDialog.single(getString(R.string.uploadlog_success).concat(logId), null)
+                    .show(getSupportFragmentManager(), null);
+        }
     }
 
     public final void uploadLog() {

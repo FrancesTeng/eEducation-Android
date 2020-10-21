@@ -129,37 +129,43 @@ internal open class EduUserImpl(
     }
 
     override fun muteStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
-        /**设置角色*/
-        RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
-        /**改变流状态的参数*/
-        val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
-                AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
-                if (streamInfo.hasAudio) 1 else 0)
         val index = Convert.streamExistsInList(streamInfo, eduRoom.getCurStreamList())
         if (index > -1) {
-            AgoraLog.i("$TAG->开始更新本地存在的流信息,streamUuid: + ${streamInfo.streamUuid}," +
-                    "流状态:${streamInfo.hasAudio},${streamInfo.hasVideo}")
-            RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
-            RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
-            RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                    .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
-                            streamInfo.streamUuid, eduStreamStatusReq)
-                    .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
-                        override fun onSuccess(res: ResponseBody<String>?) {
+            val oldStream = eduRoom.getCurStreamList()[index]
+            if (oldStream == streamInfo) {
+                AgoraLog.e("$TAG->要更改的流的目的状态不变，直接返回")
+                callback.onSuccess(true)
+            } else {
+                AgoraLog.i("$TAG->开始更新本地存在的流信息,streamUuid: + ${streamInfo.streamUuid}," +
+                        "流状态更改至:${streamInfo.hasAudio},${streamInfo.hasVideo}")
+                /**设置角色*/
+                RteEngineImpl.setClientRole(eduRoom.getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
+                /**改变流状态的参数*/
+                val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
+                        AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
+                        if (streamInfo.hasAudio) 1 else 0)
+                RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
+                RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
+                RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
+                        .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
+                                streamInfo.streamUuid, eduStreamStatusReq)
+                        .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
+                            override fun onSuccess(res: ResponseBody<String>?) {
 //                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
-                            AgoraLog.i("$TAG->流信息更新成功,streamUuid: + ${streamInfo.streamUuid}")
-                            callback.onSuccess(true)
-                        }
+                                AgoraLog.i("$TAG->流信息更新成功,streamUuid: + ${streamInfo.streamUuid}")
+                                callback.onSuccess(true)
+                            }
 
-                        override fun onFailure(throwable: Throwable?) {
-                            AgoraLog.e("$TAG->流信息更新失败,streamUuid: + ${streamInfo.streamUuid}")
-                            var error = throwable as? BusinessException
-                            callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                    error?.message ?: throwable?.message)
-                        }
-                    }))
+                            override fun onFailure(throwable: Throwable?) {
+                                AgoraLog.e("$TAG->流信息更新失败,streamUuid: + ${streamInfo.streamUuid}")
+                                var error = throwable as? BusinessException
+                                callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                        error?.message ?: throwable?.message)
+                            }
+                        }))
+            }
         } else {
-            AgoraLog.e("$TAG->流信息不存在于本地,streamUuid: + ${streamInfo.streamUuid}")
+            AgoraLog.e("$TAG->要更改的流信息不存在于本地,streamUuid: + ${streamInfo.streamUuid}")
         }
     }
 
