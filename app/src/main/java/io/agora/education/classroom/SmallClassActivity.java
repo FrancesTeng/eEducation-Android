@@ -380,6 +380,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         /**更新用户信息*/
         showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
+        userListFragment.setUserList(getCurFullStream());
     }
 
     @Override
@@ -392,6 +393,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         super.onLocalStreamAdded(streamEvent);
         showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
+        userListFragment.setUserList(getCurFullStream());
     }
 
     @Override
@@ -399,6 +401,7 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         super.onLocalStreamUpdated(streamEvent, type);
         showVideoList(getCurFullStream());
         userListFragment.updateLocalStream(getLocalCameraStream());
+        userListFragment.setUserList(getCurFullStream());
     }
 
     @Override

@@ -134,8 +134,8 @@ internal class EduRoomImpl(
         this.joining = true
         this.studentJoinCallback = callback
         /**判断是否指定了用户名*/
-        options.userName?.let {
-            AgoraLog.i("$TAG->没有传userName,使用默认用户名赋值")
+        if (options.userName == null) {
+            AgoraLog.i("$TAG->没有传userName,使用默认用户名赋值:$defaultUserName")
             options.userName = defaultUserName
         }
         val localUserInfo = EduLocalUserInfoImpl(options.userUuid, options.userName!!, EduUserRole.STUDENT,

@@ -128,7 +128,7 @@ internal class RteChannelImpl(
 
             override fun onFailure(p0: ErrorInfo?) {
                 if (p0?.errorCode == JOIN_CHANNEL_ERR_ALREADY_JOINED) {
-                    callback.onSuccess(p0 as Void)
+                    callback.onSuccess(Unit as Void)
                 } else {
                     callback.onFailure(p0)
                 }

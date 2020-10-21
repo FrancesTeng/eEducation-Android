@@ -1,5 +1,8 @@
 package io.agora.log;
 
+/**
+ * 新版Log-API设计
+ */
 
 import androidx.annotation.NonNull;
 

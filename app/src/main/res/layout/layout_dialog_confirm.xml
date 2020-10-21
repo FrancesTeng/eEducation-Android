@@ -31,7 +31,7 @@
         android:lines="1"
         android:text="@string/confirm"
         android:textColor="@color/blue_007AFF"
-        android:textSize="@dimen/sp_16"
+        android:textSize="@dimen/sp_14"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/tv_dialog_cancel"
         app:layout_constraintTop_toBottomOf="@id/line1" />

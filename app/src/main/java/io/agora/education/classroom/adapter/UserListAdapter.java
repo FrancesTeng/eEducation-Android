@@ -31,8 +31,10 @@ public class UserListAdapter extends BaseQuickAdapter<EduStreamInfo, UserListAda
     private List<String> grantedUuids = new ArrayList<>();
 
     public void setGrantedUuids(List<String> grantedUuids) {
-        this.grantedUuids = grantedUuids;
-        notifyDataSetChanged();
+        if (grantedUuids != null && this.grantedUuids.equals(grantedUuids)) {
+            this.grantedUuids = grantedUuids;
+            notifyDataSetChanged();
+        }
     }
 
     public void setLocalUserUuid(@NonNull String localUserUuid) {

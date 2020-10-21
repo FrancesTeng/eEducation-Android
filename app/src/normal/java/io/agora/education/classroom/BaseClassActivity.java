@@ -26,6 +26,7 @@ import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.RoomEntry;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.logger.DebugItem;
 import io.agora.education.api.manager.listener.EduManagerEventListener;
 import io.agora.education.api.message.EduActionMessage;
 import io.agora.education.api.message.EduChatMsg;
@@ -133,13 +134,13 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         getSupportFragmentManager().beginTransaction()
                 .remove(whiteboardFragment)
                 .remove(chatRoomFragment)
-                .commitNow();
+                .commitNowAllowingStateLoss();
         getSupportFragmentManager().beginTransaction()
                 .add(R.id.layout_whiteboard, whiteboardFragment)
                 .add(R.id.layout_chat_room, chatRoomFragment)
                 .show(whiteboardFragment)
                 .show(chatRoomFragment)
-                .commitNow();
+                .commitNowAllowingStateLoss();
     }
 
     /**
@@ -207,35 +208,41 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
      * 禁止本地音频
      */
     public final void muteLocalAudio(boolean isMute) {
-        switchLocalVideoAudio(getMyMediaRoom(), localCameraStream.getHasVideo(), !isMute);
+        if (localCameraStream != null) {
+            switchLocalVideoAudio(getMyMediaRoom(), localCameraStream.getHasVideo(), !isMute);
+        }
     }
 
     public final void muteLocalVideo(boolean isMute) {
-        switchLocalVideoAudio(getMyMediaRoom(), !isMute, localCameraStream.getHasAudio());
+        if (localCameraStream != null) {
+            switchLocalVideoAudio(getMyMediaRoom(), !isMute, localCameraStream.getHasAudio());
+        }
     }
 
     private void switchLocalVideoAudio(EduRoom room, boolean openVideo, boolean openAudio) {
         /**先更新本地流信息和rte状态*/
-        room.getLocalUser().initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
-                openVideo, openAudio), new EduCallback<EduStreamInfo>() {
-            @Override
-            public void onSuccess(@Nullable EduStreamInfo res) {
-                /**把更新后的流信息同步至服务器*/
-                room.getLocalUser().muteStream(res, new EduCallback<Boolean>() {
-                    @Override
-                    public void onSuccess(@Nullable Boolean res) {
-                    }
+        if (localCameraStream != null) {
+            room.getLocalUser().initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
+                    openVideo, openAudio), new EduCallback<EduStreamInfo>() {
+                @Override
+                public void onSuccess(@Nullable EduStreamInfo res) {
+                    /**把更新后的流信息同步至服务器*/
+                    room.getLocalUser().muteStream(res, new EduCallback<Boolean>() {
+                        @Override
+                        public void onSuccess(@Nullable Boolean res) {
+                        }
 
-                    @Override
-                    public void onFailure(int code, @Nullable String reason) {
-                    }
-                });
-            }
+                        @Override
+                        public void onFailure(int code, @Nullable String reason) {
+                        }
+                    });
+                }
 
-            @Override
-            public void onFailure(int code, @Nullable String reason) {
-            }
-        });
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+                }
+            });
+        }
     }
 
     public EduRoom getMainEduRoom() {
@@ -247,11 +254,17 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     public EduUser getLocalUser() {
-        return getMainEduRoom().getLocalUser();
+        if (getMainEduRoom() != null) {
+            return getMainEduRoom().getLocalUser();
+        }
+        return null;
     }
 
     protected EduUserInfo getLocalUserInfo() {
-        return getMainEduRoom().getLocalUser().getUserInfo();
+        if (getLocalUser() != null) {
+            return getLocalUser().getUserInfo();
+        }
+        return null;
     }
 
     public EduStreamInfo getLocalCameraStream() {
@@ -332,6 +345,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         mainEduRoom = null;
         whiteboardFragment.releaseBoard();
         getManager().setEduManagerEventListener(null);
+        getManager().release();
         super.onDestroy();
     }
 
@@ -350,6 +364,31 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                 }
             }
         }).show(getSupportFragmentManager(), null);
+    }
+
+    private final void showLogId(String logId) {
+        ConfirmDialog.single(getString(R.string.uploadlog_success).concat(logId), confirm -> {
+            if (confirm) {
+            }
+        }).show(getSupportFragmentManager(), null);
+    }
+
+    public final void uploadLog() {
+        if (getManager() != null) {
+            getManager().uploadDebugItem(DebugItem.LOG, new EduCallback<String>() {
+                @Override
+                public void onSuccess(@Nullable String res) {
+                    if (res != null) {
+                        showLogId(res);
+                    }
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String reason) {
+                    ToastManager.showShort(String.format(getString(R.string.function_error), code, reason));
+                }
+            });
+        }
     }
 
     private EduRoomInfo getMediaRoomInfo() {
@@ -708,7 +747,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     public void onGlobalStateChanged(GlobalState state) {
         BoardState boardState = (BoardState) state;
         boolean follow = whiteBoardIsFollowMode(boardState);
-        if(followTips) {
+        if (followTips) {
             if (curFollowState != follow) {
                 curFollowState = follow;
                 ToastManager.showShort(follow ? R.string.open_follow_board : R.string.relieve_follow_board);

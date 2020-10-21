@@ -104,11 +104,20 @@ public class TitleView extends ConstraintLayout {
         });
     }
 
-    @OnClick(R.id.iv_close)
+    @OnClick({R.id.iv_close, R.id.iv_uploadLog})
     public void onClock(View view) {
         Context context = getContext();
         if (context instanceof BaseClassActivity) {
-            ((BaseClassActivity) context).showLeaveDialog();
+            switch (view.getId()) {
+                case R.id.iv_close:
+                    ((BaseClassActivity) context).showLeaveDialog();
+                    break;
+                case R.id.iv_uploadLog:
+                    ((BaseClassActivity) context).uploadLog();
+                    break;
+                default:
+                    break;
+            }
         }
     }
 

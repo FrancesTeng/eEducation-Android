@@ -186,6 +186,7 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
 
     @Override
     public void onPhaseChanged(RoomPhase phase) {
+        Log.e(TAG, "onPhaseChanged->" + phase.name());
         if (listener != null) {
             handler.post(() -> listener.onRoomPhaseChanged(phase));
         }
@@ -198,7 +199,7 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
 
     @Override
     public void onDisconnectWithError(Exception e) {
-
+        Log.e(TAG, "onDisconnectWithError->" + e.getMessage());
     }
 
     @Override

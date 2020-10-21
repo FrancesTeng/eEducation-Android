@@ -1,5 +1,6 @@
 package io.agora.education.classroom.fragment;
 
+import android.text.TextUtils;
 import android.view.View;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -9,6 +10,8 @@ import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.listener.OnItemChildClickListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import butterknife.BindView;
@@ -28,6 +31,7 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
     protected RecyclerView rcv_users;
 
     private UserListAdapter adapter;
+    private String localUserUuid;
 
     @Override
     protected int getLayoutResId() {
@@ -60,6 +64,17 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
                     students.add(streamInfo);
                 }
             }
+            /**本地用户始终在第一位*/
+            if (!TextUtils.isEmpty(localUserUuid)) {
+                for (int i = 0; i < students.size(); i++) {
+                    EduStreamInfo streamInfo = students.get(i);
+                    if (streamInfo.getPublisher().getUserUuid().equals(localUserUuid)) {
+                        if (i != 0) {
+                            Collections.swap(students, 0, i);
+                        }
+                    }
+                }
+            }
             adapter.setNewData(students);
         });
     }
@@ -69,6 +84,7 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
     }
 
     public void setLocalUserUuid(String userUuid) {
+        localUserUuid = userUuid;
         adapter.setLocalUserUuid(userUuid);
     }
 

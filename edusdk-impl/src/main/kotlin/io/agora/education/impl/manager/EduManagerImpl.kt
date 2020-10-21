@@ -131,7 +131,8 @@ internal class EduManagerImpl(
     }
 
     override fun release() {
-        logMessage("${TAG}: 调用release函数释放数据", LogLevel.INFO)
+        logMessage("${TAG}: 调用release函数退出RTM并释放数据", LogLevel.INFO)
+        RteEngineImpl.logoutRtm()
         eduRooms.clear()
     }
 
