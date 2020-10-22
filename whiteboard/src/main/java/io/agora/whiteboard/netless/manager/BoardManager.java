@@ -41,7 +41,7 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
     }
 
     public void init(WhiteSdk sdk, RoomParams params) {
-        log.d("init");
+        log.e("init");
         sdk.joinRoom(params, this, promise);
     }
 
@@ -236,7 +236,7 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
 
     @Override
     void onSuccess(Room room) {
-        log.i("onSuccess");
+        log.e("onSuccess");
         if (appliance != null) {
             setAppliance(appliance);
         }

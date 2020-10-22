@@ -4,6 +4,7 @@ import android.util.Log
 import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import com.google.gson.Gson
 import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.AgoraLog
 import io.agora.education.impl.util.Convert
@@ -56,7 +57,7 @@ internal open class EduUserImpl(
     private val surfaceViewList = mutableListOf<SurfaceView>()
 
     override fun initOrUpdateLocalStream(options: LocalStreamInitOptions, callback: EduCallback<EduStreamInfo>) {
-        Log.e("EduUserImpl", "开始初始化和更新本地流")
+        AgoraLog.i("$TAG->开始初始化和更新本地流:${Gson().toJson(options)}")
         RteEngineImpl.setVideoEncoderConfiguration(
                 Convert.convertVideoEncoderConfig(videoEncoderConfig))
         RteEngineImpl.enableVideo()
@@ -71,6 +72,7 @@ internal open class EduUserImpl(
 
     override fun switchCamera(): EduError {
         val code = RteEngineImpl.switchCamera()
+        AgoraLog.i("$TAG->switchCamera:$code")
         return EduError(code, RteEngineImpl.getError(code))
     }
 
@@ -78,9 +80,11 @@ internal open class EduUserImpl(
                                  callback: EduCallback<Unit>) {
         /**订阅远端流*/
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
-        Log.e(TAG, "muteRemoteStream->audio:${options.subscribeAudio},video:${options.subscribeVideo}")
+        Log.e(TAG, "")
         val code = RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, !options.subscribeAudio,
                 !options.subscribeVideo)
+        AgoraLog.i("$TAG->subscribeStream: audio:${options.subscribeAudio}," +
+                "video:${options.subscribeVideo}, code: $code")
         if (code == RteEngineImpl.ok()) {
             callback.onSuccess(Unit)
         } else {
@@ -93,6 +97,8 @@ internal open class EduUserImpl(
         val uid: Int = (stream.streamUuid.toLong() and 0xffffffffL).toInt()
         val code = RteEngineImpl.muteRemoteStream(eduRoom.getRoomInfo().roomUuid, uid, !options.subscribeAudio,
                 !options.subscribeVideo)
+        AgoraLog.i("$TAG->unSubscribeStream: streamUuid: ${stream.streamUuid},audio:${options.subscribeAudio}," +
+                "video:${options.subscribeVideo},code: $code")
         if (code == RteEngineImpl.ok()) {
             callback.onSuccess(Unit)
         } else {
@@ -107,13 +113,14 @@ internal open class EduUserImpl(
         val eduStreamStatusReq = EduStreamStatusReq(streamInfo.streamName, streamInfo.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (streamInfo.hasVideo) 1 else 0,
                 if (streamInfo.hasAudio) 1 else 0)
-        AgoraLog.logMsg("$TAG->新建本地流信息", LogLevel.INFO.value)
+        AgoraLog.logMsg("$TAG->新建流: ${Gson().toJson(streamInfo)}", LogLevel.INFO.value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
                 .createStream(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
                         streamInfo.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        AgoraLog.logMsg("$TAG->发流状态:${streamInfo.hasAudio},${streamInfo.hasVideo}",
+                        AgoraLog.logMsg("$TAG->发流状态: streamUuid: ${streamInfo.streamUuid}," +
+                                "${streamInfo.hasAudio},${streamInfo.hasVideo}",
                                 LogLevel.INFO.value)
                         RteEngineImpl.muteLocalStream(!streamInfo.hasAudio, !streamInfo.hasVideo)
                         RteEngineImpl.publish(eduRoom.getRoomInfo().roomUuid)
@@ -170,7 +177,8 @@ internal open class EduUserImpl(
     }
 
     override fun unPublishStream(streamInfo: EduStreamInfo, callback: EduCallback<Boolean>) {
-        Log.e("EduUserImpl", "删除本地流")
+        Log.e("EduUserImpl", "删除流")
+        AgoraLog.i("$TAG->删除流:${Gson().toJson(streamInfo)}")
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
                 .deleteStream(APPID, eduRoom.getRoomInfo().roomUuid, userInfo.userUuid,
                         streamInfo.streamUuid)

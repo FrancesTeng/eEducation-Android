@@ -25,8 +25,9 @@ android {
         consumerProguardFiles 'consumer-rules.pro'
 
         /**可配置项*/
-        buildConfigField 'String', 'API_BASE_URL', '"https://api-solutions-dev.sh.agoralab.co"'
-//        buildConfigField 'String', 'API_BASE_URL', '"https://api-solutions.sh.agoralab.co"'
+        buildConfigField 'Boolean', 'isDevMode', 'false'
+//        buildConfigField 'String', 'API_BASE_URL', '"https://api-solutions-dev.sh.agoralab.co"'
+        buildConfigField 'String', 'API_BASE_URL', '"https://api-solutions.sh.agoralab.co"'
     }
 
     sourceSets {

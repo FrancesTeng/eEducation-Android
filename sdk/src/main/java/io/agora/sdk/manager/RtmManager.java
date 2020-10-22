@@ -23,6 +23,9 @@ import io.agora.rtm.RtmChannelListener;
 import io.agora.rtm.RtmChannelMember;
 import io.agora.rtm.RtmClient;
 import io.agora.rtm.RtmClientListener;
+import io.agora.rtm.RtmFileMessage;
+import io.agora.rtm.RtmImageMessage;
+import io.agora.rtm.RtmMediaOperationProgress;
 import io.agora.rtm.RtmMessage;
 import io.agora.rtm.RtmStatusCode;
 import io.agora.sdk.annotation.ConnectionState;
@@ -242,6 +245,16 @@ public final class RtmManager extends SdkManager<RtmClient> implements RtmClient
     }
 
     @Override
+    public void onImageMessageReceived(RtmImageMessage rtmImageMessage, RtmChannelMember rtmChannelMember) {
+
+    }
+
+    @Override
+    public void onFileMessageReceived(RtmFileMessage rtmFileMessage, RtmChannelMember rtmChannelMember) {
+
+    }
+
+    @Override
     public void onMemberJoined(RtmChannelMember rtmChannelMember) {
         log.i("onMemberJoined %s", rtmChannelMember.getUserId());
         for (RtmEventListener listener : listeners) {
@@ -275,6 +288,26 @@ public final class RtmManager extends SdkManager<RtmClient> implements RtmClient
         for (RtmEventListener listener : listeners) {
             listener.onMessageReceived(rtmMessage, s);
         }
+    }
+
+    @Override
+    public void onImageMessageReceivedFromPeer(RtmImageMessage rtmImageMessage, String s) {
+
+    }
+
+    @Override
+    public void onFileMessageReceivedFromPeer(RtmFileMessage rtmFileMessage, String s) {
+
+    }
+
+    @Override
+    public void onMediaUploadingProgress(RtmMediaOperationProgress rtmMediaOperationProgress, long l) {
+
+    }
+
+    @Override
+    public void onMediaDownloadingProgress(RtmMediaOperationProgress rtmMediaOperationProgress, long l) {
+
     }
 
     @Override

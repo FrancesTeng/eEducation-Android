@@ -60,13 +60,13 @@ internal class EduManagerImpl(
     private val rtmConnectState = RtmConnectState()
 
     init {
+        options.logFileDir?.let {
+            options.logFileDir = options.context.cacheDir.toString().plus(File.separatorChar).plus(LOGS_DIR_NAME)
+        }
         LogManager.init(options.logFileDir!!, "AgoraEducation")
         AgoraLog = LogManager("SDK")
         logMessage("${TAG}: 初始化LogManager,log路径为${options.logFileDir}", LogLevel.INFO)
         logMessage("${TAG}: 初始化EduManagerImpl", LogLevel.INFO)
-        options.logFileDir?.let {
-            options.logFileDir = options.context.cacheDir.toString().plus(File.separatorChar).plus(LOGS_DIR_NAME)
-        }
         logMessage("${TAG}: 初始化RteEngineImpl", LogLevel.INFO)
         RteEngineImpl.init(options.context, options.appId, options.logFileDir!!)
         /**为RteEngine设置eventListener*/

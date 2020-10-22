@@ -154,7 +154,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             video_student.setViewVisibility(View.GONE);
         }
         removeFromParent(video_student);
-        layout_video_student.addView(video_student, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        layout_video_student.addView(video_student, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         if (layout_tab != null) {
             /*不为空说明是竖屏*/
@@ -410,7 +411,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     private void refreshStudentVideoZOrder() {
         runOnUiThread(() -> {
             removeFromParent(video_student);
-            layout_video_student.addView(video_student, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            layout_video_student.addView(video_student, 0, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             FrameLayout frameLayout = video_student.getVideoLayout();
             SurfaceView surfaceView = (SurfaceView) frameLayout.getChildAt(0);
             if (surfaceView != null) {
@@ -420,6 +422,9 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     private void renderStudentStream(EduStreamInfo streamInfo, ViewGroup viewGroup) {
+        if(viewGroup != null) {
+            runOnUiThread(() -> viewGroup.removeAllViews());
+        }
         video_student.setViewVisibility((viewGroup == null) ? View.GONE : View.VISIBLE);
         video_student.setName(streamInfo.getPublisher().getUserName());
         renderStream(getMainEduRoom(), streamInfo, viewGroup);
@@ -677,11 +682,13 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             @Override
             public void onSuccess(@Nullable EduStreamInfo res) {
                 res = getLocalCameraStream();
-                RteEngineImpl.INSTANCE.setClientRole(getMainEduRoom().getRoomInfo().getRoomUuid(),
-                        Constants.CLIENT_ROLE_BROADCASTER);
-                RteEngineImpl.INSTANCE.muteLocalStream(!res.getHasAudio(), !res.getHasVideo());
-                RteEngineImpl.INSTANCE.publish(getMainEduRoom().getRoomInfo().getRoomUuid());
-                renderStudentStream(res, video_student.getVideoLayout());
+                if(res != null) {
+                    RteEngineImpl.INSTANCE.setClientRole(getMainEduRoom().getRoomInfo().getRoomUuid(),
+                            Constants.CLIENT_ROLE_BROADCASTER);
+                    RteEngineImpl.INSTANCE.muteLocalStream(!res.getHasAudio(), !res.getHasVideo());
+                    RteEngineImpl.INSTANCE.publish(getMainEduRoom().getRoomInfo().getRoomUuid());
+                    renderStudentStream(res, video_student.getVideoLayout());
+                }
             }
 
             @Override
@@ -704,11 +711,13 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
             @Override
             public void onSuccess(@Nullable EduStreamInfo res) {
                 res = getLocalCameraStream();
-                RteEngineImpl.INSTANCE.setClientRole(getMainEduRoom().getRoomInfo().getRoomUuid(),
-                        Constants.CLIENT_ROLE_BROADCASTER);
-                RteEngineImpl.INSTANCE.muteLocalStream(!res.getHasAudio(), !res.getHasVideo());
-                RteEngineImpl.INSTANCE.publish(getMainEduRoom().getRoomInfo().getRoomUuid());
-                renderStudentStream(res, video_student.getVideoLayout());
+                if(res != null) {
+                    RteEngineImpl.INSTANCE.setClientRole(getMainEduRoom().getRoomInfo().getRoomUuid(),
+                            Constants.CLIENT_ROLE_BROADCASTER);
+                    RteEngineImpl.INSTANCE.muteLocalStream(!res.getHasAudio(), !res.getHasVideo());
+                    RteEngineImpl.INSTANCE.publish(getMainEduRoom().getRoomInfo().getRoomUuid());
+                    renderStudentStream(res, video_student.getVideoLayout());
+                }
             }
 
             @Override

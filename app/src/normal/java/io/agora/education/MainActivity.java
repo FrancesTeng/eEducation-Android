@@ -47,6 +47,8 @@ import io.agora.education.widget.ConfirmDialog;
 import io.agora.education.widget.PolicyDialog;
 
 import static io.agora.education.EduApplication.getAppId;
+import static io.agora.education.EduApplication.getCustomerCer;
+import static io.agora.education.EduApplication.getCustomerId;
 import static io.agora.education.EduApplication.setManager;
 import static io.agora.education.api.BuildConfig.API_BASE_URL;
 import static io.agora.education.classroom.BaseClassActivity.RESULT_CODE;
@@ -244,11 +246,9 @@ public class MainActivity extends BaseActivity {
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
         String roomUuid = roomNameStr + roomType;
 
-        String customerId = getString(R.string.agora_app_id);
-        String customerCertificate = getString(R.string.agora_app_id);
         EduManagerOptions options = new EduManagerOptions(this, getAppId(), userUuid, yourNameStr);
-        options.setCustomerId(customerId);
-        options.setCustomerCertificate(customerCertificate);
+        options.setCustomerId(getCustomerId());
+        options.setCustomerCertificate(getCustomerCer());
         options.setLogFileDir(getCacheDir().getAbsolutePath());
         options.setTag(EDULOGINTAG);
         EduManager.init(options, new EduCallback<EduManager>() {

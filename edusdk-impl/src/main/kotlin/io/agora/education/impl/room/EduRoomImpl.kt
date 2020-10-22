@@ -85,7 +85,7 @@ internal class EduRoomImpl(
     /**当前classRoom的classType(Main or Sub)*/
     var curClassType = ClassType.Sub
 
-    /**entry接口返回的流信息(可能是上次遗留的也可能是本次autoPublish流也可能是在同步(或join)过程中添加的远端流)*/
+    /**entry接口返回的流信息(可能是上次遗留的也可能是本次autoPublish流*/
     var defaultStreams: MutableList<EduStreamEvent> = mutableListOf()
 
     lateinit var defaultUserName: String;

@@ -13,6 +13,7 @@ import java.util.Map;
 import io.agora.base.PreferenceManager;
 import io.agora.base.ToastManager;
 import io.agora.base.network.RetrofitManager;
+import io.agora.education.api.BuildConfig;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.logger.DebugItem;
 import io.agora.education.api.logger.LogLevel;
@@ -42,10 +43,17 @@ public class EduApplication extends Application {
         PreferenceManager.init(this);
         ToastManager.init(this);
 
-        String appId = getString(R.string.agora_app_id);
-        EduApplication.setAppId(appId);
-        String customerId = getString(R.string.agora_app_id);
-        String customerCertificate = getString(R.string.agora_app_id);
+        String appId, customerId, customerCertificate;
+        if (BuildConfig.isDevMode) {
+            appId = getString(R.string.agora_app_id_dev);
+            customerId = getString(R.string.agora_customer_id_dev);
+            customerCertificate = getString(R.string.agora_customer_cer_dev);
+        } else {
+            appId = getString(R.string.agora_app_id_prod);
+            customerId = getString(R.string.agora_customer_id_prod);
+            customerCertificate = getString(R.string.agora_customer_cer_prod);
+        }
+        setAppId(appId);
         /**为OKHttp添加Authorization的header*/
         String auth = Base64.encodeToString((customerId + ":" + customerCertificate)
                 .getBytes(Charsets.UTF_8), Base64.DEFAULT).replace("\n", "").trim();
@@ -85,6 +93,22 @@ public class EduApplication extends Application {
             return null;
         }
         return instance.config.appId;
+    }
+
+    @Nullable
+    public static String getCustomerId() {
+        if (instance.config == null) {
+            return null;
+        }
+        return instance.config.customerId;
+    }
+
+    @Nullable
+    public static String getCustomerCer() {
+        if (instance.config == null) {
+            return null;
+        }
+        return instance.config.customerCer;
     }
 
     public static void setAppId(String appId) {

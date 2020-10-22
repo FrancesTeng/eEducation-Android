@@ -116,6 +116,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
         boardManager.getRoomPhase(new Promise<RoomPhase>() {
             @Override
             public void then(RoomPhase phase) {
+                Log.e(TAG, "then->" + phase.name());
                 if (phase != RoomPhase.connected) {
                     runOnUiThread(() -> pb_loading.setVisibility(View.VISIBLE));
                     RoomParams params = new RoomParams(uuid, boardToken);
@@ -126,6 +127,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
             @Override
             public void catchEx(SDKError t) {
+                Log.e(TAG, "catchEx->" + t.getMessage());
                 ToastManager.showShort(t.getMessage());
             }
         });

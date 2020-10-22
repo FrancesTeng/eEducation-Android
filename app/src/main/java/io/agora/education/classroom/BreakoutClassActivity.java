@@ -30,6 +30,7 @@ import butterknife.BindView;
 import butterknife.OnClick;
 import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.RetrofitManager;
+import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.message.EduChatMsg;
@@ -68,6 +69,7 @@ import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.service.bean.request.AllocateGroupReq;
 import io.agora.education.service.bean.response.EduRoomInfoRes;
 
+import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.api.BuildConfig.API_BASE_URL;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
 import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
@@ -118,7 +120,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     private void allocateGroup(String roomUuid, String userUuid, EduCallback<EduRoomInfo> callback) {
         AllocateGroupReq req = new AllocateGroupReq();
         RetrofitManager.instance().getService(API_BASE_URL, CommonService.class)
-                .allocateGroup(getString(R.string.agora_app_id), roomUuid, req)
+                .allocateGroup(getAppId(), roomUuid, req)
                 .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<EduRoomInfoRes>>() {
                     @Override
                     public void onFailure(@Nullable Throwable throwable) {
@@ -339,7 +341,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             if (mainBoardBean == null) {
                 Log.e(TAG, "请求大房间的白板信息");
                 requestBoardInfo((getMainEduRoom().getLocalUser().getUserInfo()).getUserToken(),
-                        getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid());
+                        getAppId(), classRoom.getRoomInfo().getRoomUuid());
             } else {
                 BoardInfo info = mainBoardBean.getInfo();
                 BoardState state = mainBoardBean.getState();

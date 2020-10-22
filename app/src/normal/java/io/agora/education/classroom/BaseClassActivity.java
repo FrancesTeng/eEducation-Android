@@ -73,6 +73,7 @@ import io.agora.education.service.BoardService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.widget.ConfirmDialog;
 
+import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.EduApplication.getManager;
 import static io.agora.education.MainActivity.CODE;
 import static io.agora.education.MainActivity.REASON;
@@ -474,7 +475,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         String boardJson = getProperty(roomProperties, BOARD);
         if (TextUtils.isEmpty(boardJson)) {
             requestBoardInfo((getMainEduRoom().getLocalUser().getUserInfo()).getUserToken(),
-                    getString(R.string.agora_app_id), classRoom.getRoomInfo().getRoomUuid());
+                    getAppId(), classRoom.getRoomInfo().getRoomUuid());
         } else {
             mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
             BoardInfo info = mainBoardBean.getInfo();
