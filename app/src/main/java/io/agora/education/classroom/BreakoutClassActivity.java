@@ -68,7 +68,7 @@ import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.service.bean.request.AllocateGroupReq;
 import io.agora.education.service.bean.response.EduRoomInfoRes;
 
-import static io.agora.education.BuildConfig.API_BASE_URL;
+import static io.agora.education.api.BuildConfig.API_BASE_URL;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
 import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
 import static io.agora.education.classroom.bean.record.RecordState.END;

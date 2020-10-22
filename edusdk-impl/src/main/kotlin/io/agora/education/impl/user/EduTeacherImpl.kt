@@ -1,10 +1,10 @@
 package io.agora.education.impl.user
 
-import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.ResponseBody
+import io.agora.education.api.BuildConfig.API_BASE_URL
 import io.agora.education.api.EduCallback
 import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.stream.data.AudioSourceType

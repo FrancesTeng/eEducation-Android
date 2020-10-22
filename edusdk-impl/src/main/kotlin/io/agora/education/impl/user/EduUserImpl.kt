@@ -4,13 +4,13 @@ import android.util.Log
 import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.AgoraLog
 import io.agora.education.impl.util.Convert
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.ResponseBody
+import io.agora.education.api.BuildConfig.API_BASE_URL
 import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.message.EduChatMsg

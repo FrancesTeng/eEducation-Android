@@ -36,6 +36,8 @@ import io.agora.education.classroom.bean.record.RecordMsg;
 import io.agora.education.service.RecordService;
 import io.agora.education.service.bean.response.RecordRes;
 
+import static io.agora.education.api.BuildConfig.API_BASE_URL;
+
 public class ChatRoomFragment extends BaseFragment implements OnItemChildClickListener, View.OnKeyListener {
     public static final String TAG = ChatRoomFragment.class.getSimpleName();
 
@@ -143,7 +145,7 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
     private List<RecordRes.RecordDetail> recordDetails = new ArrayList<>();
 
     private void fetchRecordList(String appId, String roomId, int next, EduCallback<RecordRes.RecordDetail> callback) {
-        RetrofitManager.instance().getService(BuildConfig.API_BASE_URL, RecordService.class)
+        RetrofitManager.instance().getService(API_BASE_URL, RecordService.class)
                 .record(appId, roomId, next)
                 .enqueue(new BaseCallback<>(data -> {
                     total = data.total;

@@ -4,12 +4,11 @@ import android.util.Log
 import androidx.annotation.NonNull
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import io.agora.Constants
-import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.AgoraLog
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
+import io.agora.education.api.BuildConfig.API_BASE_URL
 import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
@@ -18,7 +17,6 @@ import io.agora.education.api.user.EduStudent
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserRole
 import io.agora.education.impl.util.Convert
-import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.statistics.NetworkQuality
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
@@ -34,7 +32,6 @@ import io.agora.education.impl.role.data.EduUserRoleStr
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 import io.agora.education.impl.room.data.request.EduJoinClassroomReq
 import io.agora.education.impl.room.data.response.*
-import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.sync.RoomSyncHelper
 import io.agora.education.impl.sync.RoomSyncSession
 import io.agora.education.impl.user.EduStudentImpl
@@ -47,7 +44,6 @@ import io.agora.rtc.models.ChannelMediaOptions
 import io.agora.rte.RteEngineImpl
 import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rtm.*
-import retrofit2.Converter
 import kotlin.math.max
 
 internal class EduRoomImpl(

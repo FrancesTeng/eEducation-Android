@@ -45,6 +45,18 @@ object RteEngineImpl : IRteEngine {
         override fun onMessageReceived(p0: RtmMessage?, p1: String?) {
             eventListener?.onPeerMsgReceived(p0, p1)
         }
+
+        override fun onMediaDownloadingProgress(p0: RtmMediaOperationProgress?, p1: Long) {
+        }
+
+        override fun onMediaUploadingProgress(p0: RtmMediaOperationProgress?, p1: Long) {
+        }
+
+        override fun onImageMessageReceivedFromPeer(p0: RtmImageMessage?, p1: String?) {
+        }
+
+        override fun onFileMessageReceivedFromPeer(p0: RtmFileMessage?, p1: String?) {
+        }
     }
 
     private val rtcEngineEventHandler = object : IRtcEngineEventHandler() {

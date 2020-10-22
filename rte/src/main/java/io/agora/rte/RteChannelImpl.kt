@@ -41,6 +41,12 @@ internal class RteChannelImpl(
         override fun onMemberCountUpdated(p0: Int) {
 
         }
+
+        override fun onFileMessageReceived(p0: RtmFileMessage?, p1: RtmChannelMember?) {
+        }
+
+        override fun onImageMessageReceived(p0: RtmImageMessage?, p1: RtmChannelMember?) {
+        }
     }
 
     private val rtcChannelEventHandler = object : IRtcChannelEventHandler() {

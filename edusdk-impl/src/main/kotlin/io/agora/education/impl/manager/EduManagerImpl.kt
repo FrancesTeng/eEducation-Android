@@ -3,7 +3,6 @@ package io.agora.education.impl.manager
 import android.os.Build
 import android.util.Base64
 import com.google.gson.Gson
-import io.agora.Constants.Companion.API_BASE_URL
 import io.agora.Constants.Companion.APPID
 import io.agora.Constants.Companion.AgoraLog
 import io.agora.Constants.Companion.LOGS_DIR_NAME
@@ -11,6 +10,7 @@ import io.agora.Constants.Companion.LOG_APPSECRET
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.education.api.BuildConfig
+import io.agora.education.api.BuildConfig.API_BASE_URL
 import io.agora.education.api.EduCallback
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
@@ -18,7 +18,6 @@ import io.agora.education.api.manager.EduManager
 import io.agora.education.api.manager.EduManagerOptions
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
-import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.util.CryptoUtil
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.network.RetrofitManager

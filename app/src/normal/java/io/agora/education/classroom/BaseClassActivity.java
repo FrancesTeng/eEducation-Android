@@ -73,10 +73,10 @@ import io.agora.education.service.BoardService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.widget.ConfirmDialog;
 
-import static io.agora.education.BuildConfig.API_BASE_URL;
 import static io.agora.education.EduApplication.getManager;
 import static io.agora.education.MainActivity.CODE;
 import static io.agora.education.MainActivity.REASON;
+import static io.agora.education.api.BuildConfig.API_BASE_URL;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
 import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
 import static io.agora.education.classroom.bean.record.RecordState.END;

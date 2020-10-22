@@ -45,5 +45,5 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     api "io.agora.rtc:full-sdk:${safeExtGet('dependencies', 'io.agora.rtc:full-sdk', '2.9.0.106')}"
-    api "io.agora.rtm:rtm-sdk:${safeExtGet('dependencies', 'io.agora.rtm:rtm-sdk', '1.2.2')}"
+    api "io.agora.rtm:rtm-sdk:${safeExtGet('dependencies', 'io.agora.rtm:rtm-sdk', '1.4.1')}"
 }

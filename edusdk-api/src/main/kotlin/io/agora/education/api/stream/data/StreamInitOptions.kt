@@ -9,7 +9,12 @@ class LocalStreamInitOptions(
         streamUuid: String,
         var enableCamera: Boolean = true,
         var enableMicrophone: Boolean = true
-) : StreamInitOptions(streamUuid)
+) : StreamInitOptions(streamUuid) {
+    constructor(streamUuid: String, streamName: String?, enableCamera: Boolean,
+                enableMicrophone: Boolean) : this(streamUuid, enableCamera, enableMicrophone) {
+        this.streamName = streamName
+    }
+}
 
 class ScreenStreamInitOptions(
         streamUuid: String,

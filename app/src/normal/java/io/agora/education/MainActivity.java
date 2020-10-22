@@ -45,13 +45,10 @@ import io.agora.education.service.bean.request.RoomCreateOptionsReq;
 import io.agora.education.util.AppUtil;
 import io.agora.education.widget.ConfirmDialog;
 import io.agora.education.widget.PolicyDialog;
-import kotlin.Unit;
 
-import static io.agora.education.BuildConfig.API_BASE_URL;
-import static io.agora.education.EduApplication.LogError;
 import static io.agora.education.EduApplication.getAppId;
-import static io.agora.education.EduApplication.getManager;
 import static io.agora.education.EduApplication.setManager;
+import static io.agora.education.api.BuildConfig.API_BASE_URL;
 import static io.agora.education.classroom.BaseClassActivity.RESULT_CODE;
 
 public class MainActivity extends BaseActivity {
