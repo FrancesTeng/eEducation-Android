@@ -56,7 +56,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     private WhiteSdk whiteSdk;
     private BoardManager boardManager = new BoardManager();
-    private String curLocalUuid;
+    private String curLocalUuid, curLocalToken, localUserUuid;
     private final double miniScale = 0.1d;
     private final double maxScale = 10d;
     /*初始化时不进行相关提示*/
@@ -106,17 +106,19 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
         this.inputWhileFollow = inputWhileFollow;
     }
 
-    public void initBoardWithRoomToken(String uuid, String roomToken, String localUserUuid) {
-        if (TextUtils.isEmpty(uuid) || TextUtils.isEmpty(roomToken)) {
+    public void initBoardWithRoomToken(String uuid, String boardToken, String localUserUuid) {
+        if (TextUtils.isEmpty(uuid) || TextUtils.isEmpty(boardToken)) {
             return;
         }
-        this.curLocalUuid = localUserUuid;
+        this.curLocalUuid = uuid;
+        this.curLocalToken = boardToken;
+        this.localUserUuid = localUserUuid;
         boardManager.getRoomPhase(new Promise<RoomPhase>() {
             @Override
             public void then(RoomPhase phase) {
                 if (phase != RoomPhase.connected) {
                     runOnUiThread(() -> pb_loading.setVisibility(View.VISIBLE));
-                    RoomParams params = new RoomParams(uuid, roomToken);
+                    RoomParams params = new RoomParams(uuid, boardToken);
                     params.setCameraBound(new CameraBound(miniScale, maxScale));
                     boardManager.init(whiteSdk, params);
                 }
@@ -182,27 +184,6 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
             }
         }
         return false;
-
-//        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-//            white_board_view.requestFocus();
-//            if (boardManager.isDisableCameraTransform() && !boardManager.isDisableDeviceInputs()) {
-//                if (inputWhileFollow) {
-//                    return false;
-//                } else {
-//                    ToastManager.showShort(R.string.follow_tips);
-//                    return true;
-//                }
-//            }
-//        }
-//        else if (event.getAction() == MotionEvent.ACTION_MOVE && event.getPointerCount() == 2) {
-//            white_board_view.requestFocus();
-//            if (boardManager.isDisableCameraTransform() && !boardManager.isDisableDeviceInputs()) {
-//                Log.e(TAG, "cccccccccccc");
-//                Toast.makeText(getContext(), getString(R.string.follow_tips), 10).show();
-//                return true;
-//            }
-//        }
-//        return false;
     }
 
     @Override
@@ -257,6 +238,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
 
     @Override
     public void onRoomPhaseChanged(RoomPhase phase) {
+        Log.e(TAG, "onRoomPhaseChanged->" + phase.name());
         pb_loading.setVisibility(phase == RoomPhase.connected ? View.GONE : View.VISIBLE);
     }
 
@@ -276,6 +258,11 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     @Override
     public void onMemberStateChanged(MemberState state) {
         appliance_view.check(appliance_view.getApplianceId(state.getCurrentApplianceName()));
+    }
+
+    @Override
+    public void onDisconnectWithError(Exception e) {
+        initBoardWithRoomToken(curLocalUuid, curLocalToken, localUserUuid);
     }
 
     private GlobalStateChangeListener listener;

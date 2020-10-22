@@ -15,4 +15,6 @@ public interface BoardEventListener {
     void onSceneStateChanged(SceneState state);
 
     void onMemberStateChanged(MemberState state);
+
+    void onDisconnectWithError(Exception e);
 }

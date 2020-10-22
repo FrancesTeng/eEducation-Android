@@ -200,6 +200,9 @@ public class BoardManager extends NetlessManager<Room> implements RoomCallbacks 
     @Override
     public void onDisconnectWithError(Exception e) {
         Log.e(TAG, "onDisconnectWithError->" + e.getMessage());
+        if (listener != null) {
+            handler.post(() -> listener.onDisconnectWithError(e));
+        }
     }
 
     @Override
