@@ -10,6 +10,8 @@ import com.elvishew.xlog.LogConfiguration;
 import com.elvishew.xlog.LogLevel;
 import com.elvishew.xlog.Logger;
 import com.elvishew.xlog.XLog;
+import com.elvishew.xlog.flattener.Flattener;
+import com.elvishew.xlog.flattener.Flattener2;
 import com.elvishew.xlog.printer.AndroidPrinter;
 import com.elvishew.xlog.printer.file.FilePrinter;
 import com.elvishew.xlog.printer.file.naming.ChangelessFileNameGenerator;
@@ -37,6 +39,7 @@ public class LogManager {
                 new AndroidPrinter(),
                 new FilePrinter.Builder(getPath().getAbsolutePath())
                         .fileNameGenerator(new ChangelessFileNameGenerator(tag + ".log"))
+                        .flattener(new MyFlattener())
                         .build());
     }
 

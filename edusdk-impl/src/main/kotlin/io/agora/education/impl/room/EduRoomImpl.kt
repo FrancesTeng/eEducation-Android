@@ -247,7 +247,6 @@ internal class EduRoomImpl(
                         getCurRoomType(), curClassType)
                 if (role == EduUserRoleStr.audience.value) {
                     AgoraLog.i("$TAG->本地用户角色是观众")
-                    callback.onSuccess(Unit)
                 } else {
                     /**大班课场景下为audience,小班课一对一都是broadcaster*/
                     val role = if (getCurRoomType() !=
@@ -259,8 +258,8 @@ internal class EduRoomImpl(
                         val code = RteEngineImpl.publish(getRoomInfo().roomUuid)
                         AgoraLog.i("$TAG->AutoPublish为true,publish结果:$code")
                     }
-                    callback.onSuccess(Unit)
                 }
+                callback.onSuccess(Unit)
             }
 
             override fun onFailure(code: Int, reason: String?) {

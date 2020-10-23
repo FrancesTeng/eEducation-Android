@@ -54,6 +54,8 @@ public class EduApplication extends Application {
             customerCertificate = getString(R.string.agora_customer_cer_prod);
         }
         setAppId(appId);
+        setCustomerId(customerId);
+        setCustomerCer(customerCertificate);
         /**为OKHttp添加Authorization的header*/
         String auth = Base64.encodeToString((customerId + ":" + customerCertificate)
                 .getBytes(Charsets.UTF_8), Base64.DEFAULT).replace("\n", "").trim();
@@ -116,6 +118,20 @@ public class EduApplication extends Application {
             instance.config = new AppConfigRes();
         }
         instance.config.appId = appId;
+    }
+
+    public static void setCustomerId(String customerId) {
+        if (instance.config == null) {
+            instance.config = new AppConfigRes();
+        }
+        instance.config.customerId = customerId;
+    }
+
+    public static void setCustomerCer(String customerCer) {
+        if (instance.config == null) {
+            instance.config = new AppConfigRes();
+        }
+        instance.config.customerCer = customerCer;
     }
 
     public static EduRoom buildEduRoom(RoomCreateOptions options) {
