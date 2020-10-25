@@ -28,7 +28,7 @@ cd eEducation/education_Android/
 
 **3.Open the Android project with Android Studio.**
 
-**4.Configure keys(Required).**
+**4.Configure keys.**
 
 Pass the following parameters in `app/src/main/res/values/string_configs.xml`:
 - The Agora App ID that you get.
@@ -37,19 +37,9 @@ Pass the following parameters in `app/src/main/res/values/string_configs.xml`:
 - The WhiteBoard AppIdentifier that you get.
 
 ```
-<string name="agora_app_id_dev" translatable="false">Your AppId with devMode</string>
-<string name="agora_customer_id_dev" translatable="false">Your customerId with devMode</string>
-<string name="agora_customer_cer_dev" translatable="false">Your customerCer with devMode</string>
-
-<string name="agora_app_id_prod" translatable="false">Your AppId with prodMode</string>
-<string name="agora_customer_id_prod" translatable="false">Your customerId with devMode</string>
-<string name="agora_customer_cer_prod" translatable="false">Your customerCer with devMode</string>
-```
-Dev is the configuration in the development environment and prod is the configuration in the production environment. If you have only one set of data, then the two environments can be configured as the same set of data directly; at the same time, you can set up the `eEducation/education_Android/edusdk-api/build.gradle` to change the current mode.
-
-```
-/**可配置项*/
-buildConfigField 'Boolean', 'isDevMode', 'false'
+<string name="agora_app_id" translatable="false">Your AppId</string>
+<string name="agora_customer_id" translatable="false">Your customerId</string>
+<string name="agora_customer_cer" translatable="false">Your customerCer</string>
 ```
 
 For details, see the [prerequisites](https://github.com/AgoraIO-Usecase/eEducation/blob/master/README.md#prerequisites) in Agora E-education Guide.

@@ -28,7 +28,7 @@ cd eEducation/education_Android/
 
 **3. 使用 Android Studio 打开项目**
 
-**4. 配置相关字段(必须)**
+**4. 配置相关字段**
 
 在 `app/src/main/res/values/string_configs.xml` 文件中配置以下字段：
 - 你获取到的声网 App ID。
@@ -37,18 +37,9 @@ cd eEducation/education_Android/
 - 你获取到的白板 AppIdentifier。
 
 ```
-<string name="agora_app_id_dev" translatable="false">Your AppId with devMode</string>
-<string name="agora_customer_id_dev" translatable="false">Your customerId with devMode</string>
-<string name="agora_customer_cer_dev" translatable="false">Your customerCer with devMode</string>
-
-<string name="agora_app_id_prod" translatable="false">Your AppId with prodMode</string>
-<string name="agora_customer_id_prod" translatable="false">Your customerId with devMode</string>
-<string name="agora_customer_cer_prod" translatable="false">Your customerCer with devMode</string>
-```
-dev为开发环境下的配置，prod为生产环境下的配置，如果您只有一套数据，那么两种环境直接配置为同一套数据即可；同时你可以在`eEducation/education_Android/edusdk-api/build.gradle`中更改当前模式
-```
-/**可配置项*/
-buildConfigField 'Boolean', 'isDevMode', 'false'
+<string name="agora_app_id" translatable="false">Your AppId</string>
+<string name="agora_customer_id" translatable="false">Your customerId</string>
+<string name="agora_customer_cer" translatable="false">Your customerCer</string>
 ```
 
 详见 Agora e-Education 项目指南中的[前提条件](https://github.com/AgoraIO-Usecase/eEducation/blob/master/README.zh.md#%E5%89%8D%E6%8F%90%E6%9D%A1%E4%BB%B6)。

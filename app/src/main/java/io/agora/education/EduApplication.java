@@ -44,15 +44,9 @@ public class EduApplication extends Application {
         ToastManager.init(this);
 
         String appId, customerId, customerCertificate;
-        if (BuildConfig.isDevMode) {
-            appId = getString(R.string.agora_app_id_dev);
-            customerId = getString(R.string.agora_customer_id_dev);
-            customerCertificate = getString(R.string.agora_customer_cer_dev);
-        } else {
-            appId = getString(R.string.agora_app_id_prod);
-            customerId = getString(R.string.agora_customer_id_prod);
-            customerCertificate = getString(R.string.agora_customer_cer_prod);
-        }
+        appId = getString(R.string.agora_app_id);
+        customerId = getString(R.string.agora_customer_id);
+        customerCertificate = getString(R.string.agora_customer_cer);
         setAppId(appId);
         setCustomerId(customerId);
         setCustomerCer(customerCertificate);
