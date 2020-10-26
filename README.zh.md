@@ -40,6 +40,8 @@ cd eEducation/education_Android/
 <string name="agora_app_id" translatable="false">Your AppId</string>
 <string name="agora_customer_id" translatable="false">Your customerId</string>
 <string name="agora_customer_cer" translatable="false">Your customerCer</string>
+
+<string name="whiteboard_app_id" translatable="false">Your whiteboard appId</string>
 ```
 
 详见 Agora e-Education 项目指南中的[前提条件](https://github.com/AgoraIO-Usecase/eEducation/blob/master/README.zh.md#%E5%89%8D%E6%8F%90%E6%9D%A1%E4%BB%B6)。

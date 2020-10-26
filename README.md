@@ -40,6 +40,8 @@ Pass the following parameters in `app/src/main/res/values/string_configs.xml`:
 <string name="agora_app_id" translatable="false">Your AppId</string>
 <string name="agora_customer_id" translatable="false">Your customerId</string>
 <string name="agora_customer_cer" translatable="false">Your customerCer</string>
+
+<string name="whiteboard_app_id" translatable="false">Your whiteboard appId</string>
 ```
 
 For details, see the [prerequisites](https://github.com/AgoraIO-Usecase/eEducation/blob/master/README.md#prerequisites) in Agora E-education Guide.
