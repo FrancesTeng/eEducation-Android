@@ -72,6 +72,7 @@ import io.agora.education.classroom.widget.TitleView;
 import io.agora.education.service.BoardService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.widget.ConfirmDialog;
+import io.agora.whiteboard.netless.listener.GlobalStateChangeListener;
 
 import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.EduApplication.getManager;
@@ -83,7 +84,7 @@ import static io.agora.education.classroom.bean.record.RecordBean.RECORD;
 import static io.agora.education.classroom.bean.record.RecordState.END;
 
 public abstract class BaseClassActivity extends BaseActivity implements EduRoomEventListener, EduUserEventListener,
-        EduManagerEventListener, WhiteBoardFragment.GlobalStateChangeListener {
+        EduManagerEventListener, GlobalStateChangeListener {
     private static final String TAG = BaseClassActivity.class.getSimpleName();
 
     public static final String ROOMENTRY = "roomEntry";

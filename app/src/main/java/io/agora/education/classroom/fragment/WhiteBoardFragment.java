@@ -12,6 +12,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import com.google.gson.Gson;
+import com.herewhite.sdk.CommonCallbacks;
 import com.herewhite.sdk.RoomParams;
 import com.herewhite.sdk.WhiteSdk;
 import com.herewhite.sdk.WhiteSdkConfiguration;
@@ -37,10 +38,11 @@ import io.agora.education.classroom.widget.whiteboard.ColorPicker;
 import io.agora.education.classroom.widget.whiteboard.PageControlView;
 import io.agora.education.util.ColorUtil;
 import io.agora.whiteboard.netless.listener.BoardEventListener;
+import io.agora.whiteboard.netless.listener.GlobalStateChangeListener;
 import io.agora.whiteboard.netless.manager.BoardManager;
 
 public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnCheckedChangeListener,
-        PageControlView.PageControlListener, BoardEventListener {
+        PageControlView.PageControlListener, BoardEventListener, CommonCallbacks {
     private static final String TAG = "WhiteBoardFragment";
 
     @BindView(R.id.white_board_view)
@@ -59,6 +61,7 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     private String curLocalUuid, curLocalToken, localUserUuid;
     private final double miniScale = 0.1d;
     private final double maxScale = 10d;
+    private GlobalStateChangeListener listener;
     /*初始化时不进行相关提示*/
     private boolean inputTips = false;
     private boolean transform = false;
@@ -81,9 +84,8 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     @Override
     protected void initData() {
         WhiteDisplayerState.setCustomGlobalStateClass(BoardState.class);
-//        WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(DeviceType.touch, 10, 0.1);
         WhiteSdkConfiguration configuration = new WhiteSdkConfiguration(getString(R.string.whiteboard_app_id), true);
-        whiteSdk = new WhiteSdk(white_board_view, context, configuration);
+        whiteSdk = new WhiteSdk(white_board_view, context, configuration, this);
         boardManager.setListener(this);
     }
 
@@ -211,6 +213,13 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        white_board_view.removeAllViews();
+        white_board_view.destroy();
+    }
+
+    @Override
     public void toStart() {
         boardManager.setSceneIndex(0);
     }
@@ -267,10 +276,31 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
         initBoardWithRoomToken(curLocalUuid, curLocalToken, localUserUuid);
     }
 
-    private GlobalStateChangeListener listener;
+    @Override
+    public void throwError(Object args) {
 
-    public interface GlobalStateChangeListener {
-        void onGlobalStateChanged(GlobalState state);
+    }
+
+    @Override
+    public String urlInterrupter(String sourceUrl) {
+        return null;
+    }
+
+    @Override
+    public void onPPTMediaPlay() {
+
+    }
+
+    @Override
+    public void onPPTMediaPause() {
+
+    }
+
+    @Override
+    public void sdkSetupFail(SDKError error) {
+//        initData();
+//        initBoardWithRoomToken(curLocalUuid, curLocalToken, localUserUuid);
+        /**当回调这里的时候，需要重新初始化SDK(包括重新初始化 WhiteboardView)，然后再进行调用才可以*/
     }
 
 }
