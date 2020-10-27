@@ -27,6 +27,7 @@ import io.agora.education.impl.room.data.RtmConnectState
 import io.agora.education.impl.room.data.response.EduLoginRes
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.util.Convert
+import io.agora.education.impl.util.UnCatchExceptionHandler
 import io.agora.log.LogManager
 import io.agora.log.UploadManager
 import io.agora.rte.RteCallback
@@ -60,6 +61,9 @@ internal class EduManagerImpl(
     private val rtmConnectState = RtmConnectState()
 
     init {
+        /*注册UnCatchExceptionHandler*/
+        UnCatchExceptionHandler.getExceptionHandler().init(options.context.applicationContext)
+        /*初始化LogManager*/
         options.logFileDir?.let {
             options.logFileDir = options.context.cacheDir.toString().plus(File.separatorChar).plus(LOGS_DIR_NAME)
         }
@@ -69,7 +73,7 @@ internal class EduManagerImpl(
         logMessage("${TAG}: 初始化EduManagerImpl", LogLevel.INFO)
         logMessage("${TAG}: 初始化RteEngineImpl", LogLevel.INFO)
         RteEngineImpl.init(options.context, options.appId, options.logFileDir!!)
-        /**为RteEngine设置eventListener*/
+        /*为RteEngine设置eventListener*/
         RteEngineImpl.eventListener = this
         APPID = options.appId
         val auth = Base64.encodeToString("${options.customerId}:${options.customerCertificate}"

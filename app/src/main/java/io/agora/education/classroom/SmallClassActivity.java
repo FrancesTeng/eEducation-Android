@@ -120,7 +120,6 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         RteEngineImpl.INSTANCE.setAudioMixingListener(this);
         RteEngineImpl.INSTANCE.setSpeakerReportListener(this);
         findViewById(R.id.send1).setOnClickListener((v) -> {
-
         });
         findViewById(R.id.send2).setOnClickListener((v) -> {
             RteEngineImpl.INSTANCE.startAudioMixing("/sdcard/1/111.mp3", false, false, 1);
