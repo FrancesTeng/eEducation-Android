@@ -97,6 +97,8 @@ public class RetrofitManager {
                     if (errorBody == null) {
                         throwableCallback(new Throwable(response.errorBody().string()));
                     } else {
+                        /*兼顾接口返回的错误内容不是期望的结构*/
+                        errorBody.msg = errorBody.msg == null ? "" : errorBody.msg;
                         throwableCallback(new BusinessException(errorBody.code, String.valueOf(errorBody.msg)));
                     }
                 }

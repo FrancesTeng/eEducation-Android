@@ -42,7 +42,7 @@ class UnCatchExceptionHandler : Thread.UncaughtExceptionHandler {
             }
         } else {
             try {
-                Thread.sleep(3000)
+                Thread.sleep(1000)
             } catch (e1: InterruptedException) {
                 android.os.Process.killProcess(android.os.Process.myPid())
             }

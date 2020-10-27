@@ -5,6 +5,7 @@ import io.agora.base.callback.Callback
 import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.base.network.ResponseBody
+import io.agora.education.api.statistics.AgoraError
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.internal.platform.Platform
@@ -47,6 +48,8 @@ internal class RetrofitManager private constructor() {
                     if (errorBody == null) {
                         throwableCallback(Throwable(response.errorBody()!!.string()))
                     } else {
+                        /*兼顾接口返回的错误内容不是期望的结构*/
+                        errorBody.msg = if (errorBody.msg == null) "" else errorBody.msg
                         throwableCallback(BusinessException(errorBody.code, errorBody.msg.toString()))
                     }
                 } catch (e: IOException) {

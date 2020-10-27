@@ -2,7 +2,6 @@ package io.agora.education;
 
 import android.app.Application;
 import android.util.Base64;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -13,12 +12,8 @@ import java.util.Map;
 import io.agora.base.PreferenceManager;
 import io.agora.base.ToastManager;
 import io.agora.base.network.RetrofitManager;
-import io.agora.education.api.BuildConfig;
-import io.agora.education.api.EduCallback;
-import io.agora.education.api.logger.DebugItem;
 import io.agora.education.api.logger.LogLevel;
 import io.agora.education.api.manager.EduManager;
-import io.agora.education.api.manager.EduManagerOptions;
 import io.agora.education.api.room.EduRoom;
 import io.agora.education.api.room.data.RoomCreateOptions;
 import io.agora.education.api.util.CryptoUtil;
