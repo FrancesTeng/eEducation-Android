@@ -100,8 +100,9 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
             appliance_view.check(appliance_view.getApplianceId(boardManager.getAppliance()));
             boardManager.setStrokeColor(ColorUtil.colorToArray(color));
         });
-        /*白板控制按钮暂时不予适用*/
+        /*白板控制按钮暂时不予使用*/
 //        page_control_view.setListener(this);
+        page_control_view.setVisibility(boardManager.isDisableDeviceInputs() ? View.GONE : View.VISIBLE);
     }
 
     public void setInputWhileFollow(boolean inputWhileFollow) {
@@ -210,13 +211,6 @@ public class WhiteBoardFragment extends BaseFragment implements RadioGroup.OnChe
                 color_select_view.setVisibility(View.VISIBLE);
                 break;
         }
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        white_board_view.removeAllViews();
-        white_board_view.destroy();
     }
 
     @Override

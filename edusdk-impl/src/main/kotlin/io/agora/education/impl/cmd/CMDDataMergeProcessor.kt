@@ -353,14 +353,16 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
         /**同步房间的快照信息*/
         fun syncSnapshotToRoom(eduRoom: EduRoom, snapshotRes: EduSnapshotRes) {
             val snapshotRoomRes = snapshotRes.room
-            eduRoom.getRoomInfo().roomName = snapshotRoomRes.roomInfo.roomName
-            eduRoom.getRoomInfo().roomUuid = snapshotRoomRes.roomInfo.roomUuid
-            val roomStatus = snapshotRoomRes.roomState
-            eduRoom.getRoomStatus().isStudentChatAllowed = Convert.extractStudentChatAllowState(
-                    roomStatus.muteChat, (eduRoom as EduRoomImpl).getCurRoomType())
-            eduRoom.getRoomStatus().courseState = Convert.convertRoomState(roomStatus.state)
-            if (roomStatus.state == EduRoomState.START.value) {
-                eduRoom.getRoomStatus().startTime = roomStatus.startTime
+            val roomInfo = (eduRoom as EduRoomImpl).getCurRoomInfo()
+            val roomStatus = eduRoom.getCurRoomStatus()
+            roomInfo.roomName = snapshotRoomRes.roomInfo.roomName
+            roomInfo.roomUuid = snapshotRoomRes.roomInfo.roomUuid
+            val status = snapshotRoomRes.roomState
+            roomStatus.isStudentChatAllowed = Convert.extractStudentChatAllowState(
+                    status.muteChat, (eduRoom as EduRoomImpl).getCurRoomType())
+            roomStatus.courseState = Convert.convertRoomState(status.state)
+            if (status.state == EduRoomState.START.value) {
+                roomStatus.startTime = status.startTime
             }
             snapshotRoomRes.roomProperties?.let {
                 eduRoom.roomProperties = it
@@ -370,7 +372,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     eduRoom.getCurRoomType())
             val validAddedStreamList = addStreamWithUserOnline(snapshotUserRes, eduRoom.getCurStreamList(),
                     eduRoom.getCurRoomType())
-            eduRoom.getRoomStatus().onlineUsersCount = validAddedUserList.size
+            roomStatus.onlineUsersCount = validAddedUserList.size
         }
 
         fun updateRoomProperties(eduRoom: EduRoom, event: CMDRoomPropertyRes) {

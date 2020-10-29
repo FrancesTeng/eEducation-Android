@@ -20,7 +20,7 @@ interface IRteEngine {
     fun createChannel(channelId: String, eventListener: io.agora.rte.listener.RteChannelEventListener): IRteChannel
 
     /**作用于全局*/
-    fun enableLocalMedia(audio: Boolean, video: Boolean)
+    fun enableLocalMedia(audio: Boolean, video: Boolean): Int
 
     /**作用于rtcChannel*/
     fun setClientRole(channelId: String, role: Int): Int
@@ -32,7 +32,7 @@ interface IRteEngine {
     fun unpublish(channelId: String): Int
 
     /**作用于全局*/
-    fun updateLocalStream(hasAudio: Boolean, hasVideo: Boolean)
+    fun updateLocalStream(hasAudio: Boolean, hasVideo: Boolean) :Int
 
     /**作用于rtcChannel*/
     fun muteRemoteStream(channelId: String, uid: Int, muteAudio: Boolean, muteVideo: Boolean): Int
@@ -83,5 +83,5 @@ interface IRteEngine {
 
     fun getError(code: Int): String
 
-    fun ok(): Int
+    fun OK(): Int
 }

@@ -1,5 +1,6 @@
 package io.agora.education.impl.room
 
+import android.text.TextUtils
 import android.util.Log
 import androidx.annotation.NonNull
 import com.google.gson.Gson
@@ -10,6 +11,12 @@ import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.education.api.BuildConfig.API_BASE_URL
 import io.agora.education.api.EduCallback
+import io.agora.education.api.base.EduError
+import io.agora.education.api.base.EduError.Companion.communicationError
+import io.agora.education.api.base.EduError.Companion.httpError
+import io.agora.education.api.base.EduError.Companion.mediaError
+import io.agora.education.api.base.EduError.Companion.notJoinedRoomError
+import io.agora.education.api.base.EduError.Companion.parameterError
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
@@ -21,6 +28,7 @@ import io.agora.education.api.statistics.NetworkQuality
 import io.agora.education.api.stream.data.*
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduChatState
+import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.board.EduBoardImpl
 import io.agora.education.impl.cmd.bean.CMDResponseBody
@@ -41,7 +49,10 @@ import io.agora.education.impl.user.network.UserService
 import io.agora.education.impl.util.CommonUtil
 import io.agora.rtc.Constants.*
 import io.agora.rtc.models.ChannelMediaOptions
+import io.agora.rte.RteCallback
 import io.agora.rte.RteEngineImpl
+import io.agora.rte.data.ErrorType
+import io.agora.rte.data.RteError
 import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rtm.*
 import kotlin.math.max
@@ -49,7 +60,7 @@ import kotlin.math.max
 internal class EduRoomImpl(
         roomInfo: EduRoomInfo,
         roomStatus: EduRoomStatus
-) : EduRoom(roomInfo, roomStatus), RteChannelEventListener {
+) : EduRoom(), RteChannelEventListener {
 
     private val TAG = EduRoomImpl::class.java.simpleName
     internal var syncSession: RoomSyncSession
@@ -88,10 +99,50 @@ internal class EduRoomImpl(
     /**entry接口返回的流信息(可能是上次遗留的也可能是本次autoPublish流*/
     var defaultStreams: MutableList<EduStreamEvent> = mutableListOf()
 
-    lateinit var defaultUserName: String;
+    lateinit var defaultUserName: String
+
+    internal fun getCurRoomUuid(): String {
+        return syncSession.roomInfo.roomUuid
+    }
+
+    internal fun getCurRoomInfo(): EduRoomInfo {
+        return syncSession.roomInfo
+    }
+
+    internal fun getCurRoomStatus(): EduRoomStatus {
+        return syncSession.roomStatus
+    }
+
+    internal fun getCurLocalUser(): EduUser {
+        return syncSession.localUser
+    }
+
+    internal fun getCurLocalUserInfo(): EduUserInfo {
+        return syncSession.localUser.userInfo
+    }
 
     internal fun getCurRoomType(): RoomType {
-        return (getRoomInfo() as EduRoomInfoImpl).roomType
+        return (syncSession.roomInfo as EduRoomInfoImpl).roomType
+    }
+
+    internal fun getCurStudentList(): MutableList<EduUserInfo> {
+        val studentList = mutableListOf<EduUserInfo>()
+        for (element in getCurUserList()) {
+            if (element.role == EduUserRole.STUDENT) {
+                studentList.add(element)
+            }
+        }
+        return studentList
+    }
+
+    internal fun getCurTeacherList(): MutableList<EduUserInfo> {
+        val teacherList = mutableListOf<EduUserInfo>()
+        for (element in getCurUserList()) {
+            if (element.role == EduUserRole.TEACHER) {
+                teacherList.add(element)
+            }
+        }
+        return teacherList
     }
 
     internal fun getCurUserList(): MutableList<EduUserInfo> {
@@ -101,7 +152,7 @@ internal class EduRoomImpl(
     internal fun getCurRemoteUserList(): MutableList<EduUserInfo> {
         val list = mutableListOf<EduUserInfo>()
         syncSession.eduUserInfoList?.forEach {
-            if (it != getLocalUser().userInfo) {
+            if (it != syncSession.localUser.userInfo) {
                 list.add(it)
             }
         }
@@ -115,7 +166,7 @@ internal class EduRoomImpl(
     internal fun getCurRemoteStreamList(): MutableList<EduStreamInfo> {
         val list = mutableListOf<EduStreamInfo>()
         syncSession.eduStreamInfoList?.forEach {
-            if (it.publisher != getLocalUser().userInfo) {
+            if (it.publisher != syncSession.localUser.userInfo) {
                 list.add(it)
             }
         }
@@ -125,7 +176,11 @@ internal class EduRoomImpl(
     /**上课过程中，学生的角色目前不发生改变;
      * join流程包括请求加入classroom的API接口、加入rte、同步roomInfo、同步、本地流初始化成功，任何一步出错即视为join失败*/
     override fun joinClassroom(options: RoomJoinOptions, callback: EduCallback<EduStudent>) {
-        AgoraLog.i("$TAG->用户[${options.userUuid}]准备加入房间:${getRoomInfo().roomUuid}")
+        if (TextUtils.isEmpty(options.userUuid)) {
+            callback.onFailure(parameterError("userUuid"))
+            return
+        }
+        AgoraLog.i("$TAG->用户[${options.userUuid}]准备加入房间:${getCurRoomUuid()}")
         this.curClassType = ClassType.Sub
         this.joining = true
         this.studentJoinCallback = callback
@@ -150,7 +205,7 @@ internal class EduRoomImpl(
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
                 mediaOptions.primaryStreamId.toString(), mediaOptions.getPublishType().value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
-                .joinClassroom(APPID, getRoomInfo().roomUuid, localUserInfo.userUuid, eduJoinClassroomReq)
+                .joinClassroom(APPID, getCurRoomUuid(), localUserInfo.userUuid, eduJoinClassroomReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduEntryRes>> {
                     override fun onSuccess(res: ResponseBody<EduEntryRes>?) {
                         roomEntryRes = res?.data!!
@@ -170,16 +225,16 @@ internal class EduRoomImpl(
                             defaultStreams.addAll(streamEvents)
                         }
                         /**解析返回的room相关数据并同步保存至本地*/
-                        getRoomStatus().startTime = roomEntryRes.room.roomState.startTime
-                        getRoomStatus().courseState = Convert.convertRoomState(roomEntryRes.room.roomState.state)
-                        getRoomStatus().isStudentChatAllowed = Convert.extractStudentChatAllowState(
+                        getCurRoomStatus().startTime = roomEntryRes.room.roomState.startTime
+                        getCurRoomStatus().courseState = Convert.convertRoomState(roomEntryRes.room.roomState.state)
+                        getCurRoomStatus().isStudentChatAllowed = Convert.extractStudentChatAllowState(
                                 roomEntryRes.room.roomState.muteChat, getCurRoomType())
                         roomEntryRes.room.roomProperties?.let {
                             roomProperties = it
                         }
                         /**加入rte(包括rtm和rtc)*/
                         joinRte(rtcToken, roomEntryRes.user.streamUuid.toLong(),
-                                mediaOptions.convert(), object : ResultCallback<Void> {
+                                mediaOptions.convert(), object : RteCallback<Void> {
                             override fun onSuccess(p0: Void?) {
                                 AgoraLog.i("$TAG->joinRte成功")
                                 /**拉取全量数据*/
@@ -191,22 +246,27 @@ internal class EduRoomImpl(
                                                 joinSuccess(syncSession.localUser, studentJoinCallback as EduCallback<EduUser>)
                                             }
 
-                                            override fun onFailure(code: Int, reason: String?) {
-                                                joinFailed(code, reason, studentJoinCallback as EduCallback<EduUser>)
+                                            override fun onFailure(error: EduError) {
+                                                joinFailed(error, studentJoinCallback as EduCallback<EduUser>)
                                             }
                                         })
                                     }
 
-                                    override fun onFailure(code: Int, reason: String?) {
+                                    override fun onFailure(error: EduError) {
                                         AgoraLog.i("$TAG->全量数据拉取失败")
-                                        joinFailed(code, reason, callback as EduCallback<EduUser>)
+                                        joinFailed(error, callback as EduCallback<EduUser>)
                                     }
                                 })
                             }
 
-                            override fun onFailure(p0: ErrorInfo?) {
+                            override fun onFailure(error: RteError) {
                                 AgoraLog.i("$TAG->joinRte失败")
-                                joinFailed(p0?.errorCode!!, p0?.errorDescription, callback as EduCallback<EduUser>)
+                                var eduError = if (error.type == ErrorType.RTC) {
+                                    mediaError(error.errorCode, error.errorDesc)
+                                } else {
+                                    communicationError(error.errorCode, error.errorDesc)
+                                }
+                                joinFailed(eduError, callback as EduCallback<EduUser>)
                             }
                         })
                     }
@@ -215,18 +275,18 @@ internal class EduRoomImpl(
                         AgoraLog.i("$TAG->调用entry接口失败")
                         var error = throwable as? BusinessException
                         error = error ?: BusinessException(throwable?.message)
-                        joinFailed(error?.code, error?.message
-                                ?: throwable?.message, callback as EduCallback<EduUser>)
+                        joinFailed(httpError(error?.code, error?.message ?: throwable?.message),
+                                callback as EduCallback<EduUser>)
                     }
                 }))
     }
 
     private fun joinRte(rtcToken: String, rtcUid: Long, channelMediaOptions: ChannelMediaOptions,
-                        @NonNull callback: ResultCallback<Void>) {
+                        @NonNull callback: RteCallback<Void>) {
         AgoraLog.i("$TAG->加入Rtc和Rtm")
-        RteEngineImpl.setClientRole(getRoomInfo().roomUuid, CLIENT_ROLE_BROADCASTER)
+        RteEngineImpl.setClientRole(getCurRoomUuid(), CLIENT_ROLE_BROADCASTER)
         val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(this)
-        RteEngineImpl[getRoomInfo().roomUuid]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
+        RteEngineImpl[getCurRoomUuid()]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
     }
 
     private fun initOrUpdateLocalStream(classRoomEntryRes: EduEntryRes, roomMediaOptions: RoomMediaOptions,
@@ -251,20 +311,20 @@ internal class EduRoomImpl(
                     /**大班课场景下为audience,小班课一对一都是broadcaster*/
                     val role = if (getCurRoomType() !=
                             RoomType.LARGE_CLASS) CLIENT_ROLE_BROADCASTER else CLIENT_ROLE_AUDIENCE
-                    RteEngineImpl.setClientRole(getRoomInfo().roomUuid, role)
+                    RteEngineImpl.setClientRole(getCurRoomUuid(), role)
                     AgoraLog.i("$TAG->本地用户角色不是观众，则根据roomType:${getCurRoomType()} " +
                             "设置Rtc角色:$role")
                     if (mediaOptions.autoPublish) {
-                        val code = RteEngineImpl.publish(getRoomInfo().roomUuid)
+                        val code = RteEngineImpl.publish(getCurRoomUuid())
                         AgoraLog.i("$TAG->AutoPublish为true,publish结果:$code")
                     }
                 }
                 callback.onSuccess(Unit)
             }
 
-            override fun onFailure(code: Int, reason: String?) {
+            override fun onFailure(error: EduError) {
                 AgoraLog.e("$TAG->初始化或更新本地用户的本地流失败")
-                callback.onFailure(code, reason)
+                callback.onFailure(error)
             }
         })
     }
@@ -274,13 +334,13 @@ internal class EduRoomImpl(
         if (joining) {
             joining = false
             synchronized(joinSuccess) {
-                Log.e(TAG, "加入房间成功:${getRoomInfo().roomUuid}")
+                Log.e(TAG, "加入房间成功:${getCurRoomUuid()}")
                 /**维护本地存储的在线人数*/
-                getRoomStatus().onlineUsersCount = getCurUserList().size
+                getCurRoomStatus().onlineUsersCount = getCurUserList().size
+                joinSuccess = true
                 callback.onSuccess(eduUser as EduStudent)
                 eventListener?.onRemoteUsersInitialized(getCurRemoteUserList(), this@EduRoomImpl)
                 eventListener?.onRemoteStreamsInitialized(getCurRemoteStreamList(), this@EduRoomImpl)
-                joinSuccess = true
                 /**检查是否有默认流信息(直接处理数据)*/
                 val addedStreamsIterable = defaultStreams.iterator()
                 while (addedStreamsIterable.hasNext()) {
@@ -307,7 +367,7 @@ internal class EduRoomImpl(
                     override fun onSuccess(res: Unit?) {
                     }
 
-                    override fun onFailure(code: Int, reason: String?) {
+                    override fun onFailure(error: EduError) {
                     }
                 })
             }
@@ -316,14 +376,14 @@ internal class EduRoomImpl(
 
     /**join失败的情况下，清楚所有本地已存在的缓存数据；判断joining状态防止多次调用
      * 并退出rtm和rtc*/
-    private fun joinFailed(code: Int, reason: String?, callback: EduCallback<EduUser>) {
-        AgoraLog.i("$TAG->joinClassRoom失败,code:$code,reason:$reason")
+    private fun joinFailed(error: EduError, callback: EduCallback<EduUser>) {
+        AgoraLog.i("$TAG->joinClassRoom失败,code:${error.type},msg:${error.msg}")
         if (joining) {
             joining = false
             synchronized(joinSuccess) {
                 joinSuccess = false
                 clearData()
-                callback.onFailure(code, reason)
+                callback.onFailure(error)
             }
         }
     }
@@ -335,79 +395,145 @@ internal class EduRoomImpl(
         getCurStreamList().clear()
     }
 
-    override fun getLocalUser(): EduUser {
-        return syncSession.localUser
-    }
-
-    override fun getRoomInfo(): EduRoomInfo {
-        return syncSession.roomInfo
-    }
-
-    override fun getRoomStatus(): EduRoomStatus {
-        return syncSession.roomStatus
-    }
-
-    override fun getStudentCount(): Int {
-        return getStudentList().size
-    }
-
-    override fun getTeacherCount(): Int {
-        return getTeacherList().size
-    }
-
-    override fun getStudentList(): MutableList<EduUserInfo> {
-        val studentList = mutableListOf<EduUserInfo>()
-        for (element in getFullUserList()) {
-            if (element.role == EduUserRole.STUDENT) {
-                studentList.add(element)
-            }
+    override fun getLocalUser(callback: EduCallback<EduUser>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getLocalUser error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            callback.onSuccess(syncSession.localUser)
         }
-        return studentList
     }
 
-    override fun getTeacherList(): MutableList<EduUserInfo> {
-        val teacherList = mutableListOf<EduUserInfo>()
-        for (element in getFullUserList()) {
-            if (element.role == EduUserRole.TEACHER) {
-                teacherList.add(element)
-            }
+    override fun getRoomInfo(callback: EduCallback<EduRoomInfo>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getRoomInfo error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            callback.onSuccess(syncSession.roomInfo)
         }
-        return teacherList
     }
 
-    override fun getFullStreamList(): MutableList<EduStreamInfo> {
-        return syncSession.eduStreamInfoList
+    override fun getRoomStatus(callback: EduCallback<EduRoomStatus>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getRoomStatus error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            callback.onSuccess(syncSession.roomStatus)
+        }
     }
 
-    /**获取本地缓存的所有用户数据
-     * 当第一个用户进入新房间(暂无用户的房间)的时候，不会有人流数据同步过来，此时如果调用此函数
-     * 需要把本地用户手动添加进去*/
-    override fun getFullUserList(): MutableList<EduUserInfo> {
-//        if (roomSyncSession.eduUserInfoList.size == 0) {
-//            /**把localUserInfo转换为userInfo，保持集合中数据类型统一*/
-//            val userInfo = Convert.convertUserInfo(localUser.userInfo)
-//            roomSyncSession.eduUserInfoList.add(userInfo)
-//        }
-        return syncSession.eduUserInfoList
+    override fun getStudentCount(callback: EduCallback<Int>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getStudentCount error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            callback.onSuccess(getCurStudentList().size)
+        }
+    }
+
+    override fun getTeacherCount(callback: EduCallback<Int>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getTeacherCount error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            callback.onSuccess(getCurTeacherList().size)
+        }
+    }
+
+    override fun getStudentList(callback: EduCallback<MutableList<EduUserInfo>>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getStudentList error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            val studentList = mutableListOf<EduUserInfo>()
+            for (element in getCurUserList()) {
+                if (element.role == EduUserRole.STUDENT) {
+                    studentList.add(element)
+                }
+            }
+            callback.onSuccess(studentList)
+        }
+    }
+
+    override fun getTeacherList(callback: EduCallback<MutableList<EduUserInfo>>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getTeacherList error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            val teacherList = mutableListOf<EduUserInfo>()
+            for (element in getCurUserList()) {
+                if (element.role == EduUserRole.TEACHER) {
+                    teacherList.add(element)
+                }
+            }
+            callback.onSuccess(teacherList)
+        }
+    }
+
+    override fun getFullStreamList(callback: EduCallback<MutableList<EduStreamInfo>>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getFullStreamList error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            callback.onSuccess(syncSession.eduStreamInfoList)
+        }
+    }
+
+    /**获取本地缓存的所有用户数据*/
+    override fun getFullUserList(callback: EduCallback<MutableList<EduUserInfo>>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->eduRoom[${getCurRoomUuid()}] getFullUserList error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            callback.onSuccess(syncSession.eduUserInfoList)
+        }
     }
 
     /**退出房间之前，必须调用*/
-    override fun leave() {
-        AgoraLog.w("$TAG->离开教室")
-        clearData()
-        if (!leaveRoom) {
-            AgoraLog.w("$TAG->离开Rte频道:${getRoomInfo().roomUuid}")
-            RteEngineImpl[getRoomInfo().roomUuid]?.leave()
-            leaveRoom = true
+    override fun leave(callback: EduCallback<Unit>) {
+        if (!joinSuccess) {
+            val error = notJoinedRoomError()
+            AgoraLog.e("$TAG->leave eduRoom[${getCurRoomUuid()}] error:${error.msg}")
+            callback.onFailure(error)
+        } else {
+            AgoraLog.w("$TAG->离开教室")
+            clearData()
+            if (!leaveRoom) {
+                AgoraLog.w("$TAG->准备离开Rte频道:${getCurRoomUuid()}")
+                RteEngineImpl[getCurRoomUuid()]?.leave(object : RteCallback<Unit> {
+                    override fun onSuccess(res: Unit?) {
+                        Log.e(TAG, "成功离开Rte频道")
+                    }
+
+                    override fun onFailure(error: RteError) {
+                        Log.e(TAG, "离开RTM频道失败:code:${error.errorCode},msg:${error.errorDesc}")
+                    }
+                })
+                leaveRoom = true
+            }
+            RteEngineImpl[getCurRoomUuid()]?.release()
+            eventListener = null
+            syncSession.localUser.eventListener = null
+            studentJoinCallback = null
+            (getCurLocalUser() as EduUserImpl).removeAllSurfaceView()
+            /*移除掉当前room*/
+            val rtn = EduManagerImpl.removeRoom(this)
+            AgoraLog.w("$TAG->从EduManager移除此教室:$rtn")
+            callback.onSuccess(Unit)
         }
-        RteEngineImpl[getRoomInfo().roomUuid]?.release()
-        eventListener = null
-        syncSession.localUser.eventListener = null
-        studentJoinCallback = null
-        (getLocalUser() as EduUserImpl).removeAllSurfaceView()
-        /**移除掉当前room*/
-        val rtn = EduManagerImpl.removeRoom(this)
-        AgoraLog.w("$TAG->从EduManager移除此教室:$rtn")
+    }
+
+    override fun getRoomUuid(): String {
+        return syncSession.roomInfo.roomUuid
     }
 
     override fun onChannelMsgReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
@@ -426,7 +552,7 @@ internal class EduRoomImpl(
                     override fun onSuccess(res: Unit?) {
                     }
 
-                    override fun onFailure(code: Int, reason: String?) {
+                    override fun onFailure(error: EduError) {
                     }
                 })
             }
@@ -437,6 +563,6 @@ internal class EduRoomImpl(
         /*上行和下行取最差的一个;类型转换之后，直接转发*/
         val value = max(txQuality, rxQuality)
         val quality: NetworkQuality = Convert.convertNetworkQuality(value)
-        eventListener?.onNetworkQualityChanged(quality, getLocalUser().userInfo, this)
+        eventListener?.onNetworkQualityChanged(quality, getCurLocalUser().userInfo, this)
     }
 }

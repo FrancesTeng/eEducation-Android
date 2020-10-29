@@ -1,7 +1,9 @@
 package io.agora.education.api
 
+import io.agora.education.api.base.EduError
+
 interface EduCallback<T> {
     fun onSuccess(res: T?)
 
-    fun onFailure(code: Int, reason: String?)
+    fun onFailure(error: EduError)
 }

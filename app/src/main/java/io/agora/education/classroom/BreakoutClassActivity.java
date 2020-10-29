@@ -23,16 +23,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.OnClick;
 import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.RetrofitManager;
-import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.base.EduError;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduChatMsgType;
 import io.agora.education.api.message.EduMsg;
@@ -50,7 +49,9 @@ import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.user.EduStudent;
+import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduBaseUserInfo;
+import io.agora.education.api.user.data.EduLocalUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
@@ -58,7 +59,6 @@ import io.agora.education.api.user.data.EduUserStateChangeType;
 import io.agora.education.classroom.adapter.ClassVideoAdapter;
 import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.board.BoardInfo;
-import io.agora.education.classroom.bean.board.BoardState;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.bean.msg.ChannelMsg;
 import io.agora.education.classroom.bean.record.RecordBean;
@@ -68,6 +68,7 @@ import io.agora.education.service.CommonService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.service.bean.request.AllocateGroupReq;
 import io.agora.education.service.bean.response.EduRoomInfoRes;
+import kotlin.Unit;
 
 import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.api.BuildConfig.API_BASE_URL;
@@ -110,13 +111,16 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     }
 
                     @Override
-                    public void onFailure(int code, @Nullable String reason) {
-                        joinFailed(code, reason);
+                    public void onFailure(@NotNull EduError error) {
+                        joinFailed(error.getType(), error.getMsg());
                     }
                 });
         classVideoAdapter = new ClassVideoAdapter();
     }
 
+    /**
+     * @param roomUuid 大班的roomUuid
+     */
     private void allocateGroup(String roomUuid, String userUuid, EduCallback<EduRoomInfo> callback) {
         AllocateGroupReq req = new AllocateGroupReq();
         RetrofitManager.instance().getService(API_BASE_URL, CommonService.class)
@@ -125,7 +129,15 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     @Override
                     public void onFailure(@Nullable Throwable throwable) {
                         Log.e(TAG, "申请小班信息失败:" + throwable.getMessage());
-                        getMainEduRoom().leave();
+                        getMainEduRoom().leave(new EduCallback<Unit>() {
+                            @Override
+                            public void onSuccess(@Nullable Unit res) {
+                            }
+
+                            @Override
+                            public void onFailure(@NotNull EduError error) {
+                            }
+                        });
                         joinFailed(AgoraError.INTERNAL_ERROR.getValue(), throwable.getMessage());
                     }
 
@@ -146,33 +158,53 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
      * @param userUuid 学生uuid
      */
     private void joinSubEduRoom(EduRoom mainRoom, String userUuid, String userName) {
-        allocateGroup(mainRoom.getRoomInfo().getRoomUuid(), userUuid, new EduCallback<EduRoomInfo>() {
+        allocateGroup(roomEntry.getRoomUuid(), userUuid, new EduCallback<EduRoomInfo>() {
             @Override
             public void onSuccess(@Nullable EduRoomInfo res) {
                 if (res != null) {
                     RoomCreateOptions createOptions = new RoomCreateOptions(res.getRoomUuid(),
                             res.getRoomName(), RoomType.BREAKOUT_CLASS.getValue());
-                    subEduRoom = buildEduRoom(createOptions, mainRoom.getRoomInfo().getRoomUuid());
+                    subEduRoom = buildEduRoom(createOptions, res.getRoomUuid());
                     joinRoom(subEduRoom, userName, userUuid, true, true, true, new EduCallback<EduStudent>() {
                         @Override
                         public void onSuccess(@Nullable EduStudent res) {
                             /**设置全局的userToken(注意同一个user在不同的room内，token不一样)*/
-                            RetrofitManager.instance().addHeader("token",
-                                    subEduRoom.getLocalUser().getUserInfo().getUserToken());
+                            subEduRoom.getLocalUser(new EduCallback<EduUser>() {
+                                @Override
+                                public void onSuccess(@Nullable EduUser user) {
+                                    if (user != null) {
+                                        RetrofitManager.instance().addHeader("token",
+                                                user.getUserInfo().getUserToken());
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(@NotNull EduError error) {
+                                }
+                            });
                             runOnUiThread(() -> showFragmentWithJoinSuccess());
                         }
 
                         @Override
-                        public void onFailure(int code, @Nullable String reason) {
-                            joinFailed(code, reason);
+                        public void onFailure(@NotNull EduError error) {
+                            getMainEduRoom().leave(new EduCallback<Unit>() {
+                                @Override
+                                public void onSuccess(@Nullable Unit res) {
+                                }
+
+                                @Override
+                                public void onFailure(@NotNull EduError error) {
+                                }
+                            });
+                            joinFailed(error.getType(), error.getMsg());
                         }
                     });
                 }
             }
 
             @Override
-            public void onFailure(int code, @Nullable String reason) {
-                Log.e(TAG, "进入下班失败->code:" + code + ", reason:" + reason);
+            public void onFailure(@NotNull EduError error) {
+                Log.e(TAG, "进入下班失败->code:" + error.getType() + ", reason:" + error.getMsg());
             }
         });
     }
@@ -212,22 +244,36 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     }
 
     @Override
-    protected EduUserInfo getLocalUserInfo() {
-//        return subEduRoom.getLocalUser().getUserInfo();
-        return getMainEduRoom().getLocalUser().getUserInfo();
-    }
-
-    @Override
     public void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
-        /**消息需要添加roomUuid*/
-        /**调用super方法把消息发送到大房间中去；但是fromRoomUuid是小房间的-Web端需要*/
-        EduRoomInfo subRoomInfo = subEduRoom.getRoomInfo();
-        super.sendRoomChatMsg(new ChannelMsg.BreakoutChatMsgContent(EduUserRole.STUDENT.getValue(),
-                msg, subRoomInfo.getRoomUuid(), subRoomInfo.getRoomName()).toJsonString(), callback);
-        /**把消息发送到小房间去*/
-        subEduRoom.getLocalUser().sendRoomChatMessage(new ChannelMsg.BreakoutChatMsgContent(
-                EduUserRole.STUDENT.getValue(),
-                msg, subRoomInfo.getRoomUuid(), subRoomInfo.getRoomName()).toJsonString(), callback);
+        subEduRoom.getRoomInfo(new EduCallback<EduRoomInfo>() {
+            @Override
+            public void onSuccess(@Nullable EduRoomInfo subRoomInfo) {
+                /**消息需要添加roomUuid*/
+                /**调用super方法把消息发送到大房间中去；但是fromRoomUuid是小房间的-Web端需要*/
+                BreakoutClassActivity.super.sendRoomChatMsg(new ChannelMsg.BreakoutChatMsgContent(
+                        EduUserRole.STUDENT.getValue(), msg, subRoomInfo.getRoomUuid(),
+                        subRoomInfo.getRoomName()).toJsonString(), callback);
+                subEduRoom.getLocalUser(new EduCallback<EduUser>() {
+                    @Override
+                    public void onSuccess(@Nullable EduUser user) {
+                        /**把消息发送到小房间去*/
+                        user.sendRoomChatMessage(new ChannelMsg.BreakoutChatMsgContent(
+                                EduUserRole.STUDENT.getValue(),
+                                msg, subRoomInfo.getRoomUuid(), subRoomInfo.getRoomName()).toJsonString(), callback);
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
     }
 
     @Override
@@ -245,31 +291,55 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     /**
      * 获取当前所在 超级小班 的 小班级 中的所有学生的流
      */
-    private List<EduStreamInfo> getCurAllStudentStream() {
-        return subEduRoom.getFullStreamList();
+    private void getCurAllStudentStream(EduCallback<List<EduStreamInfo>> callback) {
+        subEduRoom.getFullStreamList(callback);
     }
 
     @Override
-    protected List<EduUserInfo> getCurFullUser() {
-        List<EduUserInfo> list = new ArrayList<>();
-//        List<EduUserInfo> mainUsers = getMainEduRoom().getFullUserList();
-        List<EduUserInfo> subUsers = subEduRoom.getFullUserList();
-//        list.addAll(mainUsers);
-        list.addAll(subUsers);
-        return list;
+    protected void getCurFullUser(EduCallback<List<EduUserInfo>> callback) {
+        subEduRoom.getFullUserList(new EduCallback<List<EduUserInfo>>() {
+            @Override
+            public void onSuccess(@Nullable List<EduUserInfo> subUsers) {
+                List<EduUserInfo> list = new ArrayList<>();
+                list.addAll(subUsers);
+                callback.onSuccess(list);
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+                callback.onFailure(error);
+            }
+        });
     }
 
     @Override
-    protected List<EduStreamInfo> getCurFullStream() {
-        List<EduStreamInfo> list = new ArrayList<>();
-        List<EduStreamInfo> mainStreams = getMainEduRoom().getFullStreamList();
-        List<EduStreamInfo> subStreams = new ArrayList<>();
-        if (subEduRoom != null) {
-            subStreams = subEduRoom.getFullStreamList();
-        }
-        list.addAll(mainStreams);
-        list.addAll(subStreams);
-        return list;
+    protected void getCurFullStream(EduCallback<List<EduStreamInfo>> callback) {
+        getMainEduRoom().getFullStreamList(new EduCallback<List<EduStreamInfo>>() {
+            @Override
+            public void onSuccess(@Nullable List<EduStreamInfo> mainStreams) {
+                List<EduStreamInfo> list = new ArrayList<>();
+                list.addAll(mainStreams);
+                if (subEduRoom != null) {
+                    subEduRoom.getFullStreamList(new EduCallback<List<EduStreamInfo>>() {
+                        @Override
+                        public void onSuccess(@Nullable List<EduStreamInfo> subStreams) {
+                            list.addAll(subStreams);
+                            callback.onSuccess(list);
+                        }
+
+                        @Override
+                        public void onFailure(@NotNull EduError error) {
+                            callback.onFailure(error);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+                callback.onFailure(error);
+            }
+        });
     }
 
     private void showVideoList(List<EduStreamInfo> list) {
@@ -296,6 +366,56 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         });
     }
 
+
+    /**
+     * 刷新视频列表和学生列表
+     */
+    private void notifyVideoUserListForLocal(boolean notifyCameraVideo) {
+        getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
+            @Override
+            public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
+                /**刷新视频列表*/
+                if (notifyCameraVideo) {
+                    showVideoList(streamInfos);
+                }
+                userListFragment.updateLocalStream(getLocalCameraStream());
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
+    }
+
+    private void notifyVideoUserList(boolean notifyCameraVideo, EduRoom classRoom) {
+        getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
+            @Override
+            public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
+                /**刷新视频列表*/
+                if (notifyCameraVideo) {
+                    showVideoList(streamInfos);
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+            }
+        });
+        if (classRoom.equals(subEduRoom)) {
+            getCurAllStudentStream(new EduCallback<List<EduStreamInfo>>() {
+                @Override
+                public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
+                    userListFragment.setUserList(streamInfos);
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
+        }
+    }
+
     @OnClick(R.id.iv_float)
     public void onClick(View view) {
         boolean isSelected = view.isSelected();
@@ -306,7 +426,15 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     protected void onDestroy() {
         if (getMyMediaRoom() != null) {
-            getMyMediaRoom().leave();
+            getMyMediaRoom().leave(new EduCallback<Unit>() {
+                @Override
+                public void onSuccess(@Nullable Unit res) {
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
             subEduRoom = null;
         }
         super.onDestroy();
@@ -340,30 +468,46 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             /**判断大班级中的roomProperties中是否有白板信息，如果没有，发起请求,等待RTM通知*/
             if (mainBoardBean == null) {
                 Log.e(TAG, "请求大房间的白板信息");
-                requestBoardInfo((getMainEduRoom().getLocalUser().getUserInfo()).getUserToken(),
-                        getAppId(), classRoom.getRoomInfo().getRoomUuid());
+                getLocalUserInfo(new EduCallback<EduUserInfo>() {
+                    @Override
+                    public void onSuccess(@Nullable EduUserInfo userInfo) {
+                        requestBoardInfo(((EduLocalUserInfo) userInfo).getUserToken(),
+                                getAppId(), roomEntry.getRoomUuid());
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+                    }
+                });
             } else {
                 BoardInfo info = mainBoardBean.getInfo();
-                BoardState state = mainBoardBean.getState();
-                runOnUiThread(() -> {
-                    whiteboardFragment.initBoardWithRoomToken(info.getBoardId(),
-                            info.getBoardToken(), getLocalUserInfo().getUserUuid());
-//                    boolean follow = whiteBoardIsFollowMode(state);
-//                    whiteboardFragment.disableCameraTransform(follow);
-//                    boolean granted = whiteBoardIsGranted((state));
-//                    whiteboardFragment.disableDeviceInputs(!granted);
-//                    if (follow) {
-//                        layout_whiteboard.setVisibility(View.VISIBLE);
-//                        layout_share_video.setVisibility(View.GONE);
-//                    }
+                getLocalUserInfo(new EduCallback<EduUserInfo>() {
+                    @Override
+                    public void onSuccess(@Nullable EduUserInfo userInfo) {
+                        runOnUiThread(() -> whiteboardFragment.initBoardWithRoomToken(
+                                info.getBoardId(), info.getBoardToken(), userInfo.getUserUuid()));
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+
+                    }
                 });
             }
-            title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
+            setTitleData();
         } else {
-            EduRoomStatus roomStatus = getMainEduRoom().getRoomStatus();
-            title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
-                    System.currentTimeMillis() - roomStatus.getStartTime());
-            chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
+            getMainEduRoom().getRoomStatus(new EduCallback<EduRoomStatus>() {
+                @Override
+                public void onSuccess(@Nullable EduRoomStatus roomStatus) {
+                    title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
+                            System.currentTimeMillis() - roomStatus.getStartTime());
+                    chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
             /**处理roomProperties*/
             Map<String, Object> roomProperties = classRoom.getRoomProperties();
             String boardJson = getProperty(roomProperties, BOARD);
@@ -378,8 +522,16 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurAllStudentStream());
-            title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
+            getCurAllStudentStream(new EduCallback<List<EduStreamInfo>>() {
+                @Override
+                public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
+                    userListFragment.setUserList(streamInfos);
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
         }
     }
 
@@ -387,8 +539,16 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         super.onRemoteUserLeft(userEvent, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurAllStudentStream());
-            title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
+            getCurAllStudentStream(new EduCallback<List<EduStreamInfo>>() {
+                @Override
+                public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
+                    userListFragment.setUserList(streamInfos);
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
         }
     }
 
@@ -418,48 +578,80 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         EduUserInfo fromUser = eduChatMsg.getFromUser();
         ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(fromUser, eduChatMsg.getMessage(),
                 eduChatMsg.getType(), true, getRoleStr(fromUser.getRole().getValue()));
-        chatMsg.isMe = fromUser.equals(classRoom.getLocalUser().getUserInfo());
-        ChannelMsg.BreakoutChatMsgContent msgContent = new Gson().fromJson(chatMsg.getMessage(),
-                ChannelMsg.BreakoutChatMsgContent.class);
-        chatMsg.setMessage(msgContent.getContent());
-        boolean rev = false;
-        if (classRoom.equals(getMainEduRoom())) {
-            /**大班的消息只接收老师发往大班的消息和老师发往自己所在小班级的消息*/
-            if (fromUser.getRole().equals(EduUserRole.TEACHER) || msgContent.getFromRoomUuid().equals(
-                    subEduRoom.getRoomInfo().getRoomUuid())) {
-                rev = true;
+        classRoom.getLocalUser(new EduCallback<EduUser>() {
+            @Override
+            public void onSuccess(@Nullable EduUser user) {
+                chatMsg.isMe = fromUser.equals(user.getUserInfo());
+                ChannelMsg.BreakoutChatMsgContent msgContent = new Gson().fromJson(chatMsg.getMessage(),
+                        ChannelMsg.BreakoutChatMsgContent.class);
+                chatMsg.setMessage(msgContent.getContent());
+                boolean isTeacherMsgToMain = classRoom.equals(getMainEduRoom()) && fromUser.getRole()
+                        .equals(EduUserRole.TEACHER) && TextUtils.isEmpty(msgContent.getFromRoomUuid());
+                subEduRoom.getRoomInfo(new EduCallback<EduRoomInfo>() {
+                    @Override
+                    public void onSuccess(@Nullable EduRoomInfo roomInfo) {
+                        boolean isTeacherMsgToSub = classRoom.equals(getMainEduRoom()) && fromUser.getRole()
+                                .equals(EduUserRole.TEACHER) && msgContent.getFromRoomUuid().equals(
+                                roomInfo.getRoomUuid());
+                        boolean isGroupMsg = classRoom.equals(subEduRoom);
+                        if (isTeacherMsgToMain || isTeacherMsgToSub || isGroupMsg) {
+                            chatRoomFragment.addMessage(chatMsg);
+                            Log.e(TAG, "成功添加一条聊天消息");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+                    }
+                });
             }
-        } else if (classRoom.equals(subEduRoom)) {
-            /**自己当前所在小班级的消息永远接收*/
-            rev = true;
-        }
-        boolean isTeacherMsgToMain = classRoom.equals(getMainEduRoom()) && fromUser.getRole()
-                .equals(EduUserRole.TEACHER) && TextUtils.isEmpty(msgContent.getFromRoomUuid());
-        boolean isTeacherMsgToSub = classRoom.equals(getMainEduRoom()) && fromUser.getRole()
-                .equals(EduUserRole.TEACHER) && msgContent.getFromRoomUuid().equals(subEduRoom
-                .getRoomInfo().getRoomUuid());
-        boolean isGroupMsg = classRoom.equals(subEduRoom);
-        if (isTeacherMsgToMain || isTeacherMsgToSub || isGroupMsg) {
-            chatRoomFragment.addMessage(chatMsg);
-            Log.e(TAG, "成功添加一条聊天消息");
-        }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+            }
+        });
     }
 
     @Override
     public void onUserChatMessageReceived(@NotNull EduChatMsg chatMsg) {
         super.onUserChatMessageReceived(chatMsg);
-//        if (classRoom.equals(subEduRoom)) {
-//        }
     }
 
     @Override
-    public void onRemoteStreamsInitialized(@NotNull List<? extends
-            EduStreamInfo> streams, @NotNull EduRoom classRoom) {
+    public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams,
+                                           @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
         if (classRoom.equals(subEduRoom)) {
-            userListFragment.setLocalUserUuid(classRoom.getLocalUser().getUserInfo().getUserUuid());
-            userListFragment.setUserList(getCurAllStudentStream());
-            showVideoList(getCurFullStream());
+            classRoom.getLocalUser(new EduCallback<EduUser>() {
+                @Override
+                public void onSuccess(@Nullable EduUser user) {
+                    userListFragment.setLocalUserUuid(user.getUserInfo().getUserUuid());
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
+            getCurAllStudentStream(new EduCallback<List<EduStreamInfo>>() {
+                @Override
+                public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
+                    userListFragment.setUserList(streamInfos);
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
+            getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
+                @Override
+                public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
+                    showVideoList(streamInfos);
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
         } else {
             boolean notify = false;
             for (EduStreamInfo streamInfo : streams) {
@@ -485,8 +677,17 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             }
             if (notify) {
                 /*此时小组房间可能还没有加入成功，所以只刷新大房间的流*/
-                List<EduStreamInfo> list = getMainEduRoom().getFullStreamList();
-                showVideoList(list);
+                getMainEduRoom().getFullStreamList(new EduCallback<List<EduStreamInfo>>() {
+                    @Override
+                    public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
+                        showVideoList(streamInfos);
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+
+                    }
+                });
             }
         }
     }
@@ -508,14 +709,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     break;
             }
         }
-        /**有远端Camera流添加，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流添加，刷新视频列表");
-            showVideoList(getCurFullStream());
         }
-        if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurAllStudentStream());
-        }
+        notifyVideoUserList(notify, classRoom);
     }
 
     @Override
@@ -534,14 +731,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             default:
                 break;
         }
-        /**有远端Camera流添加，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
-            showVideoList(getCurFullStream());
         }
-        if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurAllStudentStream());
-        }
+        notifyVideoUserList(notify, classRoom);
     }
 
     @Override
@@ -561,14 +754,10 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                     break;
             }
         }
-        /**有远端Camera流被移除，刷新视频列表*/
         if (notify) {
             Log.e(TAG, "有远端Camera流被移除，刷新视频列表");
-            showVideoList(getCurFullStream());
         }
-        if (classRoom.equals(subEduRoom)) {
-            userListFragment.setUserList(getCurAllStudentStream());
-        }
+        notifyVideoUserList(notify, classRoom);
     }
 
     @Override
@@ -576,27 +765,35 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
             operatorUser, @NotNull EduRoom classRoom) {
         /**不调用父类中的super方法*/
         if (classRoom.equals(getMainEduRoom())) {
-            EduRoomStatus roomStatus = classRoom.getRoomStatus();
-            switch (event) {
-                case CourseState:
-                    Log.e(TAG, "班级:" + getMainEduRoom().getRoomInfo().getRoomUuid() + "内的课堂状态->"
-                            + roomStatus.getCourseState());
-                    title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
-                            System.currentTimeMillis() - roomStatus.getStartTime());
-                    break;
-                case AllStudentsChat:
-                    chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
-                    break;
-                default:
-                    break;
-            }
+            classRoom.getRoomStatus(new EduCallback<EduRoomStatus>() {
+                @Override
+                public void onSuccess(@Nullable EduRoomStatus roomStatus) {
+                    switch (event) {
+                        case CourseState:
+                            Log.e(TAG, "班级:" + roomEntry.getRoomUuid() + "内的课堂状态->"
+                                    + roomStatus.getCourseState());
+                            title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
+                                    System.currentTimeMillis() - roomStatus.getStartTime());
+                            break;
+                        case AllStudentsChat:
+                            chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
         }
     }
 
     @Override
     public void onRoomPropertyChanged(@NotNull EduRoom
                                               classRoom, @Nullable Map<String, Object> cause) {
-        if (!classRoom.equals(subEduRoom)) {
+        if (classRoom.equals(getMainEduRoom())) {
             Log.e(TAG, "收到大房间的roomProperty改变的数据");
             Map<String, Object> roomProperties = classRoom.getRoomProperties();
             String boardJson = getProperty(roomProperties, BOARD);
@@ -604,17 +801,17 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 Log.e(TAG, "首次获取到大房间的白板信息->" + boardJson);
                 /**首次获取到白板信息*/
                 mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
-                runOnUiThread(() -> {
-                    whiteboardFragment.initBoardWithRoomToken(mainBoardBean.getInfo().getBoardId(),
-                            mainBoardBean.getInfo().getBoardToken(), getLocalUserInfo().getUserUuid());
-//                    boolean follow = whiteBoardIsFollowMode(mainBoardBean.getState());
-//                    whiteboardFragment.disableCameraTransform(follow);
-//                    boolean granted = whiteBoardIsGranted((mainBoardBean.getState()));
-//                    whiteboardFragment.disableDeviceInputs(!granted);
-//                    if (follow) {
-//                        layout_whiteboard.setVisibility(View.VISIBLE);
-//                        layout_share_video.setVisibility(View.GONE);
-//                    }
+                getLocalUserInfo(new EduCallback<EduUserInfo>() {
+                    @Override
+                    public void onSuccess(@Nullable EduUserInfo userInfo) {
+                        runOnUiThread(() -> whiteboardFragment.initBoardWithRoomToken(
+                                mainBoardBean.getInfo().getBoardId(),
+                                mainBoardBean.getInfo().getBoardToken(), userInfo.getUserUuid()));
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+                    }
                 });
             }
             String recordJson = getProperty(roomProperties, RECORD);
@@ -623,11 +820,19 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                 if (mainRecordBean == null || tmp.getState() != mainRecordBean.getState()) {
                     mainRecordBean = tmp;
                     if (mainRecordBean.getState() == END) {
-                        RecordMsg recordMsg = new RecordMsg(getMainEduRoom().getRoomInfo().getRoomUuid(),
-                                getLocalUserInfo(), getString(R.string.replay_link),
-                                EduChatMsgType.Text.getValue());
-                        recordMsg.isMe = true;
-                        chatRoomFragment.addMessage(recordMsg);
+                        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+                            @Override
+                            public void onSuccess(@Nullable EduUserInfo userInfo) {
+                                RecordMsg recordMsg = new RecordMsg(roomEntry.getRoomUuid(), userInfo,
+                                        getString(R.string.replay_link), EduChatMsgType.Text.getValue());
+                                recordMsg.isMe = true;
+                                chatRoomFragment.addMessage(recordMsg);
+                            }
+
+                            @Override
+                            public void onFailure(@NotNull EduError error) {
+                            }
+                        });
                     }
                 }
             }
@@ -661,9 +866,7 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     public void onLocalUserUpdated(@NotNull EduUserEvent
                                            userEvent, @NotNull EduUserStateChangeType type) {
         super.onLocalUserUpdated(userEvent, type);
-        /**更新用户信息*/
-        showVideoList(getCurFullStream());
-        userListFragment.updateLocalStream(getLocalCameraStream());
+        notifyVideoUserListForLocal(true);
     }
 
     @Override
@@ -675,16 +878,14 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
-        showVideoList(getCurFullStream());
-        userListFragment.updateLocalStream(getLocalCameraStream());
+        notifyVideoUserListForLocal(true);
     }
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent
                                              streamEvent, @NotNull EduStreamStateChangeType type) {
         super.onLocalStreamUpdated(streamEvent, type);
-        showVideoList(getCurFullStream());
-        userListFragment.updateLocalStream(getLocalCameraStream());
+        notifyVideoUserListForLocal(true);
     }
 
     @Override

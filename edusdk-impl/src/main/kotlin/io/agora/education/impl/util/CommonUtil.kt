@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomType
 import io.agora.education.impl.BuildConfig
+import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.EduRoomInfoImpl
 
 internal class CommonUtil {
@@ -12,7 +13,7 @@ internal class CommonUtil {
         fun buildRtcOptionalInfo(eduRoom: EduRoom): String {
             val info = JsonObject()
             info.addProperty("demo_ver", BuildConfig.VERSION_NAME)
-            when ((eduRoom.getRoomInfo() as EduRoomInfoImpl).roomType) {
+            when (((eduRoom as EduRoomImpl).getCurRoomInfo() as EduRoomInfoImpl).roomType) {
                 RoomType.ONE_ON_ONE -> {
                     info.addProperty("demo_scenario", "One on One Classroom")
                 }

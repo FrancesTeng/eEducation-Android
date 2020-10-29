@@ -7,9 +7,9 @@ import io.agora.rtm.ResultCallback
 interface IRteChannel {
 
     fun join(rtcOptionalInfo: String, rtcToken: String, rtcUid: Long, mediaOptions: ChannelMediaOptions,
-             @NonNull callback: ResultCallback<Void>)
+             @NonNull callback: RteCallback<Void>)
 
-    fun leave()
+    fun leave(callback: RteCallback<Unit>)
 
     fun release()
 }

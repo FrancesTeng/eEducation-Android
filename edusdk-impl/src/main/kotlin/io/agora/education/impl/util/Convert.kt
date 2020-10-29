@@ -220,7 +220,7 @@ internal class Convert {
                     val videoSourceType = convertVideoSourceType(it.videoSourceType)
                     val streamInfo = EduStreamInfoImpl(it.streamUuid, it.streamName, videoSourceType,
                             it.videoState == EduVideoState.Open.value,
-                            it.audioState == EduAudioState.Open.value, eduRoom.getLocalUser().userInfo,
+                            it.audioState == EduAudioState.Open.value, eduRoom.getCurLocalUserInfo(),
                             it.updateTime
                     )
                     /**整合流信息到本地缓存中*/

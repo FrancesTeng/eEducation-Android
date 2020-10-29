@@ -1,6 +1,7 @@
 package io.agora.education.impl.manager
 
 import android.os.Build
+import android.text.TextUtils
 import android.util.Base64
 import com.google.gson.Gson
 import io.agora.Constants.Companion.APPID
@@ -12,12 +13,16 @@ import io.agora.base.network.BusinessException
 import io.agora.education.api.BuildConfig
 import io.agora.education.api.BuildConfig.API_BASE_URL
 import io.agora.education.api.EduCallback
+import io.agora.education.api.base.EduError
+import io.agora.education.api.base.EduError.Companion.communicationError
+import io.agora.education.api.base.EduError.Companion.httpError
 import io.agora.education.api.logger.DebugItem
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.manager.EduManager
 import io.agora.education.api.manager.EduManagerOptions
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.*
+import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.util.CryptoUtil
 import io.agora.education.impl.ResponseBody
 import io.agora.education.impl.network.RetrofitManager
@@ -32,6 +37,7 @@ import io.agora.log.LogManager
 import io.agora.log.UploadManager
 import io.agora.rte.RteCallback
 import io.agora.rte.RteEngineImpl
+import io.agora.rte.data.RteError
 import io.agora.rte.listener.RteEngineEventListener
 import io.agora.rtm.RtmMessage
 import io.agora.rtm.RtmStatusCode
@@ -88,7 +94,13 @@ internal class EduManagerImpl(
         logMessage("${TAG}: 初始化EduManagerImpl完成", LogLevel.INFO)
     }
 
-    override fun createClassroom(config: RoomCreateOptions): EduRoom {
+    override fun createClassroom(config: RoomCreateOptions): EduRoom? {
+        if (TextUtils.isEmpty(config.roomUuid) || TextUtils.isEmpty(config.roomName)) {
+            return null
+        }
+        if (!RoomType.roomTypeIsValid(config.roomType)) {
+            return null
+        }
         val eduRoomInfo = EduRoomInfoImpl(config.roomType, config.roomUuid, config.roomName)
         val status = EduRoomStatus(EduRoomState.INIT, 0, true, 0)
         val room = EduRoomImpl(eduRoomInfo, status)
@@ -113,9 +125,11 @@ internal class EduManagerImpl(
                                             callback.onSuccess(res)
                                         }
 
-                                        override fun onFailure(code: Int, reason: String?) {
-                                            logMessage("${TAG}: 登录RTM失败->code:$code,reason:$reason", LogLevel.ERROR)
-                                            callback.onFailure(code, reason)
+                                        override fun onFailure(error: RteError) {
+                                            logMessage("${TAG}: 登录RTM失败->code:${error.errorCode}," +
+                                                    "reason:${error.errorDesc}", LogLevel.ERROR)
+                                            callback.onFailure(communicationError(error.errorCode,
+                                                    error.errorDesc))
                                         }
                                     })
                         }
@@ -127,7 +141,8 @@ internal class EduManagerImpl(
                         error?.code?.let {
                             logMessage("${TAG}: 调用login接口失败->code:${error?.code}, reason:${error?.message
                                     ?: throwable?.message}", LogLevel.ERROR)
-                            callback.onFailure(error?.code, error?.message ?: throwable?.message)
+                            callback.onFailure(httpError(error?.code, error?.message
+                                    ?: throwable?.message))
                         }
                     }
                 }))
@@ -154,7 +169,7 @@ internal class EduManagerImpl(
                 AgoraLog.e(message)
             }
         }
-        return EduError(-1, "")
+        return EduError(AgoraError.NONE.value, "")
     }
 
     override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): EduError {
@@ -176,7 +191,8 @@ internal class EduManagerImpl(
                         error?.code?.let {
                             logMessage("${TAG}: 日志上传错误->code:${error?.code}, reason:${error?.message
                                     ?: throwable?.message}", LogLevel.ERROR)
-                            callback.onFailure(error?.code, error?.message ?: throwable?.message)
+                            callback.onFailure(httpError(error?.code, error?.message
+                                    ?: throwable?.message))
                         }
                     }
                 })
@@ -185,19 +201,20 @@ internal class EduManagerImpl(
 
     override fun onConnectionStateChanged(p0: Int, p1: Int) {
         logMessage("${TAG}: RTM连接状态发生改变->state:$p0,reason:$p1", LogLevel.INFO)
-        /**断线重连之后，同步至每一个教室*/
+        /*断线重连之后，同步至每一个教室*/
         eduRooms?.forEach {
             if (rtmConnectState.isReconnecting() &&
                     p0 == RtmStatusCode.ConnectionState.CONNECTION_STATE_CONNECTED) {
-                logMessage("${TAG}: RTM断线重连，请求教室${it.getRoomInfo().roomUuid}内丢失的消息", LogLevel.INFO)
-                (it as EduRoomImpl).syncSession.fetchLostSequence(object : EduCallback<Unit> {
+                logMessage("${TAG}: RTM断线重连，请求教室${(it as EduRoomImpl).getCurRoomUuid()}" +
+                        "内丢失的消息", LogLevel.INFO)
+                it.syncSession.fetchLostSequence(object : EduCallback<Unit> {
                     override fun onSuccess(res: Unit?) {
                         /*断线重连之后，数据同步成功之后再把重连成功的事件回调出去*/
                         it.eventListener?.onConnectionStateChanged(Convert.convertConnectionState(p0), it)
                     }
 
-                    override fun onFailure(code: Int, reason: String?) {
-                        /**无限重试，保证数据同步成功*/
+                    override fun onFailure(error: EduError) {
+                        /*无限重试，保证数据同步成功*/
                         it.syncSession.fetchLostSequence(this)
                     }
                 })

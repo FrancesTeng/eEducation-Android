@@ -124,7 +124,7 @@ public class EduApplication extends Application {
     }
 
     public static EduRoom buildEduRoom(RoomCreateOptions options) {
-        if (instance.config == null) {
+        if (instance.eduManager == null) {
             return null;
         }
         return instance.eduManager.createClassroom(options);

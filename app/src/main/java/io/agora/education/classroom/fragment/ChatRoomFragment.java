@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.listener.OnItemChildClickListener;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -24,8 +25,10 @@ import io.agora.education.BuildConfig;
 import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.base.EduError;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduChatMsgType;
+import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.base.BaseCallback;
 import io.agora.education.base.BaseFragment;
 import io.agora.education.classroom.BaseClassActivity;
@@ -133,7 +136,7 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
                                 }
 
                                 @Override
-                                public void onFailure(int code, @Nullable String reason) {
+                                public void onFailure(@NotNull EduError error) {
                                 }
                             });
                 }
@@ -179,18 +182,27 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
             if (context instanceof BaseClassActivity) {
                 edit_send_msg.setText("");
                 BaseClassActivity activity = (BaseClassActivity) getActivity();
-                /*本地消息直接添加*/
-                ChannelMsg.ChatMsg msg = new ChannelMsg.ChatMsg(activity.getLocalUser().getUserInfo(), text,
-                        EduChatMsgType.Text.getValue());
-                msg.isMe = true;
-                addMessage(msg);
-                activity.sendRoomChatMsg(text, new EduCallback<EduChatMsg>() {
+                activity.getLocalUserInfo(new EduCallback<EduUserInfo>() {
                     @Override
-                    public void onSuccess(@Nullable EduChatMsg res) {
+                    public void onSuccess(@Nullable EduUserInfo userInfo) {
+                        /*本地消息直接添加*/
+                        ChannelMsg.ChatMsg msg = new ChannelMsg.ChatMsg(userInfo, text,
+                                EduChatMsgType.Text.getValue());
+                        msg.isMe = true;
+                        addMessage(msg);
+                        activity.sendRoomChatMsg(text, new EduCallback<EduChatMsg>() {
+                            @Override
+                            public void onSuccess(@Nullable EduChatMsg res) {
+                            }
+
+                            @Override
+                            public void onFailure(@NotNull EduError error) {
+                            }
+                        });
                     }
 
                     @Override
-                    public void onFailure(int code, @Nullable String reason) {
+                    public void onFailure(@NotNull EduError error) {
                     }
                 });
             }

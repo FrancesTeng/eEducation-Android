@@ -6,6 +6,7 @@ import io.agora.base.network.BusinessException
 import io.agora.base.network.ResponseBody
 import io.agora.education.api.BuildConfig.API_BASE_URL
 import io.agora.education.api.EduCallback
+import io.agora.education.api.base.EduError.Companion.httpError
 import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.stream.data.AudioSourceType
 import io.agora.education.api.stream.data.EduStreamInfo
@@ -19,6 +20,8 @@ import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.listener.EduTeacherEventListener
 import io.agora.education.impl.network.RetrofitManager
+import io.agora.education.impl.room.EduRoomImpl
+import io.agora.education.impl.room.data.request.EduUpdateRoomPropertyReq
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.stream.network.StreamService
 import io.agora.education.impl.user.data.request.EduRoomMuteStateReq
@@ -36,7 +39,7 @@ internal class EduTeacherImpl(
 
     override fun beginClass(callback: EduCallback<Unit>) {
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .updateClassroomState(APPID, eduRoom.getRoomInfo().roomUuid, EduRoomState.START.value)
+                .updateClassroomState(APPID, eduRoom.getCurRoomUuid(), EduRoomState.START.value)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -44,15 +47,15 @@ internal class EduTeacherImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
                     }
                 }))
     }
 
     override fun endClass(callback: EduCallback<Unit>) {
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .updateClassroomState(APPID, eduRoom.getRoomInfo().roomUuid, EduRoomState.END.value)
+                .updateClassroomState(APPID, eduRoom.getCurRoomUuid(), EduRoomState.END.value)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -60,8 +63,8 @@ internal class EduTeacherImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
                     }
                 }))
     }
@@ -72,7 +75,7 @@ internal class EduTeacherImpl(
                 RoleMuteConfig(null, EduMuteState.Disable.value.toString(), EduMuteState.Disable.value.toString()),
                 null, null)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .updateClassroomMuteState(APPID, eduRoom.getRoomInfo().roomUuid, eduRoomStatusReq)
+                .updateClassroomMuteState(APPID, eduRoom.getCurRoomUuid(), eduRoomStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -80,8 +83,8 @@ internal class EduTeacherImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
                     }
                 }))
     }
@@ -91,7 +94,7 @@ internal class EduTeacherImpl(
         val role = Convert.convertUserRole(remoteStudent.role, eduRoom.getCurRoomType(), eduRoom.curClassType)
         val eduUserStatusReq = EduUserStatusReq(remoteStudent.userName, if (isAllow) 0 else 1, role)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
-                .updateUserMuteState(APPID, eduRoom.getRoomInfo().roomUuid, remoteStudent.userUuid, eduUserStatusReq)
+                .updateUserMuteState(APPID, eduRoom.getCurRoomUuid(), remoteStudent.userUuid, eduUserStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -99,8 +102,8 @@ internal class EduTeacherImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
                     }
                 }))
     }
@@ -119,7 +122,7 @@ internal class EduTeacherImpl(
         val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, remoteStream.publisher.userUuid,
+                .updateStreamInfo(APPID, eduRoom.getCurRoomUuid(), remoteStream.publisher.userUuid,
                         remoteStream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
@@ -128,8 +131,8 @@ internal class EduTeacherImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
                     }
                 }))
     }
@@ -140,7 +143,7 @@ internal class EduTeacherImpl(
         val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, remoteStream.publisher.userUuid,
+                .updateStreamInfo(APPID, eduRoom.getCurRoomUuid(), remoteStream.publisher.userUuid,
                         remoteStream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
@@ -149,8 +152,8 @@ internal class EduTeacherImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
                     }
                 }))
     }
@@ -160,7 +163,7 @@ internal class EduTeacherImpl(
         val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, remoteStream.publisher.userUuid,
+                .updateStreamInfo(APPID, eduRoom.getCurRoomUuid(), remoteStream.publisher.userUuid,
                         remoteStream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
@@ -169,8 +172,8 @@ internal class EduTeacherImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
                     }
                 }))
     }
@@ -180,7 +183,7 @@ internal class EduTeacherImpl(
         val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                .updateStreamInfo(APPID, eduRoom.getRoomInfo().roomUuid, remoteStream.publisher.userUuid,
+                .updateStreamInfo(APPID, eduRoom.getCurRoomUuid(), remoteStream.publisher.userUuid,
                         remoteStream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
@@ -189,8 +192,8 @@ internal class EduTeacherImpl(
 
                     override fun onFailure(throwable: Throwable?) {
                         var error = throwable as? BusinessException
-                        callback.onFailure(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message)
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
                     }
                 }))
     }

@@ -13,15 +13,7 @@ import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserInfo
 
-abstract class EduRoom(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus) {
-
-    companion object {
-        fun create(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus): EduRoom {
-            val cla = Class.forName("io.agora.education.impl.room.EduRoomImpl")
-            return cla.getConstructor(EduRoomInfo::class.java, EduRoomStatus::class.java)
-                    .newInstance(roomInfo, roomStatus) as EduRoom
-        }
-    }
+abstract class EduRoom {
 
     var roomProperties: MutableMap<String, Any> = mutableMapOf()
 
@@ -30,37 +22,66 @@ abstract class EduRoom(roomInfo: EduRoomInfo, roomStatus: EduRoomStatus) {
 
     var eventListener: EduRoomEventListener? = null
 
+    /**code:message
+     * 1:parameter XXX is invalid
+     * 2:internal error：可以内部订阅具体什么错误
+     * 101:communication error:code，透传rtm错误code或者message。
+     * 201:media error:code，透传rtc错误code或者message。
+     * 301:network error，透传后台错误msg字段*/
     abstract fun joinClassroom(options: RoomJoinOptions, callback: EduCallback<EduStudent>)
 
-    abstract fun getLocalUser(): EduUser
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getLocalUser(callback: EduCallback<EduUser>)
 
-    abstract fun getRoomInfo(): EduRoomInfo
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getRoomInfo(callback: EduCallback<EduRoomInfo>)
 
-    abstract fun getRoomStatus(): EduRoomStatus
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getRoomStatus(callback: EduCallback<EduRoomStatus>)
 
-    abstract fun getStudentCount(): Int
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getStudentCount(callback: EduCallback<Int>)
 
-    abstract fun getTeacherCount(): Int
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getTeacherCount(callback: EduCallback<Int>)
 
-    abstract fun getStudentList(): MutableList<EduUserInfo>
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getStudentList(callback: EduCallback<MutableList<EduUserInfo>>)
 
-    abstract fun getTeacherList(): MutableList<EduUserInfo>
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getTeacherList(callback: EduCallback<MutableList<EduUserInfo>>)
 
-    abstract fun getFullStreamList(): MutableList<EduStreamInfo>
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getFullStreamList(callback: EduCallback<MutableList<EduStreamInfo>>)
 
-    abstract fun getFullUserList(): MutableList<EduUserInfo>
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun getFullUserList(callback: EduCallback<MutableList<EduUserInfo>>)
 
     abstract fun clearData()
 
-    abstract fun leave()
+    /**code:message
+     * 1:you haven't joined the room*/
+    abstract fun leave(callback: EduCallback<Unit>)
+
+    protected abstract fun getRoomUuid(): String
 
     override fun equals(other: Any?): Boolean {
-        if (other == null) {
+        if(other == null) {
             return false
         }
-        if (other !is EduRoom) {
-            return false
+        return if (other !is EduRoom) {
+            false
+        } else {
+            getRoomUuid() == other.getRoomUuid()
         }
-        return other.getRoomInfo().roomUuid.equals(this.getRoomInfo().roomUuid)
     }
 }

@@ -9,10 +9,13 @@ import android.widget.Switch;
 
 import androidx.annotation.Nullable;
 
+import org.jetbrains.annotations.NotNull;
+
 import butterknife.BindView;
 import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.base.EduError;
 import io.agora.education.api.logger.DebugItem;
 import io.agora.education.base.BaseActivity;
 import io.agora.education.widget.EyeProtection;
@@ -59,8 +62,8 @@ public class SettingActivity extends BaseActivity {
                     }
 
                     @Override
-                    public void onFailure(int code, @Nullable String reason) {
-                        Log.e(TAG, "日志上传错误->code:" + code + ", reason:" + reason);
+                    public void onFailure(@NotNull EduError error) {
+                        Log.e(TAG, "日志上传错误->code:" + error.getType() + ", reason:" + error.getMsg());
                     }
                 });
                 break;

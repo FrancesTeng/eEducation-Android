@@ -9,6 +9,8 @@ import io.agora.base.callback.ThrowableCallback
 import io.agora.base.network.BusinessException
 import io.agora.education.api.BuildConfig.API_BASE_URL
 import io.agora.education.api.EduCallback
+import io.agora.education.api.base.EduError
+import io.agora.education.api.base.EduError.Companion.httpError
 import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduRoomInfo
@@ -147,8 +149,8 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
         AgoraLog.i("$TAG->根据${nextId}请求丢失数据}")
         syncing = true
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .fetchLostSequences(eduRoom.getLocalUser().userInfo.userToken!!, APPID,
-                        roomInfo.roomUuid, nextId, count)
+                .fetchLostSequences(localUser.userInfo.userToken!!,
+                        APPID, roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceListRes<Any>>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceListRes<Any>>?) {
                         AgoraLog.i("$TAG->根据${nextId}请求到的丢失数据:${Gson().toJson(res)}")
@@ -184,7 +186,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                                     /**彻底失败，恢复原值*/
                                     AgoraLog.e("$TAG->请求缺失数据彻底失败")
                                     sequenceRetryCount = 0
-                                    callback.onFailure(error.code, error.message)
+                                    callback.onFailure(httpError(error.code, error.message))
                                 }
                             }
                         }
@@ -198,7 +200,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
         AgoraLog.w("$TAG->请求快照（拉全量数据）")
         syncing = true
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .fetchSnapshot(eduRoom.getLocalUser().userInfo.userToken!!, APPID, roomInfo.roomUuid)
+                .fetchSnapshot(localUser.userInfo.userToken!!, APPID, roomInfo.roomUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceSnapshotRes>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceSnapshotRes>?) {
                         Log.e(TAG, "请求到的快照数据:${Gson().toJson(res)}")
@@ -223,7 +225,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                                 /**彻底失败，恢复原值*/
                                 AgoraLog.e("$TAG->请求快照彻底失败")
                                 snapshotRetryCount = 0
-                                callback.onFailure(error.code, error.message)
+                                callback.onFailure(httpError(error.code, error.message))
                             }
                         }
                         syncing = true

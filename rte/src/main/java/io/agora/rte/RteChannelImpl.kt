@@ -2,11 +2,15 @@ package io.agora.rte
 
 import android.util.Log
 import androidx.annotation.NonNull
+import io.agora.rtc.Constants.ERR_LEAVE_CHANNEL_REJECTED
 import io.agora.rtc.Constants.ERR_OK
 import io.agora.rtc.IRtcChannelEventHandler
 import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcChannel
 import io.agora.rtc.models.ChannelMediaOptions
+import io.agora.rte.RteEngineImpl.OK
+import io.agora.rte.data.RteError.Companion.rtcError
+import io.agora.rte.data.RteError.Companion.rtmError
 import io.agora.rte.listener.RteChannelEventListener
 import io.agora.rte.listener.RteStatisticsReportListener
 import io.agora.rtm.*
@@ -52,12 +56,12 @@ internal class RteChannelImpl(
     private val rtcChannelEventHandler = object : IRtcChannelEventHandler() {
         override fun onChannelError(rtcChannel: RtcChannel?, err: Int) {
             super.onChannelError(rtcChannel, err)
-            Log.e("RteChannelImpl", "onChannelError->" + rtcChannel?.channelId() + ",err->" + err)
+            Log.e(TAG, "onChannelError->" + rtcChannel?.channelId() + ",err->" + err)
         }
 
         override fun onChannelWarning(rtcChannel: RtcChannel?, warn: Int) {
             super.onChannelWarning(rtcChannel, warn)
-            Log.e("RteChannelImpl", "onChannelWarning->" + rtcChannel?.channelId() + ",warn->" + warn)
+            Log.e(TAG, "onChannelWarning->" + rtcChannel?.channelId() + ",warn->" + warn)
         }
 
         override fun onNetworkQuality(rtcChannel: RtcChannel?, uid: Int, txQuality: Int, rxQuality: Int) {
@@ -67,33 +71,33 @@ internal class RteChannelImpl(
 
         override fun onClientRoleChanged(rtcChannel: RtcChannel?, oldRole: Int, newRole: Int) {
             super.onClientRoleChanged(rtcChannel, oldRole, newRole)
-            Log.e("RteChannelImpl", rtcChannel?.channelId() + "," + oldRole + "," + newRole)
+            Log.e(TAG, rtcChannel?.channelId() + "," + oldRole + "," + newRole)
         }
 
         override fun onJoinChannelSuccess(rtcChannel: RtcChannel?, uid: Int, elapsed: Int) {
             super.onJoinChannelSuccess(rtcChannel, uid, elapsed)
-            Log.e("RteChannelImpl", String.format("onJoinChannelSuccess channel $rtcChannel uid $uid"))
+            Log.e(TAG, String.format("onJoinChannelSuccess channel $rtcChannel uid $uid"))
         }
 
         override fun onUserJoined(rtcChannel: RtcChannel?, uid: Int, elapsed: Int) {
             super.onUserJoined(rtcChannel, uid, elapsed)
-            Log.e("RteChannelImpl", "onUserJoined->$uid")
+            Log.e(TAG, "onUserJoined->$uid")
         }
 
         override fun onRemoteVideoStateChanged(rtcChannel: RtcChannel?, uid: Int, state: Int, reason: Int, elapsed: Int) {
             super.onRemoteVideoStateChanged(rtcChannel, uid, state, reason, elapsed)
-            Log.e("RteChannelImpl", "onRemoteVideoStateChanged->$uid, state->$state, reason->$reason")
+            Log.e(TAG, "onRemoteVideoStateChanged->$uid, state->$state, reason->$reason")
         }
 
         override fun onRemoteVideoStats(rtcChannel: RtcChannel?, stats: IRtcEngineEventHandler.RemoteVideoStats?) {
             super.onRemoteVideoStats(rtcChannel, stats)
-//            Log.e("RteChannelImpl", "onRemoteVideoStats->${rtcChannel?.channelId()}, " +
+//            Log.e(TAG, "onRemoteVideoStats->${rtcChannel?.channelId()}, " +
 //                    "receivedBitrate->${stats?.receivedBitrate}")
         }
 
 //        override fun onSubscribeVideoStateChanged(rtcChannel: RtcChannel?, uid: Int, oldState: Int, newState: Int, elapseSinceLastState: Int) {
 //            super.onSubscribeVideoStateChanged(rtcChannel, uid, oldState, newState, elapseSinceLastState)
-//            Log.e("RteChannelImpl", "onSubscribeVideoStateChanged->$${rtcChannel?.channelId()}, " +
+//            Log.e(TAG, "onSubscribeVideoStateChanged->$${rtcChannel?.channelId()}, " +
 //                    "uid->$uid, oldState->$oldState, newState->$newState")
 //        }
 
@@ -116,19 +120,19 @@ internal class RteChannelImpl(
     }
 
     override fun join(rtcOptionalInfo: String, rtcToken: String, rtcUid: Long, mediaOptions: ChannelMediaOptions,
-                      @NonNull callback: ResultCallback<Void>) {
+                      @NonNull callback: RteCallback<Void>) {
         val uid = (rtcUid and 0xffffffffL)
         val rtcCode = rtcChannel.joinChannel(rtcToken, rtcOptionalInfo, uid.toInt(), mediaOptions)
         joinRtmChannel(rtcCode, callback)
     }
 
-    private fun joinRtmChannel(rtcCode: Int, @NonNull callback: ResultCallback<Void>) {
+    private fun joinRtmChannel(rtcCode: Int, @NonNull callback: RteCallback<Void>) {
         rtmChannel.join(object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
                 if (rtcCode == ERR_OK) {
                     callback.onSuccess(p0)
                 } else {
-                    callback.onFailure(ErrorInfo(rtcCode))
+                    callback.onFailure(rtcError(rtcCode))
                 }
             }
 
@@ -136,23 +140,29 @@ internal class RteChannelImpl(
                 if (p0?.errorCode == JOIN_CHANNEL_ERR_ALREADY_JOINED) {
                     callback.onSuccess(Unit as Void)
                 } else {
-                    callback.onFailure(p0)
+                    callback.onFailure(rtmError(p0 ?: ErrorInfo(-1)))
                 }
             }
         })
     }
 
-    override fun leave() {
+    override fun leave(callback: RteCallback<Unit>) {
+        val rtcCode = rtcChannel.leaveChannel()
         rtmChannel.leave(object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
-                Log.e("RteChannelImpl", "成功离开RTM频道")
+                Log.e(TAG, "成功离开RTM频道")
+                if (rtcCode == OK()) {
+                    callback.onSuccess(Unit)
+                } else {
+                    callback.onFailure(rtcError(rtcCode))
+                }
             }
 
             override fun onFailure(p0: ErrorInfo?) {
-                Log.e("RteChannelImpl", "离开RTM频道失败:${p0?.errorDescription}")
+                Log.e(TAG, "离开RTM频道失败:${p0?.errorDescription}")
+                callback.onFailure(rtmError(p0 ?: ErrorInfo(-1)))
             }
         })
-        rtcChannel.leaveChannel()
         eventListener = null
     }
 

@@ -38,21 +38,23 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 /**课堂状态发生改变*/
                 val rtmRoomState = Gson().fromJson<CMDResponseBody<CMDRoomState>>(text, object :
                         TypeToken<CMDResponseBody<CMDRoomState>>() {}.type).data
-                eduRoom.getRoomStatus().courseState = Convert.convertRoomState(rtmRoomState.state)
-                AgoraLog.i("$TAG->课堂状态改变为:${eduRoom.getRoomStatus().courseState.value}")
-                eduRoom.getRoomStatus().startTime = rtmRoomState.startTime
-                val operator = Convert.convertUserInfo(rtmRoomState.operator, (eduRoom as EduRoomImpl).getCurRoomType())
+                val roomStatus = (eduRoom as EduRoomImpl).getCurRoomStatus()
+                roomStatus.courseState = Convert.convertRoomState(rtmRoomState.state)
+                AgoraLog.i("$TAG->课堂状态改变为:${roomStatus.courseState.value}")
+                roomStatus.startTime = rtmRoomState.startTime
+                val operator = Convert.convertUserInfo(rtmRoomState.operator, eduRoom.getCurRoomType())
                 cmdCallbackManager.onRoomStatusChanged(EduRoomChangeType.CourseState, operator, eduRoom)
             }
             CMDId.RoomMuteStateChange.value -> {
                 val rtmRoomMuteState = Gson().fromJson<CMDResponseBody<CMDRoomMuteState>>(text, object :
                         TypeToken<CMDResponseBody<CMDRoomMuteState>>() {}.type).data
+                val roomStatus = (eduRoom as EduRoomImpl).getCurRoomStatus()
                 when ((eduRoom as EduRoomImpl).getCurRoomType()) {
                     RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
                         /**判断本次更改是否包含针对学生的全部禁聊;*/
                         val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster
                         broadcasterMuteChat?.let {
-                            eduRoom.getRoomStatus().isStudentChatAllowed =
+                            roomStatus.isStudentChatAllowed =
                                     broadcasterMuteChat.toFloat().toInt() == EduChatState.Allow.value
                         }
                         /**
@@ -64,12 +66,12 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         /**判断本次更改是否包含针对学生的全部禁聊;*/
                         val audienceMuteChat = rtmRoomMuteState.muteChat?.audience
                         audienceMuteChat?.let {
-                            eduRoom.getRoomStatus().isStudentChatAllowed =
+                            roomStatus.isStudentChatAllowed =
                                     audienceMuteChat.toFloat().toInt() == EduChatState.Allow.value
                         }
                         val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster
                         broadcasterMuteChat?.let {
-                            eduRoom.getRoomStatus().isStudentChatAllowed =
+                            roomStatus.isStudentChatAllowed =
                                     broadcasterMuteChat.toFloat().toInt() == EduChatState.Allow.value
                         }
                     }
@@ -92,7 +94,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 AgoraLog.i("$TAG->收到频道内聊天消息")
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom) as EduChatMsg
                 AgoraLog.i("$TAG->构造出eduChatMsg:${Gson().toJson(eduMsg)}")
-                if (eduMsg.fromUser == eduRoom.getLocalUser().userInfo) {
+                if (eduMsg.fromUser == (eduRoom as EduRoomImpl).getCurLocalUserInfo()) {
                     AgoraLog.i("$TAG->本地用户发送的频道内消息，自动屏蔽掉")
                 } else {
                     AgoraLog.i("$TAG->非本地用户发送的频道内消息，回调出去")
@@ -104,7 +106,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 AgoraLog.i("$TAG->收到频道内自定义消息")
                 val eduMsg = CMDUtil.buildEduMsg(text, eduRoom)
                 AgoraLog.i("$TAG->构造出eduMsg:${Gson().toJson(eduMsg)}")
-                if (eduMsg.fromUser == eduRoom.getLocalUser().userInfo) {
+                if (eduMsg.fromUser == (eduRoom as EduRoomImpl).getCurLocalUserInfo()) {
                     AgoraLog.i("$TAG->本地用户发送的频道内消息，自动屏蔽掉")
                 } else {
                     AgoraLog.i("$TAG->非本地用户发送的频道内消息，回调出去")
@@ -114,19 +116,19 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
             CMDId.UserJoinOrLeave.value -> {
                 val rtmInOutMsg = Gson().fromJson<CMDResponseBody<RtmUserInOutMsg>>(text, object :
                         TypeToken<CMDResponseBody<RtmUserInOutMsg>>() {}.type).data
-                AgoraLog.i("$TAG->收到用户进入或离开的通知->${eduRoom.getRoomInfo().roomUuid}:${text}")
+                AgoraLog.i("$TAG->收到用户进入或离开的通知->${(eduRoom as EduRoomImpl).getCurRoomUuid()}:${text}")
 
                 /**根据回调数据，维护本地存储的流列表，并返回有效数据(可能同时包含local和remote数据)*/
                 val validOnlineUsers = CMDDataMergeProcessor.addUserWithOnline(rtmInOutMsg.onlineUsers,
-                        (eduRoom as EduRoomImpl).getCurUserList(), eduRoom.getCurRoomType())
+                        eduRoom.getCurUserList(), eduRoom.getCurRoomType())
                 val validOfflineUsers = CMDDataMergeProcessor.removeUserWithOffline(rtmInOutMsg.offlineUsers,
                         eduRoom.getCurUserList(), eduRoom.getCurRoomType())
 
                 /**从online和offline数据中剥离出本地用户的数据*/
                 val validOnlineLocalUser = CMDProcessor.filterLocalUserInfo(
-                        eduRoom.getLocalUser().userInfo, validOnlineUsers)
+                        eduRoom.getCurLocalUserInfo(), validOnlineUsers)
                 val validOfflineLocalUser = CMDProcessor.filterLocalUserEvent(
-                        eduRoom.getLocalUser().userInfo, validOfflineUsers)
+                        eduRoom.getCurLocalUserInfo(), validOfflineUsers)
 
                 /**提取出online和offline携带的流信息(可能同时包含local和remote数据)*/
                 val validAddedStreams = CMDDataMergeProcessor.addStreamWithUserOnline(rtmInOutMsg.onlineUsers,
@@ -136,9 +138,9 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
 
                 /**从有效的流数据中剥离出本地用户的流数据*/
                 val validAddedLocalStream = CMDProcessor.filterLocalStreamInfo(
-                        eduRoom.getLocalUser().userInfo, validAddedStreams)
+                        eduRoom.getCurLocalUserInfo(), validAddedStreams)
                 val validRemovedLocalStream = CMDProcessor.filterLocalStreamInfo(
-                        eduRoom.getLocalUser().userInfo, validRemovedStreams)
+                        eduRoom.getCurLocalUserInfo(), validRemovedStreams)
 
                 if (validOnlineUsers.size > 0) {
                     AgoraLog.i("$TAG->onRemoteUsersJoined:${Gson().toJson(validOnlineUsers)}")
@@ -150,11 +152,11 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 }
                 validOnlineLocalUser?.let {
                     AgoraLog.i("$TAG->onLocalUserAdded:${Gson().toJson(it)}")
-                    cmdCallbackManager.onLocalUserAdded(it, eduRoom.getLocalUser())
+                    cmdCallbackManager.onLocalUserAdded(it, eduRoom.getCurLocalUser())
                 }
                 validOfflineLocalUser?.let {
                     AgoraLog.i("$TAG->onLocalUserRemoved:${Gson().toJson(it)}")
-                    cmdCallbackManager.onLocalUserRemoved(it, eduRoom.getLocalUser())
+                    cmdCallbackManager.onLocalUserRemoved(it, eduRoom.getCurLocalUser())
                 }
                 validOfflineUsers?.let {
                     AgoraLog.i("$TAG->onRemoteUsersLeft:${Gson().toJson(it)}")
@@ -166,11 +168,11 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 }
                 validAddedLocalStream?.let {
                     AgoraLog.i("$TAG->onLocalStreamAdded:${Gson().toJson(it)}")
-                    cmdCallbackManager.onLocalStreamAdded(it, eduRoom.getLocalUser())
+                    cmdCallbackManager.onLocalStreamAdded(it, eduRoom.getCurLocalUser())
                 }
                 validRemovedLocalStream?.let {
                     AgoraLog.i("$TAG->onLocalStreamRemoved:${Gson().toJson(it)}")
-                    cmdCallbackManager.onLocalStreamRemoved(it, eduRoom.getLocalUser())
+                    cmdCallbackManager.onLocalStreamRemoved(it, eduRoom.getCurLocalUser())
                 }
             }
             CMDId.UserStateChange.value -> {
@@ -184,10 +186,10 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 /**判断有效的数据中是否有本地用户的数据,有则处理并回调*/
                 for (element in changeEvents) {
                     val event = element.event
-                    if (event.modifiedUser.userUuid == eduRoom.getLocalUser().userInfo.userUuid) {
+                    if (event.modifiedUser.userUuid == eduRoom.getCurLocalUserInfo().userUuid) {
                         Log.e(TAG, "onLocalUserUpdated")
                         cmdCallbackManager.onLocalUserUpdated(EduUserEvent(event.modifiedUser,
-                                event.operatorUser), element.type, eduRoom.getLocalUser())
+                                event.operatorUser), element.type, eduRoom.getCurLocalUser())
                     }
                 }
             }
@@ -198,9 +200,9 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 val updatedUserInfo = CMDDataMergeProcessor.updateUserPropertyWithChange(cmdUserPropertyRes,
                         (eduRoom as EduRoomImpl).getCurUserList())
                 updatedUserInfo?.let {
-                    if (updatedUserInfo == eduRoom.getLocalUser().userInfo) {
+                    if (updatedUserInfo == eduRoom.getCurLocalUserInfo()) {
                         cmdCallbackManager.onLocalUserPropertyUpdated(it, cmdUserPropertyRes.cause,
-                                eduRoom.getLocalUser())
+                                eduRoom.getCurLocalUser())
                     } else {
                         /**远端用户property发生改变如何回调出去*/
                         cmdCallbackManager.onRemoteUserPropertiesUpdated(it, eduRoom,
@@ -223,10 +225,10 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         while (iterable.hasNext()) {
                             val element = iterable.next()
                             val streamInfo = element.modifiedStream
-                            if (streamInfo.publisher == eduRoom.getLocalUser().userInfo) {
+                            if (streamInfo.publisher == eduRoom.getCurLocalUserInfo()) {
                                 RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
                                 Log.e(TAG, "join成功，把新添加的本地流回调出去")
-                                cmdCallbackManager.onLocalStreamAdded(element, eduRoom.getLocalUser())
+                                cmdCallbackManager.onLocalStreamAdded(element, eduRoom.getCurLocalUser())
                                 iterable.remove()
                             }
                         }
@@ -245,11 +247,11 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                         while (iterable.hasNext()) {
                             val element = iterable.next()
                             val stream = element.event.modifiedStream
-                            if (stream.publisher == eduRoom.getLocalUser().userInfo) {
+                            if (stream.publisher == eduRoom.getCurLocalUserInfo()) {
                                 RteEngineImpl.updateLocalStream(stream.hasAudio, stream.hasVideo)
                                 Log.e(TAG, "把发生改变的本地流回调出去")
                                 cmdCallbackManager.onLocalStreamUpdated(element.event, element.type,
-                                        eduRoom.getLocalUser())
+                                        eduRoom.getCurLocalUser())
                                 iterable.remove()
                             }
                         }
@@ -262,17 +264,18 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                     }
                     CMDStreamAction.Remove.value -> {
                         Log.e(TAG, "收到移除流的通知：${text}")
-                        val validRemoveStreams = CMDDataMergeProcessor.removeStreamWithAction(cmdStreamActionMsg,
-                                (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
+                        val validRemoveStreams = CMDDataMergeProcessor.removeStreamWithAction(
+                                cmdStreamActionMsg, (eduRoom as EduRoomImpl).getCurStreamList(),
+                                eduRoom.getCurRoomType())
 
                         /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
                         val iterable = validRemoveStreams.iterator()
                         while (iterable.hasNext()) {
                             val element = iterable.next()
-                            if (element.modifiedStream.publisher == eduRoom.getLocalUser().userInfo) {
+                            if (element.modifiedStream.publisher == eduRoom.getCurLocalUserInfo()) {
                                 RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
                                         element.modifiedStream.hasVideo)
-                                cmdCallbackManager.onLocalStreamRemoved(element, eduRoom.getLocalUser())
+                                cmdCallbackManager.onLocalStreamRemoved(element, eduRoom.getCurLocalUser())
                                 iterable.remove()
                             }
                         }

@@ -14,6 +14,7 @@ import android.widget.EditText;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import butterknife.BindView;
@@ -24,6 +25,7 @@ import io.agora.base.callback.ThrowableCallback;
 import io.agora.base.network.BusinessException;
 import io.agora.base.network.RetrofitManager;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.base.EduError;
 import io.agora.education.api.manager.EduManager;
 import io.agora.education.api.manager.EduManagerOptions;
 import io.agora.education.api.room.data.RoomCreateOptions;
@@ -246,9 +248,11 @@ public class MainActivity extends BaseActivity {
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
         String roomUuid = roomNameStr + roomType;
 
-        EduManagerOptions options = new EduManagerOptions(this, getAppId(), userUuid, yourNameStr);
-        options.setCustomerId(getCustomerId());
-        options.setCustomerCertificate(getCustomerCer());
+        assert getAppId() != null;
+        assert getCustomerId() != null;
+        assert getCustomerCer() != null;
+        EduManagerOptions options = new EduManagerOptions(this, getAppId(), getCustomerId(),
+                getCustomerCer(), userUuid, yourNameStr);
         options.setLogFileDir(getCacheDir().getAbsolutePath());
         options.setTag(EDULOGINTAG);
         EduManager.init(options, new EduCallback<EduManager>() {
@@ -262,8 +266,8 @@ public class MainActivity extends BaseActivity {
             }
 
             @Override
-            public void onFailure(int code, @Nullable String reason) {
-                Log.e(TAG, "初始化EduManager失败-> code:" + code + ",reason:" + reason);
+            public void onFailure(@NotNull EduError error) {
+                Log.e(TAG, "初始化EduManager失败->code:" + error.getType() + ",reason:" + error.getMsg());
             }
         });
     }

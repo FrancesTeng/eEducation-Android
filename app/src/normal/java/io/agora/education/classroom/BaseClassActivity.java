@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import butterknife.BindView;
@@ -26,6 +27,7 @@ import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.RoomEntry;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.base.EduError;
 import io.agora.education.api.logger.DebugItem;
 import io.agora.education.api.manager.listener.EduManagerEventListener;
 import io.agora.education.api.message.EduActionMessage;
@@ -51,6 +53,7 @@ import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
+import io.agora.education.api.user.data.EduLocalUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
@@ -73,6 +76,7 @@ import io.agora.education.service.BoardService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.widget.ConfirmDialog;
 import io.agora.whiteboard.netless.listener.GlobalStateChangeListener;
+import kotlin.Unit;
 
 import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.EduApplication.getManager;
@@ -102,7 +106,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     protected RoomEntry roomEntry;
     private volatile boolean isJoining = false, joinSuccess = false;
+    //    private EduUser localUser;
     private EduRoom mainEduRoom;
+    //    private EduRoomInfo mainRoomInfo;
     private EduStreamInfo localCameraStream, localScreenStream;
     protected BoardBean mainBoardBean;
     protected RecordBean mainRecordBean;
@@ -132,7 +138,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     protected void showFragmentWithJoinSuccess() {
-        title_view.setTitle(getMediaRoomName());
+        title_view.setTitle(roomEntry.getRoomName());
         getSupportFragmentManager().beginTransaction()
                 .remove(whiteboardFragment)
                 .remove(chatRoomFragment)
@@ -171,22 +177,26 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                 new RoomMediaOptions(autoSubscribe, autoPublish));
         eduRoom.joinClassroom(options, new EduCallback<EduStudent>() {
             @Override
-            public void onSuccess(@Nullable EduStudent res) {
-                /**设置全局的userToken(注意同一个user在不同的room内，token不一样)*/
-                RetrofitManager.instance().addHeader("token",
-                        getMainEduRoom().getLocalUser().getUserInfo().getUserToken());
-                joinSuccess = true;
-                isJoining = false;
-                if (needUserListener) {
-                    eduRoom.getLocalUser().setEventListener(BaseClassActivity.this);
+            public void onSuccess(@Nullable EduStudent user) {
+                if (user != null) {
+//                    localUser = user;
+                    /**设置全局的userToken(注意同一个user在不同的room内，token不一样)*/
+                    RetrofitManager.instance().addHeader("token", user.getUserInfo().getUserToken());
+                    joinSuccess = true;
+                    isJoining = false;
+                    if (needUserListener) {
+                        user.setEventListener(BaseClassActivity.this);
+                    }
+                    callback.onSuccess(user);
+                } else {
+                    callback.onFailure(EduError.Companion.internalError("localUser is null"));
                 }
-                callback.onSuccess(res);
             }
 
             @Override
-            public void onFailure(int code, @Nullable String reason) {
+            public void onFailure(@NotNull EduError error) {
                 isJoining = false;
-                callback.onFailure(code, reason);
+                callback.onFailure(error);
             }
         });
     }
@@ -224,24 +234,37 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     private void switchLocalVideoAudio(EduRoom room, boolean openVideo, boolean openAudio) {
         /**先更新本地流信息和rte状态*/
         if (localCameraStream != null) {
-            room.getLocalUser().initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
-                    openVideo, openAudio), new EduCallback<EduStreamInfo>() {
+            room.getLocalUser(new EduCallback<EduUser>() {
                 @Override
-                public void onSuccess(@Nullable EduStreamInfo res) {
-                    /**把更新后的流信息同步至服务器*/
-                    room.getLocalUser().muteStream(res, new EduCallback<Boolean>() {
-                        @Override
-                        public void onSuccess(@Nullable Boolean res) {
-                        }
+                public void onSuccess(@Nullable EduUser eduUser) {
+                    if (eduUser != null) {
+                        eduUser.initOrUpdateLocalStream(new LocalStreamInitOptions(localCameraStream.getStreamUuid(),
+                                openVideo, openAudio), new EduCallback<EduStreamInfo>() {
+                            @Override
+                            public void onSuccess(@Nullable EduStreamInfo res) {
+                                /**把更新后的流信息同步至服务器*/
+                                eduUser.muteStream(res, new EduCallback<Boolean>() {
+                                    @Override
+                                    public void onSuccess(@Nullable Boolean res) {
+                                    }
 
-                        @Override
-                        public void onFailure(int code, @Nullable String reason) {
-                        }
-                    });
+                                    @Override
+                                    public void onFailure(@NotNull EduError error) {
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onFailure(@NotNull EduError error) {
+                            }
+                        });
+                    } else {
+                    }
                 }
 
                 @Override
-                public void onFailure(int code, @Nullable String reason) {
+                public void onFailure(@NotNull EduError error) {
+
                 }
             });
         }
@@ -255,18 +278,30 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return mainEduRoom;
     }
 
-    public EduUser getLocalUser() {
+    public void getLocalUser(EduCallback<EduUser> callback) {
         if (getMainEduRoom() != null) {
-            return getMainEduRoom().getLocalUser();
+            getMainEduRoom().getLocalUser(callback);
         }
-        return null;
+        callback.onFailure(EduError.Companion.internalError("current eduRoom is null"));
     }
 
-    protected EduUserInfo getLocalUserInfo() {
-        if (getLocalUser() != null) {
-            return getLocalUser().getUserInfo();
-        }
-        return null;
+    public void getLocalUserInfo(EduCallback<EduUserInfo> callback) {
+        getLocalUser(new EduCallback<EduUser>() {
+            @Override
+            public void onSuccess(@Nullable EduUser res) {
+                if (res != null) {
+                    callback.onSuccess(res.getUserInfo());
+                } else {
+                    callback.onFailure(EduError.Companion.internalError("current eduUser is null"));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+                callback.onFailure(error);
+            }
+        });
+
     }
 
     public EduStreamInfo getLocalCameraStream() {
@@ -278,36 +313,57 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     public void sendRoomChatMsg(String msg, EduCallback<EduChatMsg> callback) {
-        getMainEduRoom().getLocalUser().sendRoomChatMessage(msg, callback);
-    }
-
-    protected List<EduStreamInfo> getCurFullStream() {
-        return (getMyMediaRoom() != null) ? getMyMediaRoom().getFullStreamList() : null;
-    }
-
-    protected List<EduUserInfo> getCurFullUser() {
-        return (getMyMediaRoom() != null) ? getMyMediaRoom().getFullUserList() : null;
-    }
-
-    protected EduStreamInfo getTeacherStream() {
-        for (EduStreamInfo streamInfo : getCurFullStream()) {
-            if (streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
-                return streamInfo;
-            }
-        }
-        return null;
-    }
-
-    protected EduUserInfo getTeacher() {
-        List<EduUserInfo> users = getCurFullUser();
-        if (users != null) {
-            for (EduUserInfo userInfo : users) {
-                if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                    return userInfo;
+        getLocalUser(new EduCallback<EduUser>() {
+            @Override
+            public void onSuccess(@Nullable EduUser res) {
+                if (res != null) {
+                    res.sendRoomChatMessage(msg, callback);
+                } else {
+                    callback.onFailure(EduError.Companion.internalError("current eduUser is null"));
                 }
             }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+                callback.onFailure(error);
+            }
+        });
+    }
+
+    protected void getCurFullStream(EduCallback<List<EduStreamInfo>> callback) {
+        if (getMyMediaRoom() == null) {
+            callback.onFailure(EduError.Companion.internalError("current eduRoom is null"));
+        } else {
+            getMyMediaRoom().getFullStreamList(callback);
         }
-        return null;
+    }
+
+    protected void getCurFullUser(EduCallback<List<EduUserInfo>> callback) {
+        if (getMyMediaRoom() == null) {
+            callback.onFailure(EduError.Companion.internalError("current eduRoom is null"));
+        } else {
+            getMyMediaRoom().getFullUserList(callback);
+        }
+    }
+
+    protected void getTeacher(EduCallback<EduUserInfo> callback) {
+        getCurFullUser(new EduCallback<List<EduUserInfo>>() {
+            @Override
+            public void onSuccess(@Nullable List<EduUserInfo> res) {
+                for (EduUserInfo userInfo : res) {
+                    if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
+                        callback.onSuccess(userInfo);
+                        return;
+                    }
+                }
+                callback.onSuccess(null);
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+                callback.onFailure(error);
+            }
+        });
     }
 
     protected String getRoleStr(int role) {
@@ -327,13 +383,24 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         return getString(resId);
     }
 
-    protected EduStreamInfo getScreenShareStream() {
-        for (EduStreamInfo stream : getCurFullStream()) {
-            if (stream.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
-                return stream;
+    protected void getScreenShareStream(EduCallback<EduStreamInfo> callback) {
+        getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
+            @Override
+            public void onSuccess(@Nullable List<EduStreamInfo> res) {
+                for (EduStreamInfo stream : res) {
+                    if (stream.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
+                        callback.onSuccess(stream);
+                        return;
+                    }
+                }
+                callback.onFailure(EduError.Companion.internalError("there is no screenShare"));
             }
-        }
-        return null;
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+                callback.onFailure(error);
+            }
+        });
     }
 
     @Room.Type
@@ -361,7 +428,15 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             if (confirm) {
                 /**退出activity之前离开eduRoom*/
                 if (getMainEduRoom() != null) {
-                    getMainEduRoom().leave();
+                    getMainEduRoom().leave(new EduCallback<Unit>() {
+                        @Override
+                        public void onSuccess(@Nullable Unit res) {
+                        }
+
+                        @Override
+                        public void onFailure(@NotNull EduError error) {
+                        }
+                    });
                     BaseClassActivity.this.finish();
                 }
             }
@@ -386,31 +461,89 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                 }
 
                 @Override
-                public void onFailure(int code, @Nullable String reason) {
-                    ToastManager.showShort(String.format(getString(R.string.function_error), code, reason));
+                public void onFailure(@NotNull EduError error) {
+                    ToastManager.showShort(String.format(getString(R.string.function_error),
+                            error.getType(), error.getMsg()));
                 }
             });
         }
     }
 
-    private EduRoomInfo getMediaRoomInfo() {
-        return getMyMediaRoom().getRoomInfo();
+    protected void getMediaRoomInfo(EduCallback<EduRoomInfo> callback) {
+        if (getMyMediaRoom() == null) {
+            callback.onFailure(EduError.Companion.internalError("current eduRoom is null"));
+        } else {
+            getMyMediaRoom().getRoomInfo(callback);
+        }
     }
 
-    public final String getMediaRoomUuid() {
-        return getMediaRoomInfo().getRoomUuid();
+    protected void getMediaRoomStatus(EduCallback<EduRoomStatus> callback) {
+        if (getMyMediaRoom() == null) {
+            callback.onFailure(EduError.Companion.internalError("current eduRoom is null"));
+        } else {
+            getMyMediaRoom().getRoomStatus(callback);
+        }
     }
 
-    public final String getMediaRoomName() {
-        return getMediaRoomInfo().getRoomName();
+    protected final void getMediaRoomUuid(EduCallback<String> callback) {
+        if (getMyMediaRoom() == null) {
+            callback.onFailure(EduError.Companion.internalError("current eduRoom is null"));
+        } else {
+            getMyMediaRoom().getRoomInfo(new EduCallback<EduRoomInfo>() {
+                @Override
+                public void onSuccess(@Nullable EduRoomInfo res) {
+                    callback.onSuccess(res.getRoomUuid());
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                    callback.onFailure(error);
+                }
+            });
+        }
+    }
+
+    protected final void getMediaRoomName(EduCallback<String> callback) {
+        if (getMyMediaRoom() == null) {
+            callback.onFailure(EduError.Companion.internalError("current eduRoom is null"));
+        } else {
+            getMyMediaRoom().getRoomInfo(new EduCallback<EduRoomInfo>() {
+                @Override
+                public void onSuccess(@Nullable EduRoomInfo res) {
+                    callback.onSuccess(res.getRoomName());
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                    callback.onFailure(error);
+                }
+            });
+        }
     }
 
     /**
      * 为流(主要是视频流)设置一个渲染区域
      */
     public void renderStream(EduRoom room, EduStreamInfo eduStreamInfo, @Nullable ViewGroup viewGroup) {
-        runOnUiThread(() -> room.getLocalUser().setStreamView(eduStreamInfo,
-                room.getRoomInfo().getRoomUuid(), viewGroup));
+        runOnUiThread(() -> getLocalUser(new EduCallback<EduUser>() {
+            @Override
+            public void onSuccess(@Nullable EduUser eduUser) {
+                room.getRoomInfo(new EduCallback<EduRoomInfo>() {
+                    @Override
+                    public void onSuccess(@Nullable EduRoomInfo res) {
+                        eduUser.setStreamView(eduStreamInfo, res.getRoomUuid(), viewGroup);
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+            }
+        }));
     }
 
     protected String getProperty(Map<String, Object> properties, String key) {
@@ -437,17 +570,32 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     /**
      * 当前本地用户是否得到白板授权
      */
-    protected boolean whiteBoardIsGranted(BoardState state) {
-        if (state != null) {
-            if (state.getGrantUsers() != null) {
-                for (String uuid : state.getGrantUsers()) {
-                    if (uuid.equals(getLocalUserInfo().getUserUuid())) {
-                        return true;
+    protected void whiteBoardIsGranted(BoardState state, EduCallback<Boolean> callback) {
+        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+            @Override
+            public void onSuccess(@Nullable EduUserInfo userInfo) {
+                if (state != null) {
+                    if (state.getGrantUsers() != null) {
+                        for (String uuid : state.getGrantUsers()) {
+                            if (uuid.equals(userInfo.getUserUuid())) {
+                                callback.onSuccess(true);
+                                return;
+                            }
+                        }
+                        callback.onSuccess(false);
+                    } else {
+                        callback.onSuccess(false);
                     }
+                } else {
+                    callback.onFailure(EduError.Companion.internalError("current boardState is null"));
                 }
             }
-        }
-        return false;
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+                callback.onFailure(error);
+            }
+        });
     }
 
     protected void requestBoardInfo(String userToken, String appId, String roomUuid) {
@@ -464,40 +612,69 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                 }));
     }
 
+    protected void setTitleData() {
+        getMediaRoomName(new EduCallback<String>() {
+            @Override
+            public void onSuccess(@Nullable String roomName) {
+                title_view.setTitle(String.format(Locale.getDefault(), "%s", roomName));
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
+    }
+
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
-        EduRoomStatus roomStatus = getMyMediaRoom().getRoomStatus();
-        title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
-                System.currentTimeMillis() - roomStatus.getStartTime());
-        chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
+        getMediaRoomStatus(new EduCallback<EduRoomStatus>() {
+            @Override
+            public void onSuccess(@Nullable EduRoomStatus status) {
+                title_view.setTimeState(status.getCourseState() == EduRoomState.START,
+                        System.currentTimeMillis() - status.getStartTime());
+                chatRoomFragment.setMuteAll(!status.isStudentChatAllowed());
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
         /**处理roomProperties*/
         Map<String, Object> roomProperties = classRoom.getRoomProperties();
         /**判断roomProperties中是否有白板属性信息，如果没有，发起请求,等待RTM通知*/
         String boardJson = getProperty(roomProperties, BOARD);
-        if (TextUtils.isEmpty(boardJson)) {
-            requestBoardInfo((getMainEduRoom().getLocalUser().getUserInfo()).getUserToken(),
-                    getAppId(), classRoom.getRoomInfo().getRoomUuid());
-        } else {
-            mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
-            BoardInfo info = mainBoardBean.getInfo();
-            Log.e(TAG, "白板信息已存在->" + boardJson);
-            runOnUiThread(() -> {
-                whiteboardFragment.initBoardWithRoomToken(info.getBoardId(),
-                        info.getBoardToken(), getLocalUserInfo().getUserUuid());
-//                boolean follow = whiteBoardIsFollowMode(state);
-//                if (follow) {
-//                    layout_whiteboard.setVisibility(View.VISIBLE);
-//                    layout_share_video.setVisibility(View.GONE);
-//                }
-//                whiteboardFragment.disableCameraTransform(follow);
-//                boolean granted = whiteBoardIsGranted((state));
-//                if (getClassType() == Room.Type.ONE2ONE) {
-//                    /*一对一模式下学生始终有白板授权*/
-//                    granted = true;
-//                }
-//                whiteboardFragment.disableDeviceInputs(!granted);
-            });
-        }
+        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+            @Override
+            public void onSuccess(@Nullable EduUserInfo userInfo) {
+                if (TextUtils.isEmpty(boardJson)) {
+                    classRoom.getRoomInfo(new EduCallback<EduRoomInfo>() {
+                        @Override
+                        public void onSuccess(@Nullable EduRoomInfo roomInfo) {
+                            requestBoardInfo(((EduLocalUserInfo) userInfo).getUserToken(), getAppId(),
+                                    roomInfo.getRoomUuid());
+                        }
+
+                        @Override
+                        public void onFailure(@NotNull EduError error) {
+
+                        }
+                    });
+                } else {
+                    mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
+                    BoardInfo info = mainBoardBean.getInfo();
+                    Log.e(TAG, "白板信息已存在->" + boardJson);
+                    runOnUiThread(() -> whiteboardFragment.initBoardWithRoomToken(info.getBoardId(),
+                            info.getBoardToken(), userInfo.getUserUuid()));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
     }
 
     @Override
@@ -526,9 +703,19 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         /**收到群聊消息，进行处理并展示*/
         ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(),
                 eduChatMsg.getMessage(), eduChatMsg.getType());
-        chatMsg.isMe = chatMsg.getFromUser().equals(classRoom.getLocalUser().getUserInfo());
-        chatRoomFragment.addMessage(chatMsg);
-        Log.e(TAG, "成功添加一条聊天消息");
+        classRoom.getLocalUser(new EduCallback<EduUser>() {
+            @Override
+            public void onSuccess(@Nullable EduUser user) {
+                chatMsg.isMe = chatMsg.getFromUser().equals(user.getUserInfo());
+                chatRoomFragment.addMessage(chatMsg);
+                Log.e(TAG, "成功添加一条聊天消息");
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
     }
 
     @Override
@@ -592,18 +779,27 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onRoomStatusChanged(@NotNull EduRoomChangeType event, @NotNull EduUserInfo operatorUser, @NotNull EduRoom classRoom) {
-        EduRoomStatus roomStatus = classRoom.getRoomStatus();
-        switch (event) {
-            case CourseState:
-                title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
-                        System.currentTimeMillis() - roomStatus.getStartTime());
-                break;
-            case AllStudentsChat:
-                chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
-                break;
-            default:
-                break;
-        }
+        classRoom.getRoomStatus(new EduCallback<EduRoomStatus>() {
+            @Override
+            public void onSuccess(@Nullable EduRoomStatus roomStatus) {
+                switch (event) {
+                    case CourseState:
+                        title_view.setTimeState(roomStatus.getCourseState() == EduRoomState.START,
+                                System.currentTimeMillis() - roomStatus.getStartTime());
+                        break;
+                    case AllStudentsChat:
+                        chatRoomFragment.setMuteAll(!roomStatus.isStudentChatAllowed());
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
     }
 
     @Override
@@ -611,41 +807,49 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         Log.e(TAG, "收到roomProperty改变的数据");
         Map<String, Object> roomProperties = classRoom.getRoomProperties();
         String boardJson = getProperty(roomProperties, BOARD);
-        if (mainBoardBean == null) {
-            Log.e(TAG, "首次获取到白板信息->" + boardJson);
-            /**首次获取到白板信息*/
-            mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
-            runOnUiThread(() -> {
-                whiteboardFragment.initBoardWithRoomToken(mainBoardBean.getInfo().getBoardId(),
-                        mainBoardBean.getInfo().getBoardToken(), getLocalUserInfo().getUserUuid());
-//                boolean follow = whiteBoardIsFollowMode(state);
-//                if (follow) {
-//                    layout_whiteboard.setVisibility(View.VISIBLE);
-//                    layout_share_video.setVisibility(View.GONE);
-//                }
-//                whiteboardFragment.disableCameraTransform(follow);
-//                boolean granted = whiteBoardIsGranted((state));
-//                if (getClassType() == Room.Type.ONE2ONE) {
-//                    /*一对一模式下学生始终有白板授权*/
-//                    granted = true;
-//                }
-//                whiteboardFragment.disableDeviceInputs(!granted);
-            });
-        }
-        String recordJson = getProperty(roomProperties, RECORD);
-        if (!TextUtils.isEmpty(recordJson)) {
-            RecordBean tmp = RecordBean.fromJson(recordJson, RecordBean.class);
-            if (mainRecordBean == null || tmp.getState() != mainRecordBean.getState()) {
-                mainRecordBean = tmp;
-                if (mainRecordBean.getState() == END) {
-                    revRecordMsg = true;
-                    RecordMsg recordMsg = new RecordMsg(getMediaRoomUuid(), getLocalUserInfo(),
-                            getString(R.string.replay_link), EduChatMsgType.Text.getValue());
-                    recordMsg.isMe = true;
-                    chatRoomFragment.addMessage(recordMsg);
+        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+            @Override
+            public void onSuccess(@Nullable EduUserInfo userInfo) {
+                if (mainBoardBean == null) {
+                    Log.e(TAG, "首次获取到白板信息->" + boardJson);
+                    /**首次获取到白板信息*/
+                    mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
+                    runOnUiThread(() -> {
+                        whiteboardFragment.initBoardWithRoomToken(mainBoardBean.getInfo().getBoardId(),
+                                mainBoardBean.getInfo().getBoardToken(), userInfo.getUserUuid());
+                    });
+                }
+                String recordJson = getProperty(roomProperties, RECORD);
+                if (!TextUtils.isEmpty(recordJson)) {
+                    RecordBean tmp = RecordBean.fromJson(recordJson, RecordBean.class);
+                    if (mainRecordBean == null || tmp.getState() != mainRecordBean.getState()) {
+                        mainRecordBean = tmp;
+                        if (mainRecordBean.getState() == END) {
+                            getMediaRoomUuid(new EduCallback<String>() {
+                                @Override
+                                public void onSuccess(@Nullable String uuid) {
+                                    revRecordMsg = true;
+                                    RecordMsg recordMsg = new RecordMsg(uuid, userInfo,
+                                            getString(R.string.replay_link), EduChatMsgType.Text.getValue());
+                                    recordMsg.isMe = true;
+                                    chatRoomFragment.addMessage(recordMsg);
+                                }
+
+                                @Override
+                                public void onFailure(@NotNull EduError error) {
+
+                                }
+                            });
+                        }
+                    }
                 }
             }
-        }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
     }
 
     @Override
@@ -660,7 +864,18 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
 
     @Override
     public void onConnectionStateChanged(@NotNull ConnectionState state, @NotNull EduRoom classRoom) {
-        Log.e(TAG, "onNetworkQualityChanged->" + state.getValue() + ",room:" + classRoom.getRoomInfo().getRoomUuid());
+        classRoom.getRoomInfo(new EduCallback<EduRoomInfo>() {
+            @Override
+            public void onSuccess(@Nullable EduRoomInfo roomInfo) {
+                Log.e(TAG, "onNetworkQualityChanged->" + state.getValue() + ",room:"
+                        + roomInfo.getRoomUuid());
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
     }
 
     @Override
@@ -764,7 +979,16 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
             whiteboardFragment.disableDeviceInputs(false);
             return;
         }
-        boolean granted = whiteBoardIsGranted(boardState);
-        whiteboardFragment.disableDeviceInputs(!granted);
+        whiteBoardIsGranted(boardState, new EduCallback<Boolean>() {
+            @Override
+            public void onSuccess(@Nullable Boolean granted) {
+                whiteboardFragment.disableDeviceInputs(!granted);
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
     }
 }

@@ -14,6 +14,7 @@ import butterknife.BindView;
 import butterknife.OnClick;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
+import io.agora.education.api.base.EduError;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
@@ -57,8 +58,8 @@ public class OneToOneClassActivity extends BaseClassActivity {
                     }
 
                     @Override
-                    public void onFailure(int code, @org.jetbrains.annotations.Nullable String reason) {
-                        joinFailed(code, reason);
+                    public void onFailure(@NotNull EduError error) {
+                        joinFailed(error.getType(), error.getMsg());
                     }
                 });
     }
@@ -87,25 +88,30 @@ public class OneToOneClassActivity extends BaseClassActivity {
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
-        video_student.setName(getLocalUserInfo().getUserName());
-        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
-//        runOnUiThread(() -> {
-//            /**一对一，默认学生可以针对白板进行输入*/
-//            whiteboardFragment.disableCameraTransform(false);
-//            whiteboardFragment.disableDeviceInputs(false);
-//        });
+        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+            @Override
+            public void onSuccess(@Nullable EduUserInfo userInfo) {
+                video_student.setName(userInfo.getUserName());
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
+        setTitleData();
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
+        setTitleData();
     }
 
     @Override
     public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         super.onRemoteUserLeft(userEvent, classRoom);
-        title_view.setTitle(String.format(Locale.getDefault(), "%s", getMediaRoomName()));
+        setTitleData();
     }
 
     @Override

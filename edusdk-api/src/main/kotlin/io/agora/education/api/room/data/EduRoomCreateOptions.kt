@@ -12,7 +12,16 @@ enum class RoomType(var value: Int) {
     ONE_ON_ONE(0),
     SMALL_CLASS(1),
     LARGE_CLASS(2),
-    BREAKOUT_CLASS(3)
+    BREAKOUT_CLASS(3);
+
+    companion object {
+        fun roomTypeIsValid(value: Int): Boolean {
+            return value == ONE_ON_ONE.value ||
+                    value == SMALL_CLASS.value ||
+                    value == LARGE_CLASS.value ||
+                    value == BREAKOUT_CLASS.value
+        }
+    }
 }
 
 data class Property(
@@ -60,10 +69,4 @@ class RoomCreateOptions(
             else -> "1"
         }
     }
-}
-
-class EduError(
-        val code: Int,
-        val message: String
-) {
 }
