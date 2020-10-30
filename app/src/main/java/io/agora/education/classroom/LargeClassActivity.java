@@ -739,11 +739,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                             getMediaRoomInfo(new EduCallback<EduRoomInfo>() {
                                 @Override
                                 public void onSuccess(@Nullable EduRoomInfo roomInfo) {
-                                    RteEngineImpl.INSTANCE.setClientRole(roomInfo.getRoomUuid(),
-                                            Constants.CLIENT_ROLE_BROADCASTER);
-                                    RteEngineImpl.INSTANCE.muteLocalStream(!stream.getHasAudio(),
-                                            !stream.getHasVideo());
-                                    RteEngineImpl.INSTANCE.publish(roomInfo.getRoomUuid());
                                     renderStudentStream(stream, video_student.getVideoLayout());
                                 }
 
@@ -789,11 +784,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                             getMediaRoomInfo(new EduCallback<EduRoomInfo>() {
                                 @Override
                                 public void onSuccess(@Nullable EduRoomInfo roomInfo) {
-                                    RteEngineImpl.INSTANCE.setClientRole(roomInfo.getRoomUuid(),
-                                            Constants.CLIENT_ROLE_BROADCASTER);
-                                    RteEngineImpl.INSTANCE.muteLocalStream(!stream.getHasAudio(),
-                                            !stream.getHasVideo());
-                                    RteEngineImpl.INSTANCE.publish(roomInfo.getRoomUuid());
                                     renderStudentStream(stream, video_student.getVideoLayout());
                                 }
 

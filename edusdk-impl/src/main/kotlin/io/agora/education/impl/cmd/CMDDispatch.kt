@@ -4,7 +4,6 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.agora.Constants.Companion.AgoraLog
-import io.agora.education.impl.util.Convert
 import io.agora.education.api.manager.listener.EduManagerEventListener
 import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.room.EduRoom
@@ -15,6 +14,8 @@ import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserStateChangeType.Chat
 import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
+import io.agora.education.impl.util.Convert
+import io.agora.rtc.Constants
 import io.agora.rte.RteEngineImpl
 
 
@@ -227,6 +228,9 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             val streamInfo = element.modifiedStream
                             if (streamInfo.publisher == eduRoom.getCurLocalUserInfo()) {
                                 RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                                RteEngineImpl.setClientRole(eduRoom.getCurRoomUuid(),
+                                        Constants.CLIENT_ROLE_BROADCASTER)
+                                RteEngineImpl.publish(eduRoom.getCurRoomUuid())
                                 Log.e(TAG, "join成功，把新添加的本地流回调出去")
                                 cmdCallbackManager.onLocalStreamAdded(element, eduRoom.getCurLocalUser())
                                 iterable.remove()
@@ -249,6 +253,9 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             val stream = element.event.modifiedStream
                             if (stream.publisher == eduRoom.getCurLocalUserInfo()) {
                                 RteEngineImpl.updateLocalStream(stream.hasAudio, stream.hasVideo)
+                                RteEngineImpl.setClientRole(eduRoom.getCurRoomUuid(),
+                                        Constants.CLIENT_ROLE_BROADCASTER)
+                                RteEngineImpl.publish(eduRoom.getCurRoomUuid())
                                 Log.e(TAG, "把发生改变的本地流回调出去")
                                 cmdCallbackManager.onLocalStreamUpdated(element.event, element.type,
                                         eduRoom.getCurLocalUser())
@@ -275,6 +282,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                             if (element.modifiedStream.publisher == eduRoom.getCurLocalUserInfo()) {
                                 RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
                                         element.modifiedStream.hasVideo)
+                                RteEngineImpl.unpublish(eduRoom.getCurRoomUuid())
                                 cmdCallbackManager.onLocalStreamRemoved(element, eduRoom.getCurLocalUser())
                                 iterable.remove()
                             }
