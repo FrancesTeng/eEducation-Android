@@ -19,8 +19,8 @@ internal open class CMDProcessor {
 
         /**调用此函数之前须确保first和second代表的是同一个用户
          * 比较first的数据是否比second的更为接近当前时间(即找出一个最新数据)
-         * @return > 0（user > old）
-         *         !(> 0) user <= old*/
+         * @return > 0（first > second）
+         *         !(> 0) first <= second*/
         internal fun compareUserInfoTime(first: EduUserInfo, second: EduUserInfo): Long {
             /**判断更新时间是否为空(为空的有可能是原始数据)*/
             if ((first as EduUserInfoImpl).updateTime == null) {
