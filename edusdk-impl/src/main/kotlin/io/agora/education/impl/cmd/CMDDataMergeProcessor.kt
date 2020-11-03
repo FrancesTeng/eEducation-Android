@@ -35,17 +35,12 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     if (userInfoList.contains(userInfo1)) {
                         val index = userInfoList.indexOf(userInfo1)
 
-                        /**获取已存在于集合中的用户*/
-                        val userInfo2 = userInfoList[index]
-                        /**找出最新数据并替换*/
-                        if (compareUserInfoTime(userInfo1, userInfo2) > 0) {
-                            /**剔除掉被过滤掉的用户*/
-                            userInfoList.removeAt(index)
-                            /**构造userEvent并返回*/
-                            val operator = getOperator(element.operator, userInfo1, roomType)
-                            val userEvent = EduUserEvent(userInfo1, operator)
-                            validUserInfoList.add(userEvent)
-                        }
+                        /**剔除掉被过滤掉的用户*/
+                        userInfoList.removeAt(index)
+                        /**构造userEvent并返回*/
+                        val operator = getOperator(element.operator, userInfo1, roomType)
+                        val userEvent = EduUserEvent(userInfo1, operator)
+                        validUserInfoList.add(userEvent)
                     }
                 }
                 return validUserInfoList
@@ -66,13 +61,9 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     if (userInfoList.contains(userInfo1)) {
                         val index = userInfoList.indexOf(userInfo1)
 
-                        /**获取已存在于集合中的用户*/
-                        val userInfo2 = userInfoList[index]
-                        if (compareUserInfoTime(userInfo1, userInfo2) > 0) {
-                            /**更新用户的数据为最新数据*/
-                            userInfoList[index] = userInfo1
+                        /**更新用户的数据为最新数据*/
+                        userInfoList[index] = userInfo1
 //                            validUserInfoList.add(userInfo1)
-                        }
                     } else {
                         userInfoList.add(userInfo1)
                         validUserInfoList.add(userInfo1)
@@ -89,25 +80,26 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             userStateChangedList.add(Convert.convertUserInfo(cmdUserStateMsg, roomType))
             val validUserEventList = mutableListOf<EduUserStateChangeEvent>()
             synchronized(eduUserInfos) {
+                var type = EduUserStateChangeType.Chat
                 for (element in userStateChangedList) {
                     if (eduUserInfos.contains(element)) {
                         val index = eduUserInfos.indexOf(element)
 
                         /**获取已存在于集合中的用户*/
                         val userInfo2 = eduUserInfos[index]
-                        if (compareUserInfoTime(element, userInfo2) > 0) {
-                            var type = EduUserStateChangeType.Chat
-                            /**确认changeType*/
-                            if (element.isChatAllowed != userInfo2.isChatAllowed) {
-                                type = EduUserStateChangeType.Chat
-                            }
-                            /**更新用户的数据为最新数据*/
-                            eduUserInfos[index] = element
-                            /**构造userEvent并返回*/
-                            val operator = getOperator(cmdUserStateMsg.operator, element, roomType)
-                            val userEvent = EduUserEvent(element, operator)
-                            validUserEventList.add(EduUserStateChangeEvent(userEvent, type))
-                        }
+                        /**更新用户的数据为最新数据*/
+                        eduUserInfos[index] = element
+                        /**构造userEvent并返回*/
+                        val operator = getOperator(cmdUserStateMsg.operator, element, roomType)
+                        val userEvent = EduUserEvent(element, operator)
+                        validUserEventList.add(EduUserStateChangeEvent(userEvent, type))
+                    } else {
+                        /**用户信息不存在于本地，需要先把此用户信息同步至本地*/
+                        eduUserInfos.add(element)
+                        /**构造userEvent并返回*/
+                        val operator = getOperator(cmdUserStateMsg.operator, element, roomType)
+                        val userEvent = EduUserEvent(element, operator)
+                        validUserEventList.add(EduUserStateChangeEvent(userEvent, type))
                     }
                 }
                 return validUserEventList
@@ -220,16 +212,12 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     val index = Convert.streamExistsInList(element, streamInfoList)
                     Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
                     if (index > -1) {
-                        /**获取已存在于集合中的用户*/
-                        val userInfo2 = streamInfoList[index]
-                        if (compareStreamInfoTime(element, userInfo2) > 0) {
-                            /**更新用户的数据为最新数据*/
-                            streamInfoList[index] = element
-                            /**构造userEvent并返回*/
-                            val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                            val userEvent = EduStreamEvent(element, operator)
-                            validStreamList.add(userEvent)
-                        }
+                        /**更新用户的数据为最新数据*/
+                        streamInfoList[index] = element
+                        /**构造userEvent并返回*/
+                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
+                        val userEvent = EduStreamEvent(element, operator)
+                        validStreamList.add(userEvent)
                     } else {
                         streamInfoList.add(element)
                         /**构造userEvent并返回*/
@@ -293,25 +281,23 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     if (index > -1) {
                         /**获取已存在于集合中的用户*/
                         val userInfo2 = streamInfoList[index]
-                        if (compareStreamInfoTime(element, userInfo2) > 0) {
-                            /*确认改变类型*/
-                            var type = EduStreamStateChangeType.Audio
-                            val audio = element.hasAudio != userInfo2.hasAudio
-                            val video = element.hasVideo != userInfo2.hasVideo
-                            if (audio) {
-                                type = EduStreamStateChangeType.Audio
-                            } else if (video) {
-                                type = EduStreamStateChangeType.Video
-                            } else if (audio && video) {
-                                type = EduStreamStateChangeType.VideoAudio
-                            }
-                            /**更新用户的数据为最新数据*/
-                            streamInfoList[index] = element
-                            /**构造userEvent并返回*/
-                            val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                            val userEvent = EduStreamEvent(element, operator)
-                            validStreamList.add(EduStreamStateChangeEvent(userEvent, type))
+                        /*确认改变类型*/
+                        var type = EduStreamStateChangeType.Audio
+                        val audio = element.hasAudio != userInfo2.hasAudio
+                        val video = element.hasVideo != userInfo2.hasVideo
+                        if (audio) {
+                            type = EduStreamStateChangeType.Audio
+                        } else if (video) {
+                            type = EduStreamStateChangeType.Video
+                        } else if (audio && video) {
+                            type = EduStreamStateChangeType.VideoAudio
                         }
+                        /**更新用户的数据为最新数据*/
+                        streamInfoList[index] = element
+                        /**构造userEvent并返回*/
+                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
+                        val userEvent = EduStreamEvent(element, operator)
+                        validStreamList.add(EduStreamStateChangeEvent(userEvent, type))
                     } else {
                         /**发现是修改流而且本地又没有那么直接添加到本地并作为有效数据;
                          * changeType设置为VideoAudio*/
