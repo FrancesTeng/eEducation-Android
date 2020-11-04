@@ -11,8 +11,8 @@ public class RecordMsg extends ChannelMsg.ChatMsg {
     private String roomUuid;
 
     public RecordMsg(@NonNull String roomUuid, @NotNull EduUserInfo fromUser, @NotNull String message,
-                     int type) {
-        super(fromUser, message, type);
+                     long timestamp ,int type) {
+        super(fromUser, message, timestamp, type);
         this.roomUuid = roomUuid;
     }
 

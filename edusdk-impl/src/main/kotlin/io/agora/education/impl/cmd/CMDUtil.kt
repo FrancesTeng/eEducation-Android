@@ -26,9 +26,9 @@ internal object CMDUtil {
             Convert.convertUserInfo(rtmMsg.fromUser, (eduRoom as EduRoomImpl).getCurRoomType())
         }
         return if (rtmMsg.type != null) {
-            EduChatMsg(fromUser, rtmMsg.message, rtmMsg.type)
+            EduChatMsg(fromUser, rtmMsg.message, cmdResponseBody.timestamp, rtmMsg.type)
         } else {
-            EduMsg(fromUser, rtmMsg.message)
+            EduMsg(fromUser, rtmMsg.message, cmdResponseBody.timestamp)
         }
     }
 }

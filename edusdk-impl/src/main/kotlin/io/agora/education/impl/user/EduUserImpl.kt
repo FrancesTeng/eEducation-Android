@@ -285,7 +285,7 @@ internal open class EduUserImpl(
                 .sendChannelCustomMessage(APPID, eduRoom.getCurRoomUuid(), roomMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduMsg(userInfo, message)
+                        val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
                         callback.onSuccess(textMessage)
                     }
 
@@ -304,7 +304,7 @@ internal open class EduUserImpl(
                 .sendPeerCustomMessage(APPID, eduRoom.getCurRoomUuid(), remoteUser.userUuid, userMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduMsg(userInfo, message)
+                        val textMessage = EduMsg(userInfo, message, System.currentTimeMillis())
                         callback.onSuccess(textMessage)
                     }
 
@@ -324,7 +324,8 @@ internal open class EduUserImpl(
                         eduRoom.getCurRoomUuid(), roomChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduChatMsg(userInfo, message, EduChatMsgType.Text.value)
+                        val textMessage = EduChatMsg(userInfo, message, System.currentTimeMillis(),
+                                EduChatMsgType.Text.value)
                         callback.onSuccess(textMessage)
                     }
 
@@ -343,7 +344,8 @@ internal open class EduUserImpl(
                 .sendPeerChatMsg(APPID, eduRoom.getCurRoomUuid(), remoteUser.userUuid, userChatMsgReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        val textMessage = EduChatMsg(userInfo, message, EduChatMsgType.Text.value)
+                        val textMessage = EduChatMsg(userInfo, message, System.currentTimeMillis(),
+                                EduChatMsgType.Text.value)
                         callback.onSuccess(textMessage)
                     }
 

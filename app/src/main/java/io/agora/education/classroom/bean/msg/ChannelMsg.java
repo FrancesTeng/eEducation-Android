@@ -43,13 +43,14 @@ public class ChannelMsg extends JsonBean {
         public transient boolean showRole = false;
         public String role;
 
-        public ChatMsg(@NotNull EduUserInfo fromUser, @NotNull String message, int type) {
-            super(fromUser, message, type);
+        public ChatMsg(@NotNull EduUserInfo fromUser, @NotNull String message, long timestamp,
+                       int type) {
+            super(fromUser, message, timestamp, type);
         }
 
-        public ChatMsg(@NotNull EduUserInfo fromUser, @NotNull String message, int type,
-                       boolean showRole, String role) {
-            super(fromUser, message, type);
+        public ChatMsg(@NotNull EduUserInfo fromUser, @NotNull String message, long timestamp,
+                       int type, boolean showRole, String role) {
+            super(fromUser, message, timestamp, type);
             this.showRole = showRole;
             this.role = role;
         }

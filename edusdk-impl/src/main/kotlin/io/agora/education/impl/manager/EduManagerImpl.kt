@@ -35,6 +35,7 @@ import io.agora.education.impl.util.Convert
 import io.agora.education.impl.util.UnCatchExceptionHandler
 import io.agora.log.LogManager
 import io.agora.log.UploadManager
+import io.agora.rtc.RtcEngine
 import io.agora.rte.RteCallback
 import io.agora.rte.RteEngineImpl
 import io.agora.rte.data.RteError

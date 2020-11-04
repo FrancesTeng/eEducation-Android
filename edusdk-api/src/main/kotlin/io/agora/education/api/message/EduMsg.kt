@@ -4,5 +4,6 @@ import io.agora.education.api.user.data.EduUserInfo
 
 open class EduMsg(
         val fromUser: EduUserInfo,
-        var message: String
+        var message: String,
+        val timestamp: Long
 )

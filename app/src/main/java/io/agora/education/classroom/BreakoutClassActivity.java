@@ -577,7 +577,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
         /**收到群聊消息，进行处理并展示*/
         EduUserInfo fromUser = eduChatMsg.getFromUser();
         ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(fromUser, eduChatMsg.getMessage(),
-                eduChatMsg.getType(), true, getRoleStr(fromUser.getRole().getValue()));
+                System.currentTimeMillis(), eduChatMsg.getType(), true,
+                getRoleStr(fromUser.getRole().getValue()));
         classRoom.getLocalUser(new EduCallback<EduUser>() {
             @Override
             public void onSuccess(@Nullable EduUser user) {
@@ -824,7 +825,8 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
                             @Override
                             public void onSuccess(@Nullable EduUserInfo userInfo) {
                                 RecordMsg recordMsg = new RecordMsg(roomEntry.getRoomUuid(), userInfo,
-                                        getString(R.string.replay_link), EduChatMsgType.Text.getValue());
+                                        getString(R.string.replay_link), System.currentTimeMillis(),
+                                        EduChatMsgType.Text.getValue());
                                 recordMsg.isMe = true;
                                 chatRoomFragment.addMessage(recordMsg);
                             }

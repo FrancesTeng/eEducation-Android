@@ -187,6 +187,7 @@ public class ChatRoomFragment extends BaseFragment implements OnItemChildClickLi
                     public void onSuccess(@Nullable EduUserInfo userInfo) {
                         /*本地消息直接添加*/
                         ChannelMsg.ChatMsg msg = new ChannelMsg.ChatMsg(userInfo, text,
+                                System.currentTimeMillis(),
                                 EduChatMsgType.Text.getValue());
                         msg.isMe = true;
                         addMessage(msg);

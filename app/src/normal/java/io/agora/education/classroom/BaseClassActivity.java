@@ -702,7 +702,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     public void onRoomChatMessageReceived(@NotNull EduChatMsg eduChatMsg, @NotNull EduRoom classRoom) {
         /**收到群聊消息，进行处理并展示*/
         ChannelMsg.ChatMsg chatMsg = new ChannelMsg.ChatMsg(eduChatMsg.getFromUser(),
-                eduChatMsg.getMessage(), eduChatMsg.getType());
+                eduChatMsg.getMessage(), eduChatMsg.getTimestamp(), eduChatMsg.getType());
         classRoom.getLocalUser(new EduCallback<EduUser>() {
             @Override
             public void onSuccess(@Nullable EduUser user) {
@@ -830,7 +830,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                                 public void onSuccess(@Nullable String uuid) {
                                     revRecordMsg = true;
                                     RecordMsg recordMsg = new RecordMsg(uuid, userInfo,
-                                            getString(R.string.replay_link), EduChatMsgType.Text.getValue());
+                                            getString(R.string.replay_link), System.currentTimeMillis(),
+                                            EduChatMsgType.Text.getValue());
                                     recordMsg.isMe = true;
                                     chatRoomFragment.addMessage(recordMsg);
                                 }

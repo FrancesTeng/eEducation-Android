@@ -1,5 +1,7 @@
 package io.agora.education.api.stream.data
 
+import io.agora.rtc.Constants
+
 enum class OrientationMode {
     ADAPTIVE,
     FIXED_LANDSCAPE,
