@@ -254,7 +254,6 @@ public class MainActivity extends BaseActivity {
         EduManagerOptions options = new EduManagerOptions(this, getAppId(), getCustomerId(),
                 getCustomerCer(), userUuid, yourNameStr);
         options.setLogFileDir(getCacheDir().getAbsolutePath());
-        options.setTag(EDULOGINTAG);
         EduManager.init(options, new EduCallback<EduManager>() {
             @Override
             public void onSuccess(@Nullable EduManager res) {

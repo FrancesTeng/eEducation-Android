@@ -36,7 +36,9 @@ data class RoomJoinOptions(
         /**用户可以传空,为空则使用roomImpl中默认的userName*/
         var userName: String?,
         val roleType: EduUserRole,
-        val mediaOptions: RoomMediaOptions
+        val mediaOptions: RoomMediaOptions,
+        /*用于RTC-SDK统计各个场景的使用情况*/
+        var tag: Int? = null
 ) {
     fun closeAutoPublish() {
         mediaOptions.autoPublish = false

@@ -10,24 +10,27 @@ import io.agora.education.impl.room.data.EduRoomInfoImpl
 
 internal class CommonUtil {
     companion object {
-        fun buildRtcOptionalInfo(eduRoom: EduRoom): String {
-            val info = JsonObject()
-            info.addProperty("demo_ver", BuildConfig.VERSION_NAME)
-            when (((eduRoom as EduRoomImpl).getCurRoomInfo() as EduRoomInfoImpl).roomType) {
-                RoomType.ONE_ON_ONE -> {
-                    info.addProperty("demo_scenario", "One on One Classroom")
+        fun buildRtcOptionalInfo(tag: Int?): String {
+            tag?.let {
+                val info = JsonObject()
+                info.addProperty("demo_ver", BuildConfig.VERSION_NAME)
+                when (tag) {
+                    RoomType.ONE_ON_ONE.value -> {
+                        info.addProperty("demo_scenario", "One on One Classroom")
+                    }
+                    RoomType.SMALL_CLASS.value -> {
+                        info.addProperty("demo_scenario", "Small Classroom")
+                    }
+                    RoomType.LARGE_CLASS.value -> {
+                        info.addProperty("demo_scenario", "Lecture Hall")
+                    }
+                    RoomType.BREAKOUT_CLASS.value -> {
+                        info.addProperty("demo_scenario", "Breakout Classroom")
+                    }
                 }
-                RoomType.SMALL_CLASS -> {
-                    info.addProperty("demo_scenario", "Small Classroom")
-                }
-                RoomType.LARGE_CLASS -> {
-                    info.addProperty("demo_scenario", "Lecture Hall")
-                }
-                RoomType.BREAKOUT_CLASS -> {
-                    info.addProperty("demo_scenario", "Breakout Classroom")
-                }
+                return Gson().toJson(info)
             }
-            return Gson().toJson(info)
+            return ""
         }
     }
 }

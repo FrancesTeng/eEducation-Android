@@ -174,7 +174,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         }
         isJoining = true;
         RoomJoinOptions options = new RoomJoinOptions(yourUuid, yourNameStr, EduUserRole.STUDENT,
-                new RoomMediaOptions(autoSubscribe, autoPublish));
+                new RoomMediaOptions(autoSubscribe, autoPublish), roomEntry.getRoomType());
         eduRoom.joinClassroom(options, new EduCallback<EduStudent>() {
             @Override
             public void onSuccess(@Nullable EduStudent user) {

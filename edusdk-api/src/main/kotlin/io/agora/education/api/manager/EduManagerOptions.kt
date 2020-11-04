@@ -11,7 +11,6 @@ data class EduManagerOptions(
         val userUuid: String,
         val userName: String
 ) {
-    var tag: Int? = null
     var logLevel: LogLevel = LogLevel.NONE
     var logFileDir: String? = null
 }

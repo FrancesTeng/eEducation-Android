@@ -234,7 +234,7 @@ internal class EduRoomImpl(
                         }
                         /**加入rte(包括rtm和rtc)*/
                         joinRte(rtcToken, roomEntryRes.user.streamUuid.toLong(),
-                                mediaOptions.convert(), object : RteCallback<Void> {
+                                mediaOptions.convert(), options.tag, object : RteCallback<Void> {
                             override fun onSuccess(p0: Void?) {
                                 AgoraLog.i("$TAG->joinRte成功")
                                 /**拉取全量数据*/
@@ -282,10 +282,10 @@ internal class EduRoomImpl(
     }
 
     private fun joinRte(rtcToken: String, rtcUid: Long, channelMediaOptions: ChannelMediaOptions,
-                        @NonNull callback: RteCallback<Void>) {
+                        tag: Int?, @NonNull callback: RteCallback<Void>) {
         AgoraLog.i("$TAG->加入Rtc和Rtm")
         RteEngineImpl.setClientRole(getCurRoomUuid(), CLIENT_ROLE_BROADCASTER)
-        val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(this)
+        val rtcOptionalInfo: String = CommonUtil.buildRtcOptionalInfo(tag)
         RteEngineImpl[getCurRoomUuid()]?.join(rtcOptionalInfo, rtcToken, rtcUid, channelMediaOptions, callback)
     }
 
