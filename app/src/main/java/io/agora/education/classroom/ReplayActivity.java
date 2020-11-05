@@ -2,25 +2,18 @@ package io.agora.education.classroom;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.FileUtils;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
 import com.google.android.exoplayer2.ui.PlayerView;
 
-import java.io.FileDescriptor;
-
 import butterknife.BindView;
 import butterknife.OnClick;
-import io.agora.base.network.RetrofitManager;
 import io.agora.education.BuildConfig;
-import io.agora.education.EduApplication;
 import io.agora.education.R;
 import io.agora.education.base.BaseActivity;
-import io.agora.education.base.BaseCallback;
 import io.agora.education.classroom.fragment.ReplayBoardFragment;
-import io.agora.education.service.bean.response.RoomBoardRes;
 
 
 public class ReplayActivity extends BaseActivity {
