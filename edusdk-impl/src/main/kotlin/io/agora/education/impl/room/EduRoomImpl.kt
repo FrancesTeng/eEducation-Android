@@ -93,9 +93,6 @@ internal class EduRoomImpl(
     /**标识join过程是否正在进行中*/
     var joining = false
 
-    /**当前classRoom的classType(Main or Sub)*/
-    var curClassType = ClassType.Sub
-
     /**entry接口返回的流信息(可能是上次遗留的也可能是本次autoPublish流*/
     var defaultStreams: MutableList<EduStreamEvent> = mutableListOf()
 
@@ -181,7 +178,6 @@ internal class EduRoomImpl(
             return
         }
         AgoraLog.i("$TAG->用户[${options.userUuid}]准备加入房间:${getCurRoomUuid()}")
-        this.curClassType = ClassType.Sub
         this.joining = true
         this.studentJoinCallback = callback
         /**判断是否指定了用户名*/
@@ -201,7 +197,7 @@ internal class EduRoomImpl(
         }
         mediaOptions = options.mediaOptions
         /**根据classroomType和用户传的角色值转化出一个角色字符串来和后端交互*/
-        val role = Convert.convertUserRole(localUserInfo.role, getCurRoomType(), curClassType)
+        val role = Convert.convertUserRole(localUserInfo.role, getCurRoomType())
         val eduJoinClassroomReq = EduJoinClassroomReq(localUserInfo.userName, role,
                 mediaOptions.primaryStreamId.toString(), mediaOptions.getPublishType().value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
@@ -303,8 +299,7 @@ internal class EduRoomImpl(
                     getCurStreamList()[pos] = streamInfo!!
                 }
                 /**如果当前用户是观众则什么都不做(即不发流)*/
-                val role = Convert.convertUserRole(syncSession.localUser.userInfo.role,
-                        getCurRoomType(), curClassType)
+                val role = Convert.convertUserRole(syncSession.localUser.userInfo.role, getCurRoomType())
                 if (role == EduUserRoleStr.audience.value) {
                     AgoraLog.i("$TAG->本地用户角色是观众")
                 } else {

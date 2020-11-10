@@ -71,7 +71,7 @@ abstract class EduManager(
         }
 
         fun version(): String {
-            return BuildConfig.VERSION_NAME
+            return BuildConfig.SDK_VERSION
         }
     }
 

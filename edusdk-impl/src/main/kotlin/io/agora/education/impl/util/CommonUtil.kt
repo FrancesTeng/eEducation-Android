@@ -27,6 +27,9 @@ internal class CommonUtil {
                     RoomType.BREAKOUT_CLASS.value -> {
                         info.addProperty("demo_scenario", "Breakout Classroom")
                     }
+                    RoomType.INTERMEDIATE_CLASS.value -> {
+                        info.addProperty("demo_scenario", "Intermediate Classroom")
+                    }
                 }
                 return Gson().toJson(info)
             }

@@ -12,14 +12,16 @@ enum class RoomType(var value: Int) {
     ONE_ON_ONE(0),
     SMALL_CLASS(1),
     LARGE_CLASS(2),
-    BREAKOUT_CLASS(3);
+    BREAKOUT_CLASS(3),
+    INTERMEDIATE_CLASS(4);
 
     companion object {
         fun roomTypeIsValid(value: Int): Boolean {
             return value == ONE_ON_ONE.value ||
                     value == SMALL_CLASS.value ||
                     value == LARGE_CLASS.value ||
-                    value == BREAKOUT_CLASS.value
+                    value == BREAKOUT_CLASS.value ||
+                    value == INTERMEDIATE_CLASS.value
         }
     }
 }
@@ -51,6 +53,7 @@ class RoomCreateOptions(
             RoomType.SMALL_CLASS.value -> "1"
             RoomType.LARGE_CLASS.value -> "1"
             RoomType.BREAKOUT_CLASS.value -> "1"
+            RoomType.INTERMEDIATE_CLASS.value -> "1"
             /**-1表示不做限制*/
             else -> "-1"
         }
@@ -59,6 +62,7 @@ class RoomCreateOptions(
             RoomType.SMALL_CLASS.value -> "16"
             RoomType.LARGE_CLASS.value -> "-1"
             RoomType.BREAKOUT_CLASS.value -> "-1"
+            RoomType.INTERMEDIATE_CLASS.value -> "-1"
             else -> "-1"
         }
         roomProperties[Property.KEY_ASSISTANT_LIMIT] = when (roomType) {
@@ -66,6 +70,7 @@ class RoomCreateOptions(
             RoomType.SMALL_CLASS.value -> "0"
             RoomType.LARGE_CLASS.value -> "0"
             RoomType.BREAKOUT_CLASS.value -> "1"
+            RoomType.INTERMEDIATE_CLASS.value -> "0"
             else -> "1"
         }
     }

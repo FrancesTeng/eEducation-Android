@@ -1,9 +1,7 @@
 package io.agora.education;
 
 import android.Manifest;
-import android.app.DownloadManager;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -33,10 +31,9 @@ import io.agora.education.api.room.data.RoomType;
 import io.agora.education.api.statistics.AgoraError;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.base.BaseActivity;
-import io.agora.education.base.BaseCallback;
-import io.agora.education.broadcast.DownloadReceiver;
 import io.agora.education.classroom.BaseClassActivity;
 import io.agora.education.classroom.BreakoutClassActivity;
+import io.agora.education.classroom.IntermediateClassActivity;
 import io.agora.education.classroom.LargeClassActivity;
 import io.agora.education.classroom.OneToOneClassActivity;
 import io.agora.education.classroom.SmallClassActivity;
@@ -45,9 +42,7 @@ import io.agora.education.service.CommonService;
 import io.agora.education.service.bean.ResponseBody;
 import io.agora.education.service.bean.request.RoomCreateOptionsReq;
 import io.agora.education.util.AppUtil;
-import io.agora.education.widget.ConfirmDialog;
 import io.agora.education.widget.PolicyDialog;
-import io.agora.rte.RteEngineImpl;
 
 import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.EduApplication.getCustomerCer;
@@ -122,7 +117,7 @@ public class MainActivity extends BaseActivity {
     }
 
     @OnClick({R.id.iv_setting, R.id.et_room_type, R.id.btn_join, R.id.tv_one2one, R.id.tv_small_class,
-            R.id.tv_large_class, R.id.tv_breakout_class})
+            R.id.tv_large_class, R.id.tv_breakout_class, R.id.tv_intermediate_class})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.iv_setting:
@@ -154,6 +149,10 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.tv_breakout_class:
                 et_room_type.setText(R.string.breakout);
+                card_room_type.setVisibility(View.GONE);
+                break;
+            case R.id.tv_intermediate_class:
+                et_room_type.setText(R.string.intermediate);
                 card_room_type.setVisibility(View.GONE);
                 break;
             default:
@@ -227,8 +226,10 @@ public class MainActivity extends BaseActivity {
             return RoomType.SMALL_CLASS.getValue();
         } else if (roomTypeStr.equals(getString(R.string.large_class))) {
             return RoomType.LARGE_CLASS.getValue();
-        } else {
+        } else if (roomTypeStr.equals(getString(R.string.breakout))) {
             return RoomType.BREAKOUT_CLASS.getValue();
+        } else {
+            return RoomType.INTERMEDIATE_CLASS.getValue();
         }
     }
 
@@ -279,8 +280,10 @@ public class MainActivity extends BaseActivity {
             intent.setClass(this, SmallClassActivity.class);
         } else if (roomType == RoomType.LARGE_CLASS.getValue()) {
             intent.setClass(this, LargeClassActivity.class);
-        } else {
+        } else if (roomType == RoomType.BREAKOUT_CLASS.getValue()) {
             intent.setClass(this, BreakoutClassActivity.class);
+        } else if (roomType == RoomType.INTERMEDIATE_CLASS.getValue()) {
+            intent.setClass(this, IntermediateClassActivity.class);
         }
         intent.putExtra(BaseClassActivity.ROOMENTRY, roomEntry);
         return intent;

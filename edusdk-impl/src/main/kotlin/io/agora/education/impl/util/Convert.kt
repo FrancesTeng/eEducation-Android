@@ -69,9 +69,6 @@ internal class Convert {
                 RoomType.SMALL_CLASS.value -> {
                     RoomType.SMALL_CLASS
                 }
-                RoomType.BREAKOUT_CLASS.value -> {
-                    RoomType.BREAKOUT_CLASS
-                }
                 else -> {
                     RoomType.LARGE_CLASS
                 }
@@ -79,30 +76,29 @@ internal class Convert {
         }
 
         /**根据EduUserRole枚举返回角色字符串*/
-        fun convertUserRole(role: EduUserRole, roomType: RoomType, classType: ClassType): String {
-            return if (role == EduUserRole.TEACHER) {
-                EduUserRoleStr.host.name
-            } else {
-                when (roomType) {
-                    RoomType.ONE_ON_ONE -> {
-                        EduUserRoleStr.broadcaster.name
-                    }
-                    RoomType.SMALL_CLASS -> {
-                        EduUserRoleStr.broadcaster.name
-                    }
-                    RoomType.LARGE_CLASS -> {
-                        EduUserRoleStr.audience.name
-                    }
-                    RoomType.BREAKOUT_CLASS -> {
-                        when (classType) {
-                            ClassType.Main -> {
-                                EduUserRoleStr.audience.name
-                            }
-                            ClassType.Sub -> {
-                                EduUserRoleStr.broadcaster.name
-                            }
+        fun convertUserRole(role: EduUserRole, roomType: RoomType): String {
+            return when (role) {
+                EduUserRole.TEACHER -> {
+                    EduUserRoleStr.host.name
+                }
+                EduUserRole.STUDENT -> {
+                    when (roomType) {
+                        RoomType.ONE_ON_ONE -> {
+                            EduUserRoleStr.broadcaster.name
+                        }
+                        RoomType.SMALL_CLASS -> {
+                            EduUserRoleStr.broadcaster.name
+                        }
+                        else -> {
+                            EduUserRoleStr.audience.name
                         }
                     }
+                }
+                EduUserRole.ASSISTANT -> {
+                    EduUserRoleStr.assistant.name
+                }
+                else -> {
+                    EduUserRoleStr.audience.name
                 }
             }
         }
@@ -117,17 +113,12 @@ internal class Convert {
                     return EduUserRole.ASSISTANT
                 }
                 EduUserRoleStr.broadcaster.name -> {
-                    if (roomType == RoomType.ONE_ON_ONE || roomType == RoomType.SMALL_CLASS ||
-                            roomType == RoomType.BREAKOUT_CLASS) {
+                    if (roomType == RoomType.ONE_ON_ONE || roomType == RoomType.SMALL_CLASS) {
                         return EduUserRole.STUDENT
                     }
                 }
                 EduUserRoleStr.audience.name -> {
-                    if (roomType == RoomType.LARGE_CLASS) {
-                        return EduUserRole.STUDENT
-                    } else if (roomType == RoomType.BREAKOUT_CLASS) {
-                        return EduUserRole.STUDENT
-                    }
+                    return EduUserRole.STUDENT
                 }
             }
             return EduUserRole.STUDENT
@@ -266,7 +257,7 @@ internal class Convert {
             /**任何场景下，默认都允许学生聊天*/
             var allow = true
             when (roomType) {
-                RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS, RoomType.BREAKOUT_CLASS -> {
+                RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
                     muteChatConfig?.broadcaster?.let {
                         allow = muteChatConfig?.broadcaster?.toInt() == EduMuteState.Enable.value
                     }

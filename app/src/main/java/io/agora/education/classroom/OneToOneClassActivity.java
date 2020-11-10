@@ -289,7 +289,6 @@ public class OneToOneClassActivity extends BaseClassActivity {
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user,
                                         @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
-        title_view.setNetworkQuality(quality);
     }
 
     @Override

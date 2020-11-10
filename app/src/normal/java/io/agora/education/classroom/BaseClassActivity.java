@@ -15,6 +15,7 @@ import com.herewhite.sdk.domain.GlobalState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -157,7 +158,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
      */
     protected EduRoom buildEduRoom(RoomCreateOptions options, String parentRoomUuid) {
         int roomType = options.getRoomType();
-        if (options.getRoomType() == RoomType.BREAKOUT_CLASS.getValue()) {
+        if (options.getRoomType() == RoomType.BREAKOUT_CLASS.getValue()
+                || options.getRoomType() == RoomType.INTERMEDIATE_CLASS.getValue()) {
             roomType = TextUtils.isEmpty(parentRoomUuid) ? RoomType.LARGE_CLASS.getValue() :
                     RoomType.SMALL_CLASS.getValue();
         }
@@ -726,7 +728,9 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     @Override
     public void onRemoteStreamsAdded(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到添加远端流的回调");
-        for (EduStreamEvent streamEvent : streamEvents) {
+        Iterator<EduStreamEvent> iterator = streamEvents.iterator();
+        while (iterator.hasNext()) {
+            EduStreamEvent streamEvent = iterator.next();
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
             if (streamInfo.getPublisher().getRole() == EduUserRole.TEACHER
                     && streamInfo.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
@@ -737,6 +741,8 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                     layout_share_video.removeAllViews();
                     renderStream(getMainEduRoom(), streamInfo, layout_share_video);
                 });
+                /**屏幕分享流已处理，移出集合*/
+                iterator.remove();
                 break;
             }
         }
@@ -861,6 +867,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
 //        Log.e(TAG, "onNetworkQualityChanged->" + quality.getValue());
+        title_view.setNetworkQuality(quality);
     }
 
     @Override

@@ -62,13 +62,13 @@ public class RoomCreateOptionsReq {
         return roomCreateOptionsReq;
     }
 
-    private static RoleConfig convertRoleConfig(RoomCreateOptions roomCreateOptions) {
+    private static RoleConfig convertRoleConfig(RoomCreateOptions options) {
 
         RoleConfig roleConfig = new RoleConfig();
         int teacherLimit = 0;
         int studentLimit = 0;
         int assistantLimit = 0;
-        Set<Map.Entry<String, String>> set = roomCreateOptions.getRoomProperties().entrySet();
+        Set<Map.Entry<String, String>> set = options.getRoomProperties().entrySet();
         String value;
         for (Map.Entry<String, String> element : set) {
             switch (element.getKey()) {
@@ -89,9 +89,10 @@ public class RoomCreateOptionsReq {
             }
         }
         roleConfig.setHost(new LimitConfig(teacherLimit));
-        if (roomCreateOptions.getRoomType() == RoomType.LARGE_CLASS.getValue()) {
+        if (options.getRoomType() == RoomType.LARGE_CLASS.getValue()
+                || options.getRoomType() == RoomType.INTERMEDIATE_CLASS.getValue()) {
             roleConfig.setAudience(new LimitConfig(studentLimit));
-        } else if (roomCreateOptions.getRoomType() == RoomType.BREAKOUT_CLASS.getValue()) {
+        } else if (options.getRoomType() == RoomType.BREAKOUT_CLASS.getValue()) {
             /**目前，超级小班课情况下，移动端只可能创建大房间，小房间由服务端创建，所以此处学生的角色是audience
              * */
             roleConfig.setAudience(new LimitConfig(studentLimit));

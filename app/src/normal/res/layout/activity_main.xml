@@ -205,6 +205,20 @@
                     android:layout_height="@dimen/dp_1"
                     android:background="@color/gray_EEEEEE" />
 
+                <TextView
+                    android:id="@+id/tv_intermediate_class"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/dp_44"
+                    android:gravity="center_vertical"
+                    android:text="@string/intermediate"
+                    android:textColor="@color/gray_333333"
+                    android:textSize="@dimen/sp_14" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/dp_1"
+                    android:background="@color/gray_EEEEEE" />
+
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>

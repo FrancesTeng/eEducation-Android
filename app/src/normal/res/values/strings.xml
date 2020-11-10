@@ -9,4 +9,5 @@
     <string name="small_class">Small Classroom</string>
     <string name="large_class">Lecture Hall</string>
     <string name="breakout">Breakout Classroom</string>
+    <string name="intermediate">Intermediate Classroom</string>
 </resources>

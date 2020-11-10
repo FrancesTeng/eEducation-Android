@@ -852,7 +852,6 @@ public class BreakoutClassActivity extends BaseClassActivity implements TabLayou
     @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo
             user, @NotNull EduRoom classRoom) {
-        super.onNetworkQualityChanged(quality, user, classRoom);
         if (classRoom.equals(subEduRoom)) {
             title_view.setNetworkQuality(quality);
         }

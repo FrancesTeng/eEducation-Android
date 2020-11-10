@@ -91,7 +91,8 @@ internal class EduTeacherImpl(
 
     override fun allowRemoteStudentChat(isAllow: Boolean, remoteStudent: EduUserInfo, callback: EduCallback<Unit>) {
         /***/
-        val role = Convert.convertUserRole(remoteStudent.role, eduRoom.getCurRoomType(), eduRoom.curClassType)
+//        val role = Convert.convertUserRole(remoteStudent.role, eduRoom.getCurRoomType(), eduRoom.curClassType)
+        val role = Convert.convertUserRole(remoteStudent.role, eduRoom.getCurRoomType())
         val eduUserStatusReq = EduUserStatusReq(remoteStudent.userName, if (isAllow) 0 else 1, role)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .updateUserMuteState(APPID, eduRoom.getCurRoomUuid(), remoteStudent.userUuid, eduUserStatusReq)

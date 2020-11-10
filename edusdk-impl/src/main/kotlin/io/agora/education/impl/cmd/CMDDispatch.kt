@@ -50,7 +50,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 val rtmRoomMuteState = Gson().fromJson<CMDResponseBody<CMDRoomMuteState>>(text, object :
                         TypeToken<CMDResponseBody<CMDRoomMuteState>>() {}.type).data
                 val roomStatus = (eduRoom as EduRoomImpl).getCurRoomStatus()
-                when ((eduRoom as EduRoomImpl).getCurRoomType()) {
+                when (eduRoom.getCurRoomType()) {
                     RoomType.ONE_ON_ONE, RoomType.SMALL_CLASS -> {
                         /**判断本次更改是否包含针对学生的全部禁聊;*/
                         val broadcasterMuteChat = rtmRoomMuteState.muteChat?.broadcaster

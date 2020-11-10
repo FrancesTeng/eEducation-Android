@@ -309,7 +309,7 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                                         resetHandState();
                                         renderStudentStream(getLocalCameraStream(), null);
                                         /*老师不在线就不用同步至老师*/
-                                        if(teacher != null) {
+                                        if (teacher != null) {
                                             user.sendUserMessage(peerMsg.toJsonString(), teacher, callback);
                                         }
                                         user.unPublishStream(res, new EduCallback<Boolean>() {
@@ -573,10 +573,12 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                         video_teacher.muteAudio(!streamInfo.getHasAudio());
                         break;
                     case SCREEN:
-                        layout_whiteboard.setVisibility(View.GONE);
-                        layout_share_video.setVisibility(View.VISIBLE);
-                        layout_share_video.removeAllViews();
-                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                        runOnUiThread(() -> {
+                            layout_whiteboard.setVisibility(View.GONE);
+                            layout_share_video.setVisibility(View.VISIBLE);
+                            layout_share_video.removeAllViews();
+                            renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                        });
                         break;
                     default:
                         break;
@@ -625,7 +627,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type,
                                       @NotNull EduRoom classRoom) {
         super.onRemoteStreamUpdated(streamEvent, type, classRoom);
-        /**屏幕分享流暂时只有新建和移除，不会有修改行为，所以此处的流都是Camera类型的*/
         EduStreamInfo streamInfo = streamEvent.getModifiedStream();
         EduBaseUserInfo userInfo = streamInfo.getPublisher();
         if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
@@ -702,7 +703,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user,
                                         @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
-        title_view.setNetworkQuality(quality);
     }
 
     @Override

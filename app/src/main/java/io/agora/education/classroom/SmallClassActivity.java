@@ -318,7 +318,6 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user,
                                         @NotNull EduRoom classRoom) {
         super.onNetworkQualityChanged(quality, user, classRoom);
-        title_view.setNetworkQuality(quality);
     }
 
     @Override
