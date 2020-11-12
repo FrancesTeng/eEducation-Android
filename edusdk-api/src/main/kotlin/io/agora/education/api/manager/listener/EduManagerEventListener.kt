@@ -10,6 +10,5 @@ interface EduManagerEventListener {
 
     fun onUserChatMessageReceived(chatMsg: EduChatMsg)
 
-    /*一期教育SDK没有这个方法，只是给娱乐使用*/
     fun onUserActionMessageReceived(actionMessage: EduActionMessage)
 }

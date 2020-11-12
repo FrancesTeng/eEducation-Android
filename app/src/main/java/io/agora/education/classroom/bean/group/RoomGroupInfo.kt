@@ -8,11 +8,27 @@ class RoomGroupInfo() {
     }
 
     /*分组状态*/
-    lateinit var groupStates: GroupStateInfo
+    var groupStates: GroupStateInfo? = null
 
     /*参与组外互动的小组id集合*/
-    lateinit var interactOutGroups: MutableList<String>
+    var interactOutGroups: MutableList<String>? = null
 
     /*分组后的各小组信息集合*/
-    lateinit var groups: MutableList<GroupInfo>
+    var groups: MutableList<GroupInfo>? = null
+
+    /**是否开启分组*/
+    fun enableGroup(): Boolean {
+        groupStates?.let {
+            return it.state == GroupState.ENABLE.value
+        }
+        return false
+    }
+
+    /**是否开启PK*/
+    fun enablePK(): Boolean {
+        groupStates?.let {
+            return enableGroup() && it.interactOutGroup == InteractState.ENABLE.value
+        }
+        return false
+    }
 }

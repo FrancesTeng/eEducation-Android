@@ -11,7 +11,7 @@
     <string name="cancel">Cancel</string>
     <string name="hint_im_message">Input message</string>
     <string name="confirm">Confirm</string>
-    <string name="title_student_list">Student</string>
+    <string name="title_student_list">Student List</string>
     <string name="your_name_should_not_be_empty">Your name should not be empty.</string>
     <string name="color_picker">Color Picker</string>
     <string name="no_enough_permissions">No enough permissions</string>
@@ -49,4 +49,5 @@
     <string name="assistant">Assistant</string>
     <string name="msg_title" translatable="false">[%s]%s</string>
     <string name="uploadlog_success">Log reported successfully\n</string>
+    <string name="title_msg">Message</string>
 </resources>

@@ -1,3 +1,13 @@
+def safeExtGet(prop, key, fallback) {
+    if (rootProject.ext.has(prop)) {
+        def map = rootProject.ext.get(prop)
+        if (map.containsKey(key)) {
+            return map.get(key)
+        }
+    }
+    return fallback
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
@@ -34,4 +44,6 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation project(path: ':edusdk-impl')
+
+    implementation "androidx.constraintlayout:constraintlayout:${safeExtGet('dependencies', 'androidx.constraintlayout:constraintlayout', '2.0.4')}"
 }

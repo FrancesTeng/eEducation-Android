@@ -10,7 +10,7 @@
     <string name="cancel">取消</string>
     <string name="hint_im_message">说点什么</string>
     <string name="confirm">确定</string>
-    <string name="title_student_list">学生</string>
+    <string name="title_student_list">学生列表</string>
     <string name="your_name_should_not_be_empty">用户名不能为空</string>
     <string name="color_picker">颜色选择器</string>
     <string name="no_enough_permissions">没有足够的权限</string>
@@ -45,4 +45,5 @@
     <string name="student">学生</string>
     <string name="assistant">助教</string>
     <string name="uploadlog_success">日志上报成功\n</string>
+    <string name="title_msg">消息</string>
 </resources>

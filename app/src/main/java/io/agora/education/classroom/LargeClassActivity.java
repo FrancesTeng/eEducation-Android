@@ -290,7 +290,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 getTeacher(new EduCallback<EduUserInfo>() {
                     @Override
                     public void onSuccess(@Nullable EduUserInfo teacher) {
-
                         if (localCoVideoStatus == CoVideoing) {
                             /*连麦过程中取消
                              * 1：关闭本地流
@@ -358,13 +357,13 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     /**
      * 本地用户(举手、连麦)被老师同意/(拒绝、打断)
      *
-     * @param coVideoing 是否正在连麦过程中
+     * @param agree 是否连麦
      */
-    public void onLinkMediaChanged(boolean coVideoing) {
+    public void onLinkMediaChanged(boolean agree) {
         getLocalUser(new EduCallback<EduUser>() {
             @Override
             public void onSuccess(@Nullable EduUser user) {
-                if (!coVideoing) {
+                if (!agree) {
                     video_student.setViewVisibility(View.GONE);
                     /**正在连麦中时才会记录本地流；申请中取消或被拒绝本地不会记录流*/
                     if (localCoVideoStatus == CoVideoing) {
@@ -397,8 +396,8 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
                 } else {
                     /**连麦中，老师会帮学生新建流，所以此处不用访问接口，等新添加本地流的回调即可*/
                 }
-                localCoVideoStatus = coVideoing ? CoVideoing : DisCoVideo;
-                curLinkedUser = coVideoing ? user.getUserInfo() : null;
+                localCoVideoStatus = agree ? CoVideoing : DisCoVideo;
+                curLinkedUser = agree ? user.getUserInfo() : null;
                 resetHandState();
             }
 

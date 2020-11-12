@@ -6,9 +6,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.tabs.TabLayout;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.herewhite.sdk.domain.GlobalState;
@@ -17,6 +19,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +29,7 @@ import butterknife.BindView;
 import io.agora.education.R;
 import io.agora.education.api.EduCallback;
 import io.agora.education.api.base.EduError;
+import io.agora.education.api.message.EduActionMessage;
 import io.agora.education.api.message.EduChatMsg;
 import io.agora.education.api.message.EduMsg;
 import io.agora.education.api.room.EduRoom;
@@ -49,9 +54,11 @@ import io.agora.education.classroom.bean.group.GroupState;
 import io.agora.education.classroom.bean.group.GroupStateInfo;
 import io.agora.education.classroom.bean.group.InteractState;
 import io.agora.education.classroom.bean.group.RoomGroupInfo;
+import io.agora.education.classroom.fragment.ChatRoomFragment;
 import io.agora.education.classroom.fragment.StudentGroupListFragment;
 import io.agora.education.classroom.fragment.StudentListFragment;
 import io.agora.education.classroom.widget.RtcVideoView;
+import io.agora.raisehand.AgoraEduCoVideoView;
 
 import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
@@ -59,21 +66,19 @@ import static io.agora.education.classroom.bean.group.RoomGroupInfo.GROUPS;
 import static io.agora.education.classroom.bean.group.RoomGroupInfo.GROUPSTATES;
 import static io.agora.education.classroom.bean.group.RoomGroupInfo.INTERACTOUTGROUPS;
 
-public class IntermediateClassActivity extends BaseClassActivity {
+public class IntermediateClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
     private static final String TAG = IntermediateClassActivity.class.getSimpleName();
 
     @BindView(R.id.layout_video_teacher)
     FrameLayout layoutVideoTeacher;
-    @BindView(R.id.layout_student_list)
-    FrameLayout layoutUserList;
-    @BindView(R.id.layout_group_list)
-    FrameLayout layoutGroupList;
-    @BindView(R.id.layout_list)
-    FrameLayout layoutList;
     @BindView(R.id.pk_videos_one)
     RecyclerView pkVideosOne;
     @BindView(R.id.pk_videos_two)
     RecyclerView pkVideosTwo;
+    @BindView(R.id.coVideoView)
+    AgoraEduCoVideoView agoraEduCoVideoView;
+    @BindView(R.id.layout_tab)
+    TabLayout tabLayout;
 
     private RtcVideoView videoTeacher;
     private StudentListFragment studentListFragment;
@@ -118,6 +123,9 @@ public class IntermediateClassActivity extends BaseClassActivity {
     @Override
     protected void initView() {
         super.initView();
+
+        tabLayout.addOnTabSelectedListener(this);
+
         if (videoTeacher == null) {
             videoTeacher = new RtcVideoView(this);
             videoTeacher.init(R.layout.layout_video_large_class, false);
@@ -125,28 +133,46 @@ public class IntermediateClassActivity extends BaseClassActivity {
         removeFromParent(videoTeacher);
         layoutVideoTeacher.addView(videoTeacher, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
-        studentListFragment = new StudentListFragment();
+        studentListFragment = new StudentListFragment(roomEntry.getUserUuid());
         getSupportFragmentManager().beginTransaction()
-                .add(R.id.layout_student_list, studentListFragment)
+                .add(R.id.layout_chat_room, studentListFragment)
                 .show(studentListFragment)
+                .hide(studentListFragment)
                 .commitNowAllowingStateLoss();
 
         studentGroupListFragment = new StudentGroupListFragment();
         getSupportFragmentManager().beginTransaction()
-                .add(R.id.layout_group_list, studentGroupListFragment)
+                .add(R.id.layout_chat_room, studentGroupListFragment)
                 .show(studentGroupListFragment)
+                .hide(studentGroupListFragment)
                 .commitNowAllowingStateLoss();
     }
 
     @Override
+    public void onTabSelected(TabLayout.Tab tab) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        if (tab.getPosition() == 0) {
+            Fragment fragment = roomGroupInfo.enableGroup() ? studentGroupListFragment : studentListFragment;
+            transaction.show(fragment).hide(chatRoomFragment);
+        } else {
+            transaction.show(chatRoomFragment).hide(studentListFragment).hide(studentGroupListFragment);
+        }
+        transaction.commitNow();
+    }
+
+    @Override
+    public void onTabUnselected(TabLayout.Tab tab) {
+    }
+
+    @Override
+    public void onTabReselected(TabLayout.Tab tab) {
+    }
+
+    @Override
     protected void showFragmentWithJoinSuccess() {
-        title_view.setTitle(roomEntry.getRoomName());
+        super.showFragmentWithJoinSuccess();
         getSupportFragmentManager().beginTransaction()
-                .remove(whiteboardFragment)
-                .commitNowAllowingStateLoss();
-        getSupportFragmentManager().beginTransaction()
-                .add(R.id.layout_whiteboard, whiteboardFragment)
-                .show(whiteboardFragment)
+                .hide(chatRoomFragment)
                 .commitNowAllowingStateLoss();
     }
 
@@ -229,15 +255,15 @@ public class IntermediateClassActivity extends BaseClassActivity {
             @Override
             public void onSuccess(@Nullable List<EduUserInfo> res) {
                 if (res != null) {
+                    List<EduUserInfo> students = new ArrayList<>();
                     Iterator<EduUserInfo> iterator = res.iterator();
                     while (iterator.hasNext()) {
                         EduUserInfo element = iterator.next();
-                        if (element.getRole().equals(EduUserRole.TEACHER)) {
-                            iterator.remove();
-                            break;
+                        if (element.getRole().equals(EduUserRole.STUDENT)) {
+                            students.add(element);
                         }
                     }
-                    callback.onSuccess(res);
+                    callback.onSuccess(students);
                 } else {
                     callback.onFailure(EduError.Companion.customMsgError("current room no stream!"));
                 }
@@ -255,11 +281,21 @@ public class IntermediateClassActivity extends BaseClassActivity {
      * 分为分组显示和直接列表显示
      */
     private void notifyUserList() {
-        if (roomGroupInfo.getGroupStates() != null && roomGroupInfo.getGroupStates().getState()
-                == GroupState.ENABLE.getValue()) {
+        if (roomGroupInfo.enableGroup()) {
             /*开启了分组，需要分组显示学生列表*/
             switchUserFragment(true);
             //TODO 显示分组列表
+//            List<GroupInfo> groupInfos = new ArrayList<>();
+//            List<String> groupUuids = new ArrayList<>();
+//            groupUuids.add("123");
+//            groupUuids.add("456");
+//            groupUuids.add("789");
+//            for (int i = 0; i < 5; i++) {
+//                GroupInfo groupInfo = new GroupInfo("123-" + i, "组" + i, 6, 6, groupUuids,
+//                        new HashMap<>(), 123456789);
+//                groupInfos.add(groupInfo);
+//            }
+//            studentGroupListFragment.updateGroupList(groupInfos);
         } else {
             /*未开启分组，直接列表显示学生*/
             switchUserFragment(false);
@@ -277,9 +313,7 @@ public class IntermediateClassActivity extends BaseClassActivity {
     }
 
     private void notifyPKVideoList() {
-        if (roomGroupInfo.getGroupStates() != null
-                && roomGroupInfo.getGroupStates().getState() == GroupState.ENABLE.getValue()
-                && roomGroupInfo.getGroupStates().getInteractOutGroup() == InteractState.ENABLE.getValue()) {
+        if (roomGroupInfo.enablePK()) {
             /*正在PK*/
             List<GroupInfo> groupInfos = roomGroupInfo.getGroups();
             List<String> pkGroupIds = roomGroupInfo.getInteractOutGroups();
@@ -298,6 +332,8 @@ public class IntermediateClassActivity extends BaseClassActivity {
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         if (classRoom.equals(getMainEduRoom())) {
+            /*初始化举手连麦组件*/
+            agoraEduCoVideoView.init(getMainEduRoom());
             /*判断班级中的roomProperties中是否有白板信息，如果没有，发起请求,等待RTM通知*/
             if (mainBoardBean == null) {
                 Log.e(TAG, "请求大房间的白板信息");
@@ -473,7 +509,14 @@ public class IntermediateClassActivity extends BaseClassActivity {
     }
 
     @Override
+    public void onUserActionMessageReceived(@NotNull EduActionMessage actionMessage) {
+        super.onUserActionMessageReceived(actionMessage);
+    }
+
+    @Override
     public void onGlobalStateChanged(GlobalState state) {
         super.onGlobalStateChanged(state);
     }
+
+
 }

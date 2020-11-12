@@ -346,4 +346,8 @@ object RteEngineImpl : IRteEngine {
     override fun OK(): Int {
         return ERR_OK
     }
+
+    override fun version(): String {
+        return RtcEngine.getSdkVersion()
+    }
 }

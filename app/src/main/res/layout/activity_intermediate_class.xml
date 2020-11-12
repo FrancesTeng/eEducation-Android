@@ -18,34 +18,72 @@
 
     <FrameLayout
         android:id="@+id/layout_video_teacher"
-        android:layout_width="@dimen/dp_188"
-        android:layout_height="@dimen/dp_125"
+        android:layout_width="@dimen/dp_180"
+        android:layout_height="@dimen/dp_100"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/title_view" />
 
-    <FrameLayout
-        android:id="@+id/layout_list"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layout_im"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:background="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@id/layout_video_teacher"
         app:layout_constraintStart_toStartOf="@id/layout_video_teacher"
         app:layout_constraintTop_toBottomOf="@id/layout_video_teacher">
 
-        <FrameLayout
-            android:id="@+id/layout_student_list"
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/layout_tab"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tabGravity="fill"
+            app:tabIndicatorColor="@color/blue_44A2FC"
+            app:tabIndicatorHeight="@dimen/dp_2"
+            app:tabMode="fixed"
+            app:tabSelectedTextColor="@color/blue_44A2FC"
+            app:tabTextColor="@color/gray_333333">
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_student_list" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_msg" />
+
+        </com.google.android.material.tabs.TabLayout>
+
+        <View
+            android:id="@+id/line_vertical0"
+            android:layout_width="@dimen/dp_1"
+            android:layout_height="match_parent"
+            android:background="@color/gray_DBE2E5"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <View
+            android:id="@+id/line_horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_1"
+            android:background="@color/gray_DBE2E5"
+            app:layout_constraintBottom_toBottomOf="@id/layout_tab" />
 
         <FrameLayout
-            android:id="@+id/layout_group_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:id="@+id/layout_chat_room"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/line_vertical0"
+            app:layout_constraintTop_toBottomOf="@id/line_horizontal" />
 
-    </FrameLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <View
-        android:id="@+id/line_vertical"
+        android:id="@+id/line_vertical1"
         android:layout_width="@dimen/dp_1"
         android:layout_height="0dp"
         android:background="@color/gray_DBE2E5"
@@ -58,7 +96,7 @@
         android:layout_width="0dp"
         android:layout_height="@dimen/dp_70"
         android:scrollbars="none"
-        app:layout_constraintEnd_toStartOf="@id/line_vertical"
+        app:layout_constraintEnd_toStartOf="@id/line_vertical1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/title_view" />
 
@@ -66,17 +104,18 @@
         android:id="@+id/pk_videos_two"
         android:layout_width="0dp"
         android:layout_height="@dimen/dp_70"
+        android:visibility="gone"
         android:scrollbars="none"
-        app:layout_constraintEnd_toStartOf="@id/line_vertical"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/line_vertical1"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <FrameLayout
         android:id="@+id/layout_whiteboard"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/line_vertical"
+        app:layout_constraintEnd_toStartOf="@id/line_vertical1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/title_view" />
 
@@ -85,8 +124,17 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/line_vertical"
+        app:layout_constraintEnd_toStartOf="@id/line_vertical1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/title_view" />
+
+    <io.agora.raisehand.AgoraEduCoVideoView
+        android:id="@+id/coVideoView"
+        android:layout_width="@dimen/dp_30"
+        android:layout_height="@dimen/dp_30"
+        android:layout_marginStart="@dimen/dp_5"
+        android:layout_marginBottom="@dimen/dp_5"
+        app:layout_constraintBottom_toTopOf="@id/pk_videos_two"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

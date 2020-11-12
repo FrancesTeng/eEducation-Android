@@ -352,8 +352,12 @@ internal class Convert {
             val cmdResponseBody = Gson().fromJson<CMDResponseBody<CMDActionMsgRes>>(text, object :
                     TypeToken<CMDResponseBody<CMDActionMsgRes>>() {}.type)
             val msg = cmdResponseBody.data
-            return EduActionMessage(msg.processUuid, convertActionMsgType(msg.action), msg.fromUser,
-                    msg.timeout, msg.payload)
+            return EduActionMessage(msg.processUuid, convertActionMsgType(msg.action), msg.timeout,
+                    msg.fromUser, convertEduRoomInfo(msg.fromRoom), msg.payload)
+        }
+
+        fun convertEduRoomInfo(roomInfoRes: EduSnapshotRoomInfoRes): EduRoomInfo {
+            return EduRoomInfo(roomInfoRes.roomUuid, roomInfoRes.roomName)
         }
 
         fun convertNetworkQuality(quality: Int): NetworkQuality {

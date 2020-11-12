@@ -193,7 +193,8 @@ public class MainActivity extends BaseActivity {
         /**userUuid和roomUuid需用户自己指定，并保证唯一性*/
         int roomType = getClassType(roomTypeStr);
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
-        String roomUuid = roomNameStr + roomType;
+//        String roomUuid = roomNameStr + roomType;
+        String roomUuid = roomNameStr + 2;
 
         assert getAppId() != null;
         assert getCustomerId() != null;

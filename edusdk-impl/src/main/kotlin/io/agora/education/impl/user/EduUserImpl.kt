@@ -67,7 +67,7 @@ internal open class EduUserImpl(
             callback.onFailure(parameterError("streamUuid"))
             return
         }
-        AgoraLog.i("$TAG->开始初始化和更新本地流:${Gson().toJson(options)}")
+        AgoraLog.i("$TAG->Start initOrUpdateLocalStream:${Gson().toJson(options)}")
         val a = RteEngineImpl.setVideoEncoderConfiguration(
                 Convert.convertVideoEncoderConfig(videoEncoderConfig))
         if (a != OK()) {
@@ -145,13 +145,13 @@ internal open class EduUserImpl(
         val eduStreamStatusReq = EduStreamStatusReq(stream.streamName, stream.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (stream.hasVideo) 1 else 0,
                 if (stream.hasAudio) 1 else 0)
-        AgoraLog.logMsg("$TAG->新建流: ${Gson().toJson(stream)}", LogLevel.INFO.value)
+        AgoraLog.logMsg("$TAG->Create new Stream: ${Gson().toJson(stream)}", LogLevel.INFO.value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
                 .createStream(APPID, eduRoom.getCurRoomUuid(), userInfo.userUuid,
                         stream.streamUuid, eduStreamStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
-                        AgoraLog.logMsg("$TAG->发流状态: streamUuid: ${stream.streamUuid}," +
+                        AgoraLog.logMsg("$TAG->publishStream state: streamUuid: ${stream.streamUuid}," +
                                 "${stream.hasAudio},${stream.hasVideo}",
                                 LogLevel.INFO.value)
                         val a = RteEngineImpl.setClientRole(eduRoom.getCurRoomUuid(), CLIENT_ROLE_BROADCASTER)
@@ -189,11 +189,11 @@ internal open class EduUserImpl(
         if (index > -1) {
             val oldStream = eduRoom.getCurStreamList()[index]
             if (oldStream == stream) {
-                AgoraLog.e("$TAG->要更改的流的目的状态和当前状态一致，直接返回")
+                AgoraLog.e("$TAG->Wanted state of the stream to be updated is same with the current state，return")
                 callback.onSuccess(true)
             } else {
-                AgoraLog.i("$TAG->开始更新本地存在的流信息,streamUuid: + ${stream.streamUuid}," +
-                        "流状态更改至:${stream.hasAudio},${stream.hasVideo}")
+                AgoraLog.i("$TAG->Start updating locally existing stream info, streamUuid: + " +
+                        "${stream.streamUuid}, Wanted state is:${stream.hasAudio},${stream.hasVideo}")
                 /**设置角色*/
                 val a = RteEngineImpl.setClientRole(eduRoom.getCurRoomUuid(), CLIENT_ROLE_BROADCASTER)
                 if (a != OK()) {
@@ -220,12 +220,12 @@ internal open class EduUserImpl(
                         .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                             override fun onSuccess(res: ResponseBody<String>?) {
 //                                (streamInfo as EduStreamInfoImpl).updateTime = res?.timeStamp
-                                AgoraLog.i("$TAG->流信息更新成功,streamUuid: + ${stream.streamUuid}")
+                                AgoraLog.i("$TAG->Update stream info success, streamUuid: + ${stream.streamUuid}")
                                 callback.onSuccess(true)
                             }
 
                             override fun onFailure(throwable: Throwable?) {
-                                AgoraLog.e("$TAG->流信息更新失败,streamUuid: + ${stream.streamUuid}")
+                                AgoraLog.e("$TAG->Update stream info failed,streamUuid: + ${stream.streamUuid}")
                                 var error = throwable as? BusinessException
                                 callback.onFailure(httpError(error?.code
                                         ?: AgoraError.INTERNAL_ERROR.value,
@@ -234,7 +234,8 @@ internal open class EduUserImpl(
                         }))
             }
         } else {
-            val error = customMsgError("要更改的流信息不存在于本地,streamUuid: + ${stream.streamUuid}")
+            val error = customMsgError("The stream you want to update does not exist locally, " +
+                    "streamUuid: + ${stream.streamUuid}")
             AgoraLog.e("$TAG->${error.msg}")
             callback.onFailure(error)
         }
@@ -245,7 +246,7 @@ internal open class EduUserImpl(
             callback.onFailure(parameterError("streamUuid"))
             return
         }
-        AgoraLog.i("$TAG->删除流:${stream.streamUuid}")
+        AgoraLog.i("$TAG->Del stream:${stream.streamUuid}")
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
                 .deleteStream(APPID, eduRoom.getCurRoomUuid(), userInfo.userUuid,
                         stream.streamUuid)
@@ -280,6 +281,7 @@ internal open class EduUserImpl(
     }
 
     override fun sendRoomMessage(message: String, callback: EduCallback<EduMsg>) {
+        AgoraLog.i("$TAG->sendRoomMessage:$message")
         val roomMsgReq = EduRoomMsgReq(message)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .sendChannelCustomMessage(APPID, eduRoom.getCurRoomUuid(), roomMsgReq)
@@ -299,6 +301,7 @@ internal open class EduUserImpl(
     }
 
     override fun sendUserMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduMsg>) {
+        AgoraLog.i("$TAG->sendUserMessage:$message,remoteUserUuid:${remoteUser.userUuid}")
         val userMsgReq = EduUserMsgReq(message)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .sendPeerCustomMessage(APPID, eduRoom.getCurRoomUuid(), remoteUser.userUuid, userMsgReq)
@@ -318,6 +321,7 @@ internal open class EduUserImpl(
     }
 
     override fun sendRoomChatMessage(message: String, callback: EduCallback<EduChatMsg>) {
+        AgoraLog.i("$TAG->sendRoomChatMessage:$message")
         val roomChatMsgReq = EduRoomChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .sendRoomChatMsg(eduRoom.getCurLocalUser().userInfo.userToken!!, APPID,
@@ -339,6 +343,7 @@ internal open class EduUserImpl(
     }
 
     override fun sendUserChatMessage(message: String, remoteUser: EduUserInfo, callback: EduCallback<EduChatMsg>) {
+        AgoraLog.i("$TAG->sendUserChatMessage:$message,remoteUserUuid:${remoteUser.userUuid}")
         val userChatMsgReq = EduUserChatMsgReq(message, EduChatMsgType.Text.value)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .sendPeerChatMsg(APPID, eduRoom.getCurRoomUuid(), remoteUser.userUuid, userChatMsgReq)
@@ -363,7 +368,7 @@ internal open class EduUserImpl(
             callback.onFailure(parameterError("processUuid"))
             return
         }
-        if (TextUtils.isEmpty(config.toUser.userUuid)) {
+        if (TextUtils.isEmpty(config.toUserUuid)) {
             callback.onFailure(parameterError("toUser'userUuid"))
             return
         }
@@ -371,8 +376,9 @@ internal open class EduUserImpl(
             callback.onFailure(parameterError("timeout"))
             return
         }
-        val startActionReq = EduStartActionReq(config.action.value, config.toUser.userUuid,
-                userInfo.userUuid, config.timeout, config.payload)
+        AgoraLog.i("$TAG->startActionWithConfig:${Gson().toJson(config)}")
+        val startActionReq = EduStartActionReq(config.action.value, config.toUserUuid,
+                userInfo.userUuid, config.timeout, config.limit, config.payload)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .startAction(APPID, config.processUuid, startActionReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
@@ -394,6 +400,7 @@ internal open class EduUserImpl(
             callback.onFailure(parameterError("processUuid"))
             return
         }
+        AgoraLog.i("$TAG->stopActionWithConfig:${Gson().toJson(config)}")
         val stopAction = EduStopActionReq(config.action.value, config.payload)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .stopAction(APPID, config.processUuid, stopAction)
@@ -456,12 +463,12 @@ internal open class EduUserImpl(
         if (stream.publisher.userUuid == this.userInfo.userUuid) {
             code = RteEngineImpl.setupLocalVideo(videoCanvas)
             if (code == 0) {
-                Log.e("EduUserImpl", "setupLocalVideo成功")
+                AgoraLog.e("$TAG->setupLocalVideo success")
             }
         } else {
             code = RteEngineImpl.setupRemoteVideo(videoCanvas)
             if (code == 0) {
-                Log.e("EduUserImpl", "setupRemoteVideo成功")
+                AgoraLog.e("$TAG->setupRemoteVideo success")
             }
         }
         return EduError(code, getError(code))
@@ -475,7 +482,7 @@ internal open class EduUserImpl(
     }
 
     internal fun removeAllSurfaceView() {
-        AgoraLog.w("$TAG->清除所有SurfaceView")
+        AgoraLog.w("$TAG->Clear all SurfaceView")
         if (surfaceViewList.size > 0) {
             surfaceViewList.forEach {
                 val parent = it.parent;

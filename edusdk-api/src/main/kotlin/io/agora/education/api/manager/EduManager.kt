@@ -10,6 +10,7 @@ import io.agora.education.api.logger.LogLevel
 import io.agora.education.api.manager.listener.EduManagerEventListener
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.RoomCreateOptions
+import io.agora.rte.RteEngineImpl
 
 /**0代表正常
  * 1-10 本地错误code
@@ -71,7 +72,7 @@ abstract class EduManager(
         }
 
         fun version(): String {
-            return BuildConfig.SDK_VERSION
+            return RteEngineImpl.version().plus(".").plus(BuildConfig.SDK_VERSION)
         }
     }
 

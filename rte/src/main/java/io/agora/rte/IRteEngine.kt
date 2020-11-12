@@ -84,4 +84,6 @@ interface IRteEngine {
     fun getError(code: Int): String
 
     fun OK(): Int
+
+    fun version(): String
 }

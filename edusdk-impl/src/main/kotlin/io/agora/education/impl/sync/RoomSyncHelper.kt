@@ -72,20 +72,21 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
     override fun updateSequenceId(cmdResponseBody: CMDResponseBody<Any>): Pair<Int, Int>? {
         val eduSequenceRes = Convert.convertCMDResponseBody(cmdResponseBody)
         if (syncing || (eduRoom as EduRoomImpl).joining) {
-            AgoraLog.w("$TAG->join过程中或者同步seq过程中收到的消息均加入缓存")
+            AgoraLog.w("$TAG->The messages received during the join process or the synchronous " +
+                    "sequence process are added to the cache")
             cache.add(cmdResponseBody)
         } else {
             when {
                 cmdResponseBody.sequence - lastSequenceId == 1 -> {
-                    AgoraLog.logMsg("sequence-${cmdResponseBody.sequence}和${lastSequenceId}衔接，" +
-                            "传递转发", LogLevel.INFO.value)
+                    AgoraLog.logMsg("Sequence-${cmdResponseBody.sequence} and ${lastSequenceId} is continuity，" +
+                            "dispatch to down", LogLevel.INFO.value)
                     lastSequenceId = cmdResponseBody.sequence
                     /**传递转发*/
                     eduRoom.cmdDispatch.dispatchMsg(cmdResponseBody)
                 }
                 cmdResponseBody.sequence - lastSequenceId > 1 -> {
-                    AgoraLog.logMsg("sequence-${cmdResponseBody.sequence}和${lastSequenceId}不衔接，" +
-                            "返回丢失起始点", LogLevel.INFO.value)
+                    AgoraLog.logMsg("Sequence-${cmdResponseBody.sequence} and ${lastSequenceId} is not continuity，" +
+                            "return to missing start index", LogLevel.INFO.value)
                     sequenceList.add(cmdResponseBody.sequence)
                     sequenceData[cmdResponseBody.sequence] = eduSequenceRes
                     return Pair(lastSequenceId + 1, cmdResponseBody.sequence - lastSequenceId - 1)
@@ -114,7 +115,7 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
      * 2:join成功后的流程中，某一次sync完成后
      * */
     fun handleCache(callback: EduCallback<Unit>) {
-        AgoraLog.logMsg("检查并处理缓存数据(处理CMD消息)", LogLevel.INFO.value)
+        AgoraLog.logMsg("Check and process cached data(process CMD message)", LogLevel.INFO.value)
         if (cache.hasCache()) {
             val iterable = cache.list.iterator()
             while (iterable.hasNext()) {
@@ -146,14 +147,14 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
      * @param nextId 查询的起始sequence(当前本地最新的sequence的下一个)
      * @param count 需要查询的条数(为空则是请求全部)*/
     override fun fetchLostSequence(nextId: Int, count: Int?, callback: EduCallback<Unit>) {
-        AgoraLog.i("$TAG->根据${nextId}请求丢失数据}")
+        AgoraLog.i("$TAG->Follow $nextId to request missing sequence}")
         syncing = true
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .fetchLostSequences(localUser.userInfo.userToken!!,
                         APPID, roomInfo.roomUuid, nextId, count)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceListRes<Any>>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceListRes<Any>>?) {
-                        AgoraLog.i("$TAG->根据${nextId}请求到的丢失数据:${Gson().toJson(res)}")
+                        AgoraLog.i("$TAG->The missing sequence data requested from $nextId is :${Gson().toJson(res)}")
                         res?.data?.let {
                             /**把缺失的seq数据添加到集合中*/
                             addSequenceData(res.data as EduSequenceListRes<Any>)
@@ -172,7 +173,8 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                         var error = throwable as? BusinessException
                         error?.code?.let {
                             if (error?.code == AgoraError.SEQUENCE_NOT_EXISTS.value) {
-                                AgoraLog.e("$TAG->被请求的sequence不存在，清空本地旧缓存，拉全量数据")
+                                AgoraLog.e("$TAG->The requested sequence does not exist，" +
+                                        "empty local old cache，pull snapshot data")
                                 (eduRoom as EduRoomImpl).clearData()
                                 clearSequence()
                                 fetchSnapshot(callback)
@@ -180,11 +182,12 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                                 /**请求失败重试*/
                                 if (sequenceRetryCount <= maxRetry) {
                                     sequenceRetryCount++
-                                    AgoraLog.e("$TAG->请求缺失数据失败,第$snapshotRetryCount 次重试")
+                                    AgoraLog.e("$TAG->Request for missing sequence failed, " +
+                                            "try again for $snapshotRetryCount time")
                                     fetchLostSequence(nextId, count, callback)
                                 } else {
                                     /**彻底失败，恢复原值*/
-                                    AgoraLog.e("$TAG->请求缺失数据彻底失败")
+                                    AgoraLog.e("$TAG->The request for missing sequence failed completely")
                                     sequenceRetryCount = 0
                                     callback.onFailure(httpError(error.code, error.message))
                                 }
@@ -197,13 +200,13 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
 
     /**请求快照（拉全量数据）*/
     override fun fetchSnapshot(callback: EduCallback<Unit>) {
-        AgoraLog.w("$TAG->请求快照（拉全量数据）")
+        AgoraLog.w("$TAG->Request snapshot(pull all data)")
         syncing = true
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .fetchSnapshot(localUser.userInfo.userToken!!, APPID, roomInfo.roomUuid)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<EduSequenceSnapshotRes>> {
                     override fun onSuccess(res: ResponseBody<EduSequenceSnapshotRes>?) {
-                        Log.e(TAG, "请求到的快照数据:${Gson().toJson(res)}")
+                        Log.e(TAG, "The requested snapshot data is :${Gson().toJson(res)}")
                         /**因为是全量数据，所以直接全部赋值即可*/
                         res?.data?.let {
                             CMDDataMergeProcessor.syncSnapshotToRoom(eduRoom, it.snapshot)
@@ -219,11 +222,11 @@ internal class RoomSyncHelper(private val eduRoom: EduRoom, roomInfo: EduRoomInf
                             /**请求失败重试*/
                             if (snapshotRetryCount <= maxRetry) {
                                 snapshotRetryCount++
-                                AgoraLog.e("$TAG->请求快照失败,第$snapshotRetryCount 次重试")
+                                AgoraLog.e("$TAG->Request snapshot failed, try again for $snapshotRetryCount time")
                                 fetchSnapshot(callback)
                             } else {
                                 /**彻底失败，恢复原值*/
-                                AgoraLog.e("$TAG->请求快照彻底失败")
+                                AgoraLog.e("$TAG->The request for snapshot failed completely")
                                 snapshotRetryCount = 0
                                 callback.onFailure(httpError(error.code, error.message))
                             }

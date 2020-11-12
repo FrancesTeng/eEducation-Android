@@ -9,8 +9,8 @@ class EduError(
             return EduError(-1, "")
         }
 
-        fun customMsgError(msg: String): EduError {
-            return EduError(1, msg)
+        fun customMsgError(msg: String?): EduError {
+            return EduError(1, msg ?: "")
         }
 
         fun parameterError(parameterName: String): EduError {
