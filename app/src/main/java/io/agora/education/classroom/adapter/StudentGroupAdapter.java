@@ -44,7 +44,7 @@ public class StudentGroupAdapter extends RecyclerView.Adapter<StudentGroupAdapte
         List<GroupMemberInfo> curGroupMembers = new ArrayList<>();
         for (EduUserInfo userInfo : allStudentList) {
             if (groupInfo.getMembers().contains(userInfo.getUserUuid())) {
-                curGroupMembers.add(new GroupMemberInfo(userInfo, 0));
+                curGroupMembers.add(new GroupMemberInfo(userInfo));
             }
         }
         GroupMemberAdapter memberAdapter = new GroupMemberAdapter(curGroupMembers);

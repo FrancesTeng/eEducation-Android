@@ -46,12 +46,14 @@ import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.api.user.data.EduUserStateChangeType;
+import io.agora.education.classroom.adapter.PKVideoAdapter;
 import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.board.BoardInfo;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.bean.group.GroupInfo;
 import io.agora.education.classroom.bean.group.GroupStateInfo;
 import io.agora.education.classroom.bean.group.RoomGroupInfo;
+import io.agora.education.classroom.bean.group.StageStreamInfo;
 import io.agora.education.classroom.fragment.StudentGroupListFragment;
 import io.agora.education.classroom.fragment.StudentListFragment;
 import io.agora.education.classroom.widget.RtcVideoView;
@@ -84,6 +86,10 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     private EduRoom curGroupRoom;
     /*当前班级的分组情况*/
     private RoomGroupInfo roomGroupInfo = new RoomGroupInfo();
+    private PKVideoAdapter pkVideoAdapterOne = new PKVideoAdapter(),
+            getPkVideoAdapterTwo = new PKVideoAdapter();
+    private List<StageStreamInfo> stageStreamInfos_One = new ArrayList<>();
+    private List<StageStreamInfo> stageStreamInfos_Two = new ArrayList<>();
 
     @Override
     protected int getClassType() {

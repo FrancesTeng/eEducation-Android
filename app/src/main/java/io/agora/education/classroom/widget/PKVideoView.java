@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.SurfaceView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,7 +16,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.agora.education.R;
 
-public class RtcVideoView extends ConstraintLayout {
+public class PKVideoView extends ConstraintLayout {
 
     @BindView(R.id.tv_name)
     protected TextView tv_name;
@@ -31,24 +30,24 @@ public class RtcVideoView extends ConstraintLayout {
     @BindView(R.id.layout_video)
     protected FrameLayout layout_video;
 
-    public RtcVideoView(Context context) {
+    public PKVideoView(Context context) {
         super(context);
+        init(context);
     }
 
-    public RtcVideoView(Context context, AttributeSet attrs) {
+    public PKVideoView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        init(context);
     }
 
-    public RtcVideoView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public PKVideoView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        init(context);
     }
 
-    public void init(@LayoutRes int layoutResId, boolean showVideo) {
-        inflate(getContext(), layoutResId, this);
+    public void init(Context context) {
+        inflate(context, R.layout.layout_video_pk, this);
         ButterKnife.bind(this);
-        if (ic_video != null) {
-            ic_video.setVisibility(showVideo ? VISIBLE : GONE);
-        }
     }
 
     public void setViewVisibility(int visibility) {

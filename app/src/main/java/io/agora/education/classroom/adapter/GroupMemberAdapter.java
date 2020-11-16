@@ -38,7 +38,7 @@ public class GroupMemberAdapter extends RecyclerView.Adapter<GroupMemberAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         GroupMemberInfo info = memberList.get(position);
         holder.memberNameTextView.setText(info.getUserInfo().getUserName());
-        holder.integralTextView.setText(String.valueOf(info.getIntegral()));
+        holder.integralTextView.setText(String.valueOf(info.getReward()));
         holder.memberNameTextView.setTextColor(holder.itemView.getResources().getColor(
                 info.getOnline() ? R.color.gray_191919 : R.color.gray_CCCCCC));
         holder.integralImageView.setImageResource(
