@@ -13,6 +13,7 @@ public class BoardBean /*extends JsonBean*/ implements Parcelable {
     private BoardInfo info;
     private BoardState state;
 
+
     public BoardBean() {
     }
 

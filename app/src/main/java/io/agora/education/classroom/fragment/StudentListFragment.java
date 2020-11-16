@@ -48,7 +48,7 @@ public class StudentListFragment extends BaseFragment {
         localUserUuid = userUuid;
     }
 
-    public void setStudentList(List<EduUserInfo> studentList) {
+    public void updateStudentList(List<EduUserInfo> studentList) {
         getActivity().runOnUiThread(() -> {
             /**本地用户始终在第一位*/
             if (!TextUtils.isEmpty(localUserUuid)) {

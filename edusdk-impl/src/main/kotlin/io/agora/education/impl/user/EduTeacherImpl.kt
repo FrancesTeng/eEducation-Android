@@ -33,13 +33,13 @@ import io.agora.education.impl.user.network.UserService
 internal class EduTeacherImpl(
         userInfo: EduLocalUserInfo
 ) : EduUserImpl(userInfo), EduTeacher {
-    override fun setEventListener(eventListener: EduTeacherEventListener) {
+    override fun setEventListener(eventListener: EduTeacherEventListener?) {
         this.eventListener = eventListener
     }
 
-    override fun beginClass(callback: EduCallback<Unit>) {
+    override fun updateCourseState(roomState: EduRoomState, callback: EduCallback<Unit>) {
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .updateClassroomState(APPID, eduRoom.getCurRoomUuid(), EduRoomState.START.value)
+                .updateClassroomState(APPID, eduRoom.getCurRoomUuid(), roomState.value)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)
@@ -53,26 +53,10 @@ internal class EduTeacherImpl(
                 }))
     }
 
-    override fun endClass(callback: EduCallback<Unit>) {
-        RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .updateClassroomState(APPID, eduRoom.getCurRoomUuid(), EduRoomState.END.value)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
-                    override fun onSuccess(res: ResponseBody<String>?) {
-                        callback.onSuccess(Unit)
-                    }
-
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message))
-                    }
-                }))
-    }
-
-    override fun allowStudentChat(isAllow: Boolean, callback: EduCallback<Unit>) {
+    override fun allowAllStudentChat(isAllow: Boolean, callback: EduCallback<Unit>) {
         val chatState = if (isAllow) EduMuteState.Enable else EduMuteState.Disable
         val eduRoomStatusReq = EduRoomMuteStateReq(
-                RoleMuteConfig(null, EduMuteState.Disable.value.toString(), EduMuteState.Disable.value.toString()),
+                RoleMuteConfig(null, chatState.value.toString(), chatState.value.toString()),
                 null, null)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .updateClassroomMuteState(APPID, eduRoom.getCurRoomUuid(), eduRoomStatusReq)
@@ -89,11 +73,11 @@ internal class EduTeacherImpl(
                 }))
     }
 
-    override fun allowRemoteStudentChat(isAllow: Boolean, remoteStudent: EduUserInfo, callback: EduCallback<Unit>) {
+    override fun allowStudentChat(isAllow: Boolean, remoteStudent: EduUserInfo, callback: EduCallback<Unit>) {
         /***/
-//        val role = Convert.convertUserRole(remoteStudent.role, eduRoom.getCurRoomType(), eduRoom.curClassType)
         val role = Convert.convertUserRole(remoteStudent.role, eduRoom.getCurRoomType())
-        val eduUserStatusReq = EduUserStatusReq(remoteStudent.userName, if (isAllow) 0 else 1, role)
+        val chatState = if (isAllow) EduMuteState.Enable else EduMuteState.Disable
+        val eduUserStatusReq = EduUserStatusReq(remoteStudent.userName, chatState.value, role)
         RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
                 .updateUserMuteState(APPID, eduRoom.getCurRoomUuid(), remoteStudent.userUuid, eduUserStatusReq)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
@@ -117,70 +101,7 @@ internal class EduTeacherImpl(
 
     }
 
-    override fun remoteStartStudentCamera(remoteStream: EduStreamInfo, callback: EduCallback<Unit>) {
-        remoteStream.videoSourceType = VideoSourceType.CAMERA
-        remoteStream.hasVideo = true
-        val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
-                AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
-        RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                .updateStreamInfo(APPID, eduRoom.getCurRoomUuid(), remoteStream.publisher.userUuid,
-                        remoteStream.streamUuid, eduStreamStatusReq)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
-                    override fun onSuccess(res: ResponseBody<String>?) {
-                        callback.onSuccess(Unit)
-                    }
-
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message))
-                    }
-                }))
-    }
-
-    override fun remoteStopStudentCamera(remoteStream: EduStreamInfo, callback: EduCallback<Unit>) {
-        remoteStream.videoSourceType = VideoSourceType.CAMERA
-        remoteStream.hasVideo = false
-        val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
-                AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
-        RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                .updateStreamInfo(APPID, eduRoom.getCurRoomUuid(), remoteStream.publisher.userUuid,
-                        remoteStream.streamUuid, eduStreamStatusReq)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
-                    override fun onSuccess(res: ResponseBody<String>?) {
-                        callback.onSuccess(Unit)
-                    }
-
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message))
-                    }
-                }))
-    }
-
-    override fun remoteStartStudentMicrophone(remoteStream: EduStreamInfo, callback: EduCallback<Unit>) {
-        remoteStream.hasAudio = true
-        val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
-                AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
-        RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                .updateStreamInfo(APPID, eduRoom.getCurRoomUuid(), remoteStream.publisher.userUuid,
-                        remoteStream.streamUuid, eduStreamStatusReq)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
-                    override fun onSuccess(res: ResponseBody<String>?) {
-                        callback.onSuccess(Unit)
-                    }
-
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message))
-                    }
-                }))
-    }
-
-    override fun remoteStopStudentMicrophone(remoteStream: EduStreamInfo, callback: EduCallback<Unit>) {
-        remoteStream.hasAudio = false
+    override fun createOrUpdateStudentStream(remoteStream: EduStreamInfo, callback: EduCallback<Unit>) {
         val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
                 AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)

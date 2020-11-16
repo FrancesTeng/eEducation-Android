@@ -2,7 +2,7 @@ package io.agora.education.classroom.bean.group
 
 class RoomGroupInfo() {
     companion object {
-        const val GROUPSTATES = "groupStates"
+        const val GROUPSTATES = "groupsStates"
         const val INTERACTOUTGROUPS = "interactOutGroups"
         const val GROUPS = "groups"
     }

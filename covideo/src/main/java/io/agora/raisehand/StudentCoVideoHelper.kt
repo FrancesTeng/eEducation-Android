@@ -79,7 +79,7 @@ internal class StudentCoVideoHelper(
         })
     }
 
-    /**老师处理前主动取消和老师处理后主动退出*/
+    /**老师处理前主动取消和老师同意连麦后主动退出*/
     override fun cancelCoVideo(callback: EduCallback<Unit>) {
         if (curCoVideoState == Applying) {
             /*老师处理前主动取消*/
@@ -145,5 +145,13 @@ internal class StudentCoVideoHelper(
     override fun onLinkMediaChanged(agree: Boolean) {
         curCoVideoState = if (agree) CoVideoing else DisCoVideo
         //TODO 重置UI
+    }
+
+    override fun abortCoVideoing(): Boolean {
+        if (isCoVideoing()) {
+            curCoVideoState = DisCoVideo
+            return true
+        }
+        return false
     }
 }

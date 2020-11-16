@@ -89,6 +89,11 @@ class AgoraEduCoVideoView : AppCompatImageView {
 
     /**申请连麦*/
     private fun applyCoVideo() {
+        if (session.autoCoVideo) {
+            /*允许举手即上台，直接回调允许上台接口*/
+            coVideoListener?.onCoVideoAccepted()
+            return
+        }
         session.applyCoVideo(object : EduCallback<Unit> {
             override fun onSuccess(res: Unit?) {
                 coVideoListener?.onApplyCoVideoComplete()
@@ -124,26 +129,13 @@ class AgoraEduCoVideoView : AppCompatImageView {
         session.onLinkMediaChanged(agree)
     }
 
-    /**同步连麦状态-数据来源有两处，所以有两个同步函数
-     * syncCoVideoState(EduMsg)同步peer消息过来的状态(包括abort)
-     * syncCoVideoState(EduActionMessage)同步action消息过来的状态(包括accept和reject*/
-    fun syncCoVideoState(msg: EduMsg) {
-        val peerMsg: CoVideoPeerMsg = Gson().fromJson(msg.message, CoVideoPeerMsg::class.java)
-        if (peerMsg.cmd == CoVideoPeerMsg.COVIDEOCMD) {
-            val coVideoMsg = Gson().fromJson(peerMsg.data.toString(), CoVideoMsg::class.java)
-            when (coVideoMsg.type) {
-                ABORT -> {
-                    onLinkMediaChanged(false)
-                    ToastManager.showShort(R.string.covideo_abort_interactive)
-                    coVideoListener?.onCoVideoAborted()
-                }
-                else -> {
-                }
-            }
+    fun abortCoVideoing() {
+        if (session.abortCoVideoing()) {
+            coVideoListener?.onCoVideoAborted()
         }
     }
 
-    /**同步连麦状态*/
+    /**同步连麦状态;同步action消息过来的状态(包括accept和reject)*/
     fun syncCoVideoState(actionMsg: EduActionMessage) {
         if (actionMsg.processUuid != session.processUuid) {
             return
@@ -162,6 +154,11 @@ class AgoraEduCoVideoView : AppCompatImageView {
             else -> {
             }
         }
+    }
+
+    /**同步举手即上台的开关状态*/
+    fun syncAutoCoVideoState(enable: Boolean) {
+        session.autoCoVideo = enable
     }
 
     fun destroy() {

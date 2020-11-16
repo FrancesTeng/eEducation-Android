@@ -52,10 +52,10 @@
         android:id="@+id/coVideoing"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
         android:text="（正在台上）"
         android:textColor="@color/blue_44A2FC"
         android:textSize="@dimen/sp_9"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/groupName_TextView"
         app:layout_constraintStart_toEndOf="@id/groupName_TextView"
         app:layout_constraintTop_toTopOf="@id/groupName_TextView" />
@@ -91,13 +91,20 @@
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/dp_6"
-        android:layout_marginBottom="@dimen/dp_6"
+        android:layout_margin="@dimen/dp_2"
+        android:gravity="center_vertical"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/view1">
+
+        <View
+            android:id="@+id/scrollView"
+            android:layout_width="@dimen/dp_120"
+            android:layout_height="@dimen/dp_4"
+            android:background="@drawable/bg_groupmember_scrollview_layout" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

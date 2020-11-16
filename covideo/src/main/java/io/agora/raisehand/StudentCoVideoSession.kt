@@ -18,6 +18,9 @@ internal abstract class StudentCoVideoSession(
     var processUuid: String = Random.nextLong().toString()
         private set
 
+    /**是否允许举手即上台*/
+    var autoCoVideo: Boolean = false
+
     protected fun refreshProcessUuid() {
         processUuid = Random.nextLong().toString()
     }
@@ -36,6 +39,9 @@ internal abstract class StudentCoVideoSession(
     /**本地用户(举手、连麦)被老师同意/(拒绝、打断)
      * @param agree 是否连麦*/
     abstract fun onLinkMediaChanged(agree: Boolean)
+
+    /**连麦中被老师打断*/
+    abstract fun abortCoVideoing(): Boolean
 
     fun clear() {
         context.clear()

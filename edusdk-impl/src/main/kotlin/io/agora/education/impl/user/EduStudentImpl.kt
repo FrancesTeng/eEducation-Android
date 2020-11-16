@@ -9,7 +9,7 @@ internal class EduStudentImpl(
         userInfo: EduLocalUserInfo
 ) : EduUserImpl(userInfo), EduStudent {
 
-    override fun setEventListener(eventListener: EduStudentEventListener) {
+    override fun setEventListener(eventListener: EduStudentEventListener?) {
         this.eventListener = eventListener
     }
 }

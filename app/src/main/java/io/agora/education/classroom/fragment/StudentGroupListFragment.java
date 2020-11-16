@@ -10,6 +10,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import io.agora.education.R;
+import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.base.BaseFragment;
 import io.agora.education.classroom.adapter.StudentGroupAdapter;
 import io.agora.education.classroom.bean.group.GroupInfo;
@@ -37,14 +38,14 @@ public class StudentGroupListFragment extends BaseFragment {
         rcvGroups.setAdapter(studentListAdapter);
     }
 
-    public void updateGroupList(List<GroupInfo> groupInfos) {
+    public void updateGroupList(List<GroupInfo> groupInfos, List<EduUserInfo> allStudents) {
         getActivity().runOnUiThread(() -> {
             if (rcvGroups.isComputingLayout()) {
                 rcvGroups.postDelayed(() -> {
-                    studentListAdapter.updateGroupList(groupInfos);
+                    studentListAdapter.updateGroupList(groupInfos, allStudents);
                 }, 300);
             } else {
-                rcvGroups.post(() -> studentListAdapter.updateGroupList(groupInfos));
+                rcvGroups.post(() -> studentListAdapter.updateGroupList(groupInfos, allStudents));
             }
         });
     }
