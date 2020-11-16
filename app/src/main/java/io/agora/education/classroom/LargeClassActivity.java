@@ -41,6 +41,7 @@ import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
+import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduBaseUserInfo;
@@ -484,6 +485,48 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         video_student.muteAudio(!streamInfo.getHasAudio());
     }
 
+    private void renderOwnCoVideoStream(EduStreamEvent streamEvent) {
+        EduStreamInfo modifiedStream = streamEvent.getModifiedStream();
+        setLocalCameraStream(modifiedStream);
+        onLinkMediaChanged(true);
+        LocalStreamInitOptions options = new LocalStreamInitOptions(modifiedStream.getStreamUuid(),
+                modifiedStream.getStreamName(), modifiedStream.getHasVideo(), modifiedStream.getHasAudio());
+        getLocalUser(new EduCallback<EduUser>() {
+            @Override
+            public void onSuccess(@Nullable EduUser user) {
+                user.initOrUpdateLocalStream(options, new EduCallback<EduStreamInfo>() {
+                    @Override
+                    public void onSuccess(@Nullable EduStreamInfo res) {
+                        final EduStreamInfo stream = getLocalCameraStream();
+                        if (stream != null) {
+                            getMediaRoomInfo(new EduCallback<EduRoomInfo>() {
+                                @Override
+                                public void onSuccess(@Nullable EduRoomInfo roomInfo) {
+                                    renderStudentStream(stream, video_student.getVideoLayout());
+                                }
+
+                                @Override
+                                public void onFailure(@NotNull EduError error) {
+
+                                }
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
+    }
+
     @Override
     public void onTabSelected(TabLayout.Tab tab) {
         if (layout_materials == null) {
@@ -512,7 +555,6 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
         setTitleData();
-        /**老师不在的时候不能举手*/
         resetHandState();
     }
 
@@ -655,17 +697,12 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
         for (EduStreamEvent streamEvent : streamEvents) {
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
             EduBaseUserInfo userInfo = streamInfo.getPublisher();
-            if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                switch (streamInfo.getVideoSourceType()) {
-                    case CAMERA:
-                        video_teacher.setName(streamInfo.getPublisher().getUserName());
-                        renderStream(getMainEduRoom(), streamInfo, null);
-                        video_teacher.muteVideo(!streamInfo.getHasVideo());
-                        video_teacher.muteAudio(!streamInfo.getHasAudio());
-                        break;
-                    default:
-                        break;
-                }
+            if (userInfo.getRole().equals(EduUserRole.TEACHER) &&
+                    streamInfo.getVideoSourceType().equals(VideoSourceType.CAMERA)) {
+                video_teacher.setName(streamInfo.getPublisher().getUserName());
+                renderStream(getMainEduRoom(), streamInfo, null);
+                video_teacher.muteVideo(!streamInfo.getHasVideo());
+                video_teacher.muteAudio(!streamInfo.getHasAudio());
             } else {
                 renderStudentStream(streamInfo, null);
                 if (curLinkedUser != null && curLinkedUser.equals(streamInfo.getPublisher())) {
@@ -722,90 +759,14 @@ public class LargeClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
-        EduStreamInfo modifiedStream = streamEvent.getModifiedStream();
-        setLocalCameraStream(modifiedStream);
-        onLinkMediaChanged(true);
-        LocalStreamInitOptions options = new LocalStreamInitOptions(modifiedStream.getStreamUuid(),
-                modifiedStream.getStreamName(), modifiedStream.getHasVideo(), modifiedStream.getHasAudio());
-        getLocalUser(new EduCallback<EduUser>() {
-            @Override
-            public void onSuccess(@Nullable EduUser user) {
-                user.initOrUpdateLocalStream(options, new EduCallback<EduStreamInfo>() {
-                    @Override
-                    public void onSuccess(@Nullable EduStreamInfo res) {
-                        final EduStreamInfo stream = getLocalCameraStream();
-                        if (stream != null) {
-                            getMediaRoomInfo(new EduCallback<EduRoomInfo>() {
-                                @Override
-                                public void onSuccess(@Nullable EduRoomInfo roomInfo) {
-                                    renderStudentStream(stream, video_student.getVideoLayout());
-                                }
-
-                                @Override
-                                public void onFailure(@NotNull EduError error) {
-
-                                }
-                            });
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(@NotNull EduError error) {
-
-                    }
-                });
-            }
-
-            @Override
-            public void onFailure(@NotNull EduError error) {
-
-            }
-        });
+        renderOwnCoVideoStream(streamEvent);
     }
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
         super.onLocalStreamUpdated(streamEvent, type);
         /**本地流(连麦的Camera流)被修改;同时，老师同意连麦时，老师会访问更新流接口来为学生新建流，所以此处会接收到回调*/
-        EduStreamInfo modifiedStream = streamEvent.getModifiedStream();
-        setLocalCameraStream(modifiedStream);
-        onLinkMediaChanged(true);
-        LocalStreamInitOptions options = new LocalStreamInitOptions(modifiedStream.getStreamUuid(),
-                modifiedStream.getStreamName(), modifiedStream.getHasVideo(), modifiedStream.getHasAudio());
-        getLocalUser(new EduCallback<EduUser>() {
-            @Override
-            public void onSuccess(@Nullable EduUser user) {
-                user.initOrUpdateLocalStream(options, new EduCallback<EduStreamInfo>() {
-                    @Override
-                    public void onSuccess(@Nullable EduStreamInfo res) {
-                        final EduStreamInfo stream = getLocalCameraStream();
-                        if (stream != null) {
-                            getMediaRoomInfo(new EduCallback<EduRoomInfo>() {
-                                @Override
-                                public void onSuccess(@Nullable EduRoomInfo roomInfo) {
-                                    renderStudentStream(stream, video_student.getVideoLayout());
-                                }
-
-                                @Override
-                                public void onFailure(@NotNull EduError error) {
-
-                                }
-                            });
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(@NotNull EduError error) {
-
-                    }
-                });
-            }
-
-            @Override
-            public void onFailure(@NotNull EduError error) {
-
-            }
-        });
+        renderOwnCoVideoStream(streamEvent);
     }
 
     @Override

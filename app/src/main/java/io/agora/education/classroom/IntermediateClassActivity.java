@@ -38,6 +38,7 @@ import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.EduStreamStateChangeType;
+import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduLocalUserInfo;
@@ -521,7 +522,8 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             for (EduStreamEvent streamEvent : streamEvents) {
                 EduStreamInfo streamInfo = streamEvent.getModifiedStream();
                 EduBaseUserInfo userInfo = streamInfo.getPublisher();
-                if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
+                if (userInfo.getRole().equals(EduUserRole.TEACHER) &&
+                        streamInfo.getVideoSourceType().equals(VideoSourceType.CAMERA)) {
                     showTeacherStream(streamInfo, null);
                 }
             }

@@ -174,10 +174,10 @@ internal class EduManagerImpl(
     }
 
     override fun uploadDebugItem(item: DebugItem, callback: EduCallback<String>): EduError {
-        val uploadParam = UploadManager.UploadParam(APPID, BuildConfig.VERSION_NAME, Build.DEVICE,
+        val uploadParam = UploadManager.UploadParam(BuildConfig.VERSION_NAME, Build.DEVICE,
                 Build.VERSION.SDK, "ZIP", "Android", null)
         logMessage("${TAG}: Call the uploadDebugItem function to upload logs，parameter->${Gson().toJson(uploadParam)}", LogLevel.INFO)
-        UploadManager.upload(options.context, LOG_APPSECRET, API_BASE_URL, options.logFileDir!!, uploadParam,
+        UploadManager.upload(options.context, APPID, API_BASE_URL, options.logFileDir!!, uploadParam,
                 object : ThrowableCallback<String> {
                     override fun onSuccess(res: String?) {
                         res?.let {

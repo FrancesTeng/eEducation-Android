@@ -1,49 +1,73 @@
 package io.agora.raisehand
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.os.CountDownTimer
 import android.util.AttributeSet
 import android.view.MotionEvent
+import android.view.View
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
+import android.widget.LinearLayout
 import androidx.appcompat.widget.AppCompatImageView
-import com.google.gson.Gson
 import io.agora.base.ToastManager
 import io.agora.education.api.EduCallback
 import io.agora.education.api.base.EduError
 import io.agora.education.api.message.EduActionMessage
 import io.agora.education.api.message.EduActionType
-import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.EduRoom
-import io.agora.raisehand.CoVideoActionType.ABORT
+import io.agora.raisehand.CoVideoState.CoVideoing
+import io.agora.raisehand.CoVideoState.DisCoVideo
+import kotlinx.android.synthetic.main.view_covideo_layout.view.*
 
 /**
  * 举手组件布局
  * */
-class AgoraEduCoVideoView : AppCompatImageView {
+class AgoraEduCoVideoView : LinearLayout {
+
+    private lateinit var countDownImg: AppCompatImageView
+    private lateinit var handImg: AppCompatImageView
 
     private lateinit var session: StudentCoVideoSession
     private var initialized = false
-    private var imgs: Array<Int> = arrayOf(R.drawable.ic_hand_up, R.drawable.ic_hand_down)
-    private var downTime: Long = System.currentTimeMillis()
-    private val longClickInternal: Long = 3000
+    private var countDownImgs: Array<Int> = arrayOf(R.drawable.ic_covideo_3, R.drawable.ic_covideo_2,
+            R.drawable.ic_covideo_1)
+    private var handImgs: Array<Int> = arrayOf(R.drawable.ic_hand_up, R.drawable.ic_hand_down)
     private var coVideoListener: AgoraEduCoVideoListener? = null
+    private var countDownTimer: CountDownTimer = object : CountDownTimer(1000 * 3, 1000) {
+        override fun onFinish() {
+            countDownImg.visibility = View.INVISIBLE
+            countDownImg.setBackgroundResource(countDownImgs[0])
+            /*倒计时结束，发起举手申请*/
+            applyCoVideo()
+        }
+
+        override fun onTick(millisUntilFinished: Long) {
+            val index: Int = (3 - (millisUntilFinished / 1000)).toInt()
+            countDownImg.setBackgroundResource(countDownImgs[index])
+        }
+
+    }
 
     constructor(context: Context) : super(context) {
-        initView()
+        initView(context)
     }
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
-        initView()
+        initView(context)
     }
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             super(context, attrs, defStyleAttr) {
-        initView()
+        initView(context)
     }
 
     /**初始化时，图片是默认*/
-    private fun initView() {
-        setImageResource(imgs[0])
+    private fun initView(context: Context) {
+        inflate(context, R.layout.view_covideo_layout, this)
+        countDownImg = findViewById(R.id.countDownImg)
+        handImg = findViewById(R.id.handImg)
+        handImg.setImageResource(handImgs[0])
     }
 
     fun init(eduRoom: EduRoom) {
@@ -56,26 +80,38 @@ class AgoraEduCoVideoView : AppCompatImageView {
         animation.repeatCount = Animation.INFINITE
         animation.duration = 300
         animation.cancel()
-        setOnTouchListener { v, motionEvent ->
-            when (motionEvent?.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    downTime = System.currentTimeMillis()
-                }
-                MotionEvent.ACTION_UP -> {
-                    /*长按三秒举手/取消举手/主动退出举手*/
-                    if (System.currentTimeMillis() - downTime > longClickInternal) {
-                        if (session.isCoVideoing()) {
-                            cancelCoVideo()
-                        } else {
-                            applyCoVideo()
+        handImg.setOnTouchListener(object : OnTouchListener {
+            @SuppressLint("ClickableViewAccessibility")
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                /*touchListener只处理举手逻辑*/
+                if (session.curCoVideoState == DisCoVideo) {
+                    when (event?.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            /*开启倒计时任务*/
+                            countDownImg.visibility = View.VISIBLE
+                            countDownTimer.start()
+                        }
+                        MotionEvent.ACTION_UP -> {
+                            /*抬起时，倒计时任务强制结束*/
+                            if (countDownImg.visibility != View.INVISIBLE) {
+                                countDownTimer.cancel()
+                            }
+                        }
+                        else -> {
                         }
                     }
                 }
-                else -> {
+                return false
+            }
+        })
+        handImg.setOnClickListener(object : OnClickListener {
+            override fun onClick(v: View?) {
+                /*clickListener只处理取消连麦逻辑*/
+                if (session.curCoVideoState == CoVideoing) {
+                    cancelCoVideo()
                 }
             }
-            false
-        }
+        })
         initialized = true
     }
 
@@ -97,8 +133,6 @@ class AgoraEduCoVideoView : AppCompatImageView {
         session.applyCoVideo(object : EduCallback<Unit> {
             override fun onSuccess(res: Unit?) {
                 coVideoListener?.onApplyCoVideoComplete()
-                /*申请连麦接口访问成功之后，等待老师处理过程中，按钮闪烁*/
-                operateAnimation(true)
             }
 
             override fun onFailure(error: EduError) {
@@ -124,9 +158,8 @@ class AgoraEduCoVideoView : AppCompatImageView {
     /**本地用户举手(连麦)被老师同意/(拒绝、打断)
      * @param agree 举手(连麦)请求是否被允许*/
     fun onLinkMediaChanged(agree: Boolean) {
-        /**老师处理过后，动画消失*/
-        operateAnimation(false)
         session.onLinkMediaChanged(agree)
+        handImg.setBackgroundResource(if (session.isCoVideoing()) handImgs[1] else handImgs[0])
     }
 
     fun abortCoVideoing() {

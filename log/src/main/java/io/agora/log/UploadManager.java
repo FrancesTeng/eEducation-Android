@@ -36,10 +36,10 @@ public class UploadManager {
 
     public static final String ZIP = "zip";
     public static final String LOG = "log";
-    private static final String callbackPath = "/monitor/v1/log/oss/callback";
+    private static final String callbackPath = "/monitor/apps/{appId}/v1/log/oss/callback";
+    private static final String APP_JSON = "application/json";
 
     public static class UploadParam {
-        public String appId;
         public String appVersion;
         public String deviceName;
         public String deviceVersion;
@@ -48,7 +48,6 @@ public class UploadManager {
         public Object tag;
 
         public UploadParam(
-                @NonNull String appId,
                 @Nullable String appVersion,
                 @Nullable String deviceName,
                 @NonNull String deviceVersion,
@@ -59,7 +58,6 @@ public class UploadManager {
                 @NonNull String platform,
                 @Nullable Object tag
         ) {
-            this.appId = appId;
             this.appVersion = appVersion;
             this.deviceName = deviceName;
             this.deviceVersion = deviceVersion;
@@ -69,18 +67,18 @@ public class UploadManager {
         }
     }
 
-    public static void upload(@NonNull Context context, @NonNull String appSecret,
+    public static void upload(@NonNull Context context, @NonNull String appId,
                               @NonNull String host, @NonNull String uploadPath,
                               @NonNull UploadParam param, @Nullable Callback<String> callback) {
         LogService service = RetrofitManager.instance().getService(host, LogService.class);
-        long timeStamp = System.currentTimeMillis();
-        String sign = sign(appSecret, param, timeStamp);
-        service.logParams(sign, String.valueOf(timeStamp), param)
+//        long timeStamp = System.currentTimeMillis();
+//        String sign = sign(appSecret, param, timeStamp);
+        service.logParams(appId, APP_JSON, param)
                 .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<LogParamsRes>>() {
                     @Override
                     public void onSuccess(ResponseBody<LogParamsRes> res) {
                         res.data.callbackUrl = service.logStsCallback(host).request().url()
-                                .toString().concat(callbackPath);
+                                .toString().concat(callbackPath.replace("{appId}", appId));
                         new Thread(() -> {
                             uploadByOss(context, uploadPath, res.data, callback);
                         }).start();

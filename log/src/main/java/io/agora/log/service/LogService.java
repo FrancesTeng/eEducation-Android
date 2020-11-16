@@ -9,13 +9,14 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.Path;
 import retrofit2.http.Url;
 
 public interface LogService {
-    @POST("/monitor/v1/log/oss/policy")
+    @POST("/monitor/apps/{appId}/v1/log/oss/policy")
     Call<ResponseBody<LogParamsRes>> logParams(
-            @Header("sign") @NonNull String sign,
-            @Header("timestamp") @NonNull String timestamp,
+            @Path("appId") @NonNull String appId,
+            @Header("Content-Type") @NonNull String contentType,
             @Body @NonNull UploadManager.UploadParam param
     );
 

@@ -249,15 +249,6 @@ public class OneToOneClassActivity extends BaseClassActivity {
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
                     video_teacher.muteAudio(!streamInfo.getHasAudio());
                     break;
-//                case SCREEN:
-//                    /**老师关闭了屏幕分享，移除屏幕分享的布局*/
-//                    runOnUiThread(() -> {
-//                        layout_whiteboard.setVisibility(View.VISIBLE);
-//                        layout_share_video.setVisibility(View.GONE);
-//                        layout_share_video.removeAllViews();
-//                        renderStream(getMainEduRoom(), streamInfo, null);
-//                    });
-//                    break;
                 default:
                     break;
             }
