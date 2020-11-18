@@ -6,18 +6,19 @@ import android.os.CountDownTimer
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import androidx.appcompat.widget.AppCompatImageView
+import androidx.appcompat.widget.AppCompatTextView
 import io.agora.base.ToastManager
 import io.agora.education.api.EduCallback
 import io.agora.education.api.base.EduError
 import io.agora.education.api.message.EduActionMessage
 import io.agora.education.api.message.EduActionType
 import io.agora.education.api.room.EduRoom
-import io.agora.raisehand.CoVideoState.CoVideoing
-import io.agora.raisehand.CoVideoState.DisCoVideo
 import kotlinx.android.synthetic.main.view_covideo_layout.view.*
 
 /**
@@ -25,29 +26,50 @@ import kotlinx.android.synthetic.main.view_covideo_layout.view.*
  * */
 class AgoraEduCoVideoView : LinearLayout {
 
-    private lateinit var countDownImg: AppCompatImageView
+    private lateinit var countdownLayout: RelativeLayout
+    private lateinit var countDownTextView: AppCompatTextView
     private lateinit var handImg: AppCompatImageView
 
     private lateinit var session: StudentCoVideoSession
     private var initialized = false
-    private var countDownImgs: Array<Int> = arrayOf(R.drawable.ic_covideo_3, R.drawable.ic_covideo_2,
-            R.drawable.ic_covideo_1)
+    private var countDownTexts: Array<String> = arrayOf("4", "3", "2", "1");
     private var handImgs: Array<Int> = arrayOf(R.drawable.ic_hand_up, R.drawable.ic_hand_down)
     private var coVideoListener: AgoraEduCoVideoListener? = null
-    private var countDownTimer: CountDownTimer = object : CountDownTimer(1000 * 3, 1000) {
+
+    /*举手倒计时*/
+    private var coVideoCountDownTimer: CountDownTimer = object : CountDownTimer(1000 * 3, 1000) {
         override fun onFinish() {
-            countDownImg.visibility = View.INVISIBLE
-            countDownImg.setBackgroundResource(countDownImgs[0])
+            countdownLayout.visibility = View.INVISIBLE
+            countDownTextView.setText(countDownTexts[0])
             /*倒计时结束，发起举手申请*/
             applyCoVideo()
+            operaAlphaAnimation(false)
         }
 
         override fun onTick(millisUntilFinished: Long) {
             val index: Int = (3 - (millisUntilFinished / 1000)).toInt()
-            countDownImg.setBackgroundResource(countDownImgs[index])
+            countDownTextView.setText(countDownTexts[index])
         }
 
     }
+
+    /*取消举手倒计时*/
+    private var cancelCountDownTimer: CountDownTimer = object : CountDownTimer(1000 * 3, 1000) {
+        override fun onFinish() {
+            countdownLayout.visibility = View.INVISIBLE
+            countDownTextView.setText(countDownTexts[0])
+            /*倒计时结束，取消举手*/
+            cancelCoVideo()
+            operaAlphaAnimation(false)
+        }
+
+        override fun onTick(millisUntilFinished: Long) {
+            val index: Int = (3 - (millisUntilFinished / 1000)).toInt()
+            countDownTextView.setText(countDownTexts[index])
+        }
+
+    }
+    private var countDownAlphaAnimation: AlphaAnimation? = null
 
     constructor(context: Context) : super(context) {
         initView(context)
@@ -65,9 +87,21 @@ class AgoraEduCoVideoView : LinearLayout {
     /**初始化时，图片是默认*/
     private fun initView(context: Context) {
         inflate(context, R.layout.view_covideo_layout, this)
-        countDownImg = findViewById(R.id.countDownImg)
+        countdownLayout = findViewById(R.id.countdown_Layout)
+        countDownTextView = findViewById(R.id.countDown_TextView)
         handImg = findViewById(R.id.handImg)
         handImg.setImageResource(handImgs[0])
+        countdownLayout.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                var width = countdownLayout.right - countdownLayout.left
+                var height = countdownLayout.bottom - countdownLayout.top
+                width /= 5
+                height /= 5
+                countDownTextView.textSize = (width + height) / 2.0f
+                countdownLayout.viewTreeObserver.removeOnGlobalLayoutListener(this)
+            }
+
+        })
     }
 
     fun init(eduRoom: EduRoom) {
@@ -75,57 +109,66 @@ class AgoraEduCoVideoView : LinearLayout {
         if (context is AgoraEduCoVideoListener) {
             coVideoListener = context as AgoraEduCoVideoListener
         }
-        animation = AlphaAnimation(1.0f, 0.5f)
-        animation.repeatMode = Animation.REVERSE
-        animation.repeatCount = Animation.INFINITE
-        animation.duration = 300
-        animation.cancel()
+        operaAlphaAnimation(false)
         handImg.setOnTouchListener(object : OnTouchListener {
             @SuppressLint("ClickableViewAccessibility")
             override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-                /*touchListener只处理举手逻辑*/
-                if (session.curCoVideoState == DisCoVideo) {
-                    when (event?.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            /*开启倒计时任务*/
-                            countDownImg.visibility = View.VISIBLE
-                            countDownTimer.start()
-                        }
-                        MotionEvent.ACTION_UP -> {
-                            /*抬起时，倒计时任务强制结束*/
-                            if (countDownImg.visibility != View.INVISIBLE) {
-                                countDownTimer.cancel()
-                            }
-                        }
-                        else -> {
+                when (event?.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        if (countdownLayout.visibility == View.INVISIBLE) {
+                            countdownLayout.visibility = View.VISIBLE
+                            operaAlphaAnimation(true)
+                            /*举手倒计时任务开启*/
+                            coVideoCountDownTimer.start()
+                        } else {
+                            operaAlphaAnimation(false)
+                            cancelCountDownTimer.cancel()
+                            countdownLayout.visibility = View.INVISIBLE
+                            countDownTextView.setText(countDownTexts[0])
                         }
                     }
+                    MotionEvent.ACTION_UP -> {
+                        if (countdownLayout.visibility == View.INVISIBLE) {
+                            if (!session.isCoVideoing()) {
+                                countdownLayout.visibility = View.VISIBLE
+                                operaAlphaAnimation(true)
+                                cancelCountDownTimer.start()
+                            }
+                        } else {
+                            operaAlphaAnimation(false)
+                            coVideoCountDownTimer.cancel()
+                            countdownLayout.visibility = View.INVISIBLE
+                            countDownTextView.setText(countDownTexts[0])
+                        }
+                    }
+                    else -> {
+                    }
                 }
-                return false
-            }
-        })
-        handImg.setOnClickListener(object : OnClickListener {
-            override fun onClick(v: View?) {
-                /*clickListener只处理取消连麦逻辑*/
-                if (session.curCoVideoState == CoVideoing) {
-                    cancelCoVideo()
-                }
+                return true
             }
         })
         initialized = true
     }
 
-    private fun operateAnimation(enable: Boolean) {
+    private fun operaAlphaAnimation(enable: Boolean) {
+        if (countDownAlphaAnimation == null) {
+            countDownAlphaAnimation = AlphaAnimation(1.0f, 0.3f)
+            countDownAlphaAnimation?.repeatMode = Animation.REVERSE
+            countDownAlphaAnimation?.repeatCount = Animation.INFINITE
+            countDownAlphaAnimation?.duration = 300
+            countDownTextView.animation = countDownAlphaAnimation
+        }
         if (enable) {
-            animation.startNow()
+            countDownAlphaAnimation?.startNow()
         } else {
-            animation.cancel()
+            countDownAlphaAnimation?.cancel()
         }
     }
 
     /**申请连麦*/
     private fun applyCoVideo() {
         if (session.autoCoVideo) {
+            session.onLinkMediaChanged(true)
             /*允许举手即上台，直接回调允许上台接口*/
             coVideoListener?.onCoVideoAccepted()
             return
@@ -142,7 +185,7 @@ class AgoraEduCoVideoView : LinearLayout {
     }
 
     /**取消连麦
-     * 老师处理前主动取消和老师处理后主动退出*/
+     * 老师处理前主动取消*/
     private fun cancelCoVideo() {
         session.cancelCoVideo(object : EduCallback<Unit> {
             override fun onSuccess(res: Unit?) {
@@ -156,9 +199,9 @@ class AgoraEduCoVideoView : LinearLayout {
     }
 
     /**本地用户举手(连麦)被老师同意/(拒绝、打断)
-     * @param agree 举手(连麦)请求是否被允许*/
-    fun onLinkMediaChanged(agree: Boolean) {
-        session.onLinkMediaChanged(agree)
+     * @param onStage 举手(连麦)请求是否被允许*/
+    fun onLinkMediaChanged(onStage: Boolean) {
+        session.onLinkMediaChanged(onStage)
         handImg.setBackgroundResource(if (session.isCoVideoing()) handImgs[1] else handImgs[0])
     }
 
@@ -196,9 +239,9 @@ class AgoraEduCoVideoView : LinearLayout {
 
     fun destroy() {
         session.clear()
-        if (animation != null) {
-            animation.cancel()
-            animation = null
+        countDownAlphaAnimation?.let {
+            countDownAlphaAnimation?.cancel()
+            countDownAlphaAnimation = null
         }
     }
 }

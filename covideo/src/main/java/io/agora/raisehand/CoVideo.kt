@@ -1,7 +1,5 @@
 package io.agora.raisehand
 
-import java.io.Serializable
-
 object CoVideoState {
     /**
      * 初始状态
@@ -49,21 +47,4 @@ object CoVideoActionType {
      * student exit co-video
      */
     var EXIT = 7
-}
-
-internal class CoVideoPeerMsg(
-        val cmd: Int,
-        val data: Any
-) : Serializable {
-
-    companion object {
-        const val COVIDEOCMD: Int = 1
-    }
-}
-
-internal class CoVideoMsg(
-        val type: Int,
-        val userUuid: String,
-        val userName: String
-) {
 }

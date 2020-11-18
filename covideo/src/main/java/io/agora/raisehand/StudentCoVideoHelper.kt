@@ -21,6 +21,19 @@ internal class StudentCoVideoHelper(
         eduRoom: EduRoom) :
         StudentCoVideoSession(context, eduRoom) {
 
+    init {
+        val properties = eduRoom.roomProperties
+        properties?.let {
+            for ((key, value) in properties) {
+                if (key == STATE) {
+                    enableCoVideo = (value as Int) == 1
+                } else if (key == APPLY) {
+                    autoCoVideo = (value as Int) == 0
+                }
+            }
+        }
+    }
+
     fun getLocalUser(callback: EduCallback<EduUser>) {
         eduRoom?.let {
             eduRoom.get()?.getLocalUser(callback)
@@ -79,7 +92,7 @@ internal class StudentCoVideoHelper(
         })
     }
 
-    /**老师处理前主动取消和老师同意连麦后主动退出*/
+    /**老师处理前主动取消*/
     override fun cancelCoVideo(callback: EduCallback<Unit>) {
         if (curCoVideoState == Applying) {
             /*老师处理前主动取消*/
@@ -110,40 +123,41 @@ internal class StudentCoVideoHelper(
                     callback.onFailure(error)
                 }
             })
-        } else if (curCoVideoState == CoVideoing) {
-            /*举手连麦中学生主动退出*/
-            val payload = mutableMapOf<String, Any>(Pair(BusinessType.BUSINESS,
-                    BusinessType.RAISEHAND))
-            val config = EduStopActionConfig(processUuid, EduActionType.EduActionTypeCancel, payload)
-            getLocalUser(object : EduCallback<EduUser> {
-                override fun onSuccess(res: EduUser?) {
-                    if (res != null) {
-                        res.stopActionWithConfig(config, object : EduCallback<Unit> {
-                            override fun onSuccess(res: Unit?) {
-                                curCoVideoState = DisCoVideo
-                                callback.onSuccess(Unit)
-                                refreshProcessUuid()
-                            }
-
-                            override fun onFailure(error: EduError) {
-                                callback.onFailure(error)
-                                refreshProcessUuid()
-                            }
-                        })
-                    } else {
-                        callback.onFailure(customMsgError("local user is null!"))
-                    }
-                }
-
-                override fun onFailure(error: EduError) {
-                    callback.onFailure(error)
-                }
-            })
         }
+//        else if (curCoVideoState == CoVideoing) {
+//            /*举手连麦中学生主动退出*/
+//            val payload = mutableMapOf<String, Any>(Pair(BusinessType.BUSINESS,
+//                    BusinessType.RAISEHAND))
+//            val config = EduStopActionConfig(processUuid, EduActionType.EduActionTypeCancel, payload)
+//            getLocalUser(object : EduCallback<EduUser> {
+//                override fun onSuccess(res: EduUser?) {
+//                    if (res != null) {
+//                        res.stopActionWithConfig(config, object : EduCallback<Unit> {
+//                            override fun onSuccess(res: Unit?) {
+//                                curCoVideoState = DisCoVideo
+//                                callback.onSuccess(Unit)
+//                                refreshProcessUuid()
+//                            }
+//
+//                            override fun onFailure(error: EduError) {
+//                                callback.onFailure(error)
+//                                refreshProcessUuid()
+//                            }
+//                        })
+//                    } else {
+//                        callback.onFailure(customMsgError("local user is null!"))
+//                    }
+//                }
+//
+//                override fun onFailure(error: EduError) {
+//                    callback.onFailure(error)
+//                }
+//            })
+//        }
     }
 
-    override fun onLinkMediaChanged(agree: Boolean) {
-        curCoVideoState = if (agree) CoVideoing else DisCoVideo
+    override fun onLinkMediaChanged(onStage: Boolean) {
+        curCoVideoState = if (onStage) CoVideoing else DisCoVideo
         //TODO 重置UI
     }
 

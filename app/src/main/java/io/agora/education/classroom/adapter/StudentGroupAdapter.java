@@ -26,7 +26,7 @@ import io.agora.education.classroom.bean.group.GroupMemberInfo;
 public class StudentGroupAdapter extends RecyclerView.Adapter<StudentGroupAdapter.ViewHolder> {
 
     private List<GroupInfo> groupInfoList = new ArrayList<>();
-    private List<EduUserInfo> allStudentList = new ArrayList<>();
+    private List<GroupMemberInfo> allMemberList = new ArrayList<>();
     private final int layoutId = R.layout.item_studentgroup_layout;
     private int scrollViewWidth;
 
@@ -42,9 +42,9 @@ public class StudentGroupAdapter extends RecyclerView.Adapter<StudentGroupAdapte
         GroupInfo groupInfo = groupInfoList.get(position);
         holder.groupNameTextView.setText(groupInfo.getGroupName());
         List<GroupMemberInfo> curGroupMembers = new ArrayList<>();
-        for (EduUserInfo userInfo : allStudentList) {
-            if (groupInfo.getMembers().contains(userInfo.getUserUuid())) {
-                curGroupMembers.add(new GroupMemberInfo(userInfo));
+        for (GroupMemberInfo memberInfo : allMemberList) {
+            if (groupInfo.getMembers().contains(memberInfo.getUserInfo().getUserUuid())) {
+                curGroupMembers.add(memberInfo);
             }
         }
         GroupMemberAdapter memberAdapter = new GroupMemberAdapter(curGroupMembers);
@@ -90,9 +90,9 @@ public class StudentGroupAdapter extends RecyclerView.Adapter<StudentGroupAdapte
         return groupInfoList.size();
     }
 
-    public void updateGroupList(List<GroupInfo> groupInfos, List<EduUserInfo> allStudents) {
+    public void updateGroupList(List<GroupInfo> groupInfos, List<GroupMemberInfo> allMembers) {
         this.groupInfoList = groupInfos;
-        this.allStudentList = allStudents;
+        this.allMemberList = allMembers;
         notifyDataSetChanged();
     }
 

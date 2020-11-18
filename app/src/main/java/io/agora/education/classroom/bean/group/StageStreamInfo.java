@@ -4,14 +4,11 @@ import io.agora.education.api.stream.data.EduStreamInfo;
 
 public class StageStreamInfo {
     private EduStreamInfo streamInfo;
-    /**
-     * 此流的发送者在组内的信息
-     */
-    private GroupMemberInfo publisher;
+    private String reward;
 
-    public StageStreamInfo(EduStreamInfo streamInfo, GroupMemberInfo publisher) {
+    public StageStreamInfo(EduStreamInfo streamInfo, String reward) {
         this.streamInfo = streamInfo;
-        this.publisher = publisher;
+        this.reward = reward;
     }
 
     public EduStreamInfo getStreamInfo() {
@@ -22,11 +19,11 @@ public class StageStreamInfo {
         this.streamInfo = streamInfo;
     }
 
-    public GroupMemberInfo getPublisher() {
-        return publisher;
+    public String getReward() {
+        return reward;
     }
 
-    public void setPublisher(GroupMemberInfo publisher) {
-        this.publisher = publisher;
+    public void setReward(String reward) {
+        this.reward = reward;
     }
 }

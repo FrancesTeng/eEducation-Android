@@ -46,11 +46,12 @@ import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.api.user.data.EduUserStateChangeType;
-import io.agora.education.classroom.adapter.PKVideoAdapter;
+import io.agora.education.classroom.adapter.StageVideoAdapter;
 import io.agora.education.classroom.bean.board.BoardBean;
 import io.agora.education.classroom.bean.board.BoardInfo;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.bean.group.GroupInfo;
+import io.agora.education.classroom.bean.group.GroupMemberInfo;
 import io.agora.education.classroom.bean.group.GroupStateInfo;
 import io.agora.education.classroom.bean.group.RoomGroupInfo;
 import io.agora.education.classroom.bean.group.StageStreamInfo;
@@ -70,10 +71,10 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
 
     @BindView(R.id.layout_video_teacher)
     FrameLayout layoutVideoTeacher;
-    @BindView(R.id.pk_videos_one)
-    RecyclerView pkVideosOne;
-    @BindView(R.id.pk_videos_two)
-    RecyclerView pkVideosTwo;
+    @BindView(R.id.stage_videos_one)
+    RecyclerView stageVideosOne;
+    @BindView(R.id.stage_videos_two)
+    RecyclerView stageVideosTwo;
     @BindView(R.id.coVideoView)
     AgoraEduCoVideoView agoraEduCoVideoView;
     @BindView(R.id.layout_tab)
@@ -86,10 +87,11 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     private EduRoom curGroupRoom;
     /*当前班级的分组情况*/
     private RoomGroupInfo roomGroupInfo = new RoomGroupInfo();
-    private PKVideoAdapter pkVideoAdapterOne = new PKVideoAdapter(),
-            getPkVideoAdapterTwo = new PKVideoAdapter();
-    private List<StageStreamInfo> stageStreamInfos_One = new ArrayList<>();
-    private List<StageStreamInfo> stageStreamInfos_Two = new ArrayList<>();
+    private List<GroupMemberInfo> allGroupMembers = new ArrayList<>();
+    private StageVideoAdapter stageVideoAdapterOne = new StageVideoAdapter(),
+            getStageVideoAdapterTwo = new StageVideoAdapter();
+    private List<StageStreamInfo> stageStreamInfosOne = new ArrayList<>();
+    private List<StageStreamInfo> stageStreamInfosTwo = new ArrayList<>();
 
     @Override
     protected int getClassType() {
@@ -149,6 +151,9 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                 .show(studentGroupListFragment)
                 .hide(studentGroupListFragment)
                 .commitNowAllowingStateLoss();
+
+        stageVideosOne.setAdapter(stageVideoAdapterOne);
+        stageVideosTwo.setAdapter(getStageVideoAdapterTwo);
     }
 
     @Override
@@ -371,7 +376,11 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             userInfos.add(new EduUserInfo("260", "学260", EduUserRole.STUDENT, true));
             userInfos.add(new EduUserInfo("270", "学270", EduUserRole.STUDENT, true));
             userInfos.add(new EduUserInfo("280", "学280", EduUserRole.STUDENT, true));
-            studentGroupListFragment.updateGroupList(groupInfos, userInfos);
+            for (EduUserInfo userInfo : userInfos) {
+                GroupMemberInfo memberInfo = new GroupMemberInfo(userInfo);
+                allGroupMembers.add(memberInfo);
+            }
+            studentGroupListFragment.updateGroupList(groupInfos, allGroupMembers);
 //            getCurAllStudent(new EduCallback<List<EduUserInfo>>() {
 //                @Override
 //                public void onSuccess(@Nullable List<EduUserInfo> res) {
@@ -402,21 +411,55 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
         }
     }
 
-    private void notifyPKVideoList() {
+    private void notifyStageVideoList() {
         if (roomGroupInfo.enablePK()) {
-            /*正在PK*/
             List<GroupInfo> groupInfos = roomGroupInfo.getGroups();
-            List<String> pkGroupIds = roomGroupInfo.getInteractOutGroups();
-            List<GroupInfo> pkGroups = new ArrayList<>(2);
+            List<String> stageGroupIds = roomGroupInfo.getInteractOutGroups();
+            List<GroupInfo> stageGroups = new ArrayList<>(2);
             Iterator<GroupInfo> iterator = groupInfos.iterator();
             while (iterator.hasNext()) {
                 GroupInfo element = iterator.next();
-                if (pkGroupIds.contains(element.getGroupUuid())) {
-                    pkGroups.add(element);
+                if (stageGroupIds.contains(element.getGroupUuid())) {
+                    stageGroups.add(element);
                 }
             }
-            //TODO 显示PK列表；刷新
+            List<String> stageMemberIdsOne = stageGroups.get(0).getMembers();
+            List<String> stageMemberIdsTwo = stageGroups.get(1).getMembers();
+            getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
+                @Override
+                public void onSuccess(@Nullable List<EduStreamInfo> curFullStreams) {
+                    if (curFullStreams != null) {
+                        for (EduStreamInfo stream : curFullStreams) {
+                            String userUuid = stream.getPublisher().getUserUuid();
+                            if (stageMemberIdsOne.contains(userUuid)) {
+                                StageStreamInfo stageStream = new StageStreamInfo(stream, "0");
+                                stageStreamInfosOne.add(stageStream);
+                            } else if (stageMemberIdsTwo.contains(userUuid)) {
+                                StageStreamInfo stageStream = new StageStreamInfo(stream, "0");
+                                stageStreamInfosTwo.add(stageStream);
+                            }
+                        }
+                        notifyStageVideoListOne();
+                        notifyStageVideoListTwo();
+                    }
+                }
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+
+                }
+            });
         }
+    }
+
+    private void notifyStageVideoListOne() {
+        stageVideoAdapterOne.setNewList(stageStreamInfosOne);
+        stageVideosOne.setVisibility(stageStreamInfosOne.size() > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void notifyStageVideoListTwo() {
+        getStageVideoAdapterTwo.setNewList(stageStreamInfosTwo);
+        stageVideosTwo.setVisibility(stageStreamInfosTwo.size() > 0 ? View.VISIBLE : View.GONE);
     }
 
     @Override
@@ -447,7 +490,7 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             /*获取班级的roomProperties中可能存在的分组信息*/
             syncRoomGroupProperty(roomProperties);
             notifyUserList();
-            notifyPKVideoList();
+            notifyStageVideoList();
             /*刷新title数据*/
             setTitleData();
         }
@@ -506,6 +549,7 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                     showTeacherStream(streamInfo, videoTeacher.getVideoLayout());
                 }
             }
+            notifyStageVideoList();
         }
     }
 
@@ -518,6 +562,7 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
                 showTeacherStream(streamInfo, videoTeacher.getVideoLayout());
             }
+            notifyStageVideoList();
         }
     }
 
@@ -533,6 +578,7 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                     showTeacherStream(streamInfo, null);
                 }
             }
+            notifyStageVideoList();
         }
     }
 
@@ -557,7 +603,7 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             /*处理分组信息*/
             syncRoomGroupProperty(roomProperties);
             notifyUserList();
-            notifyPKVideoList();
+//            notifyStageVideoList();
         }
     }
 
@@ -589,16 +635,22 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     @Override
     public void onLocalStreamAdded(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamAdded(streamEvent);
+        notifyStageVideoList();
     }
 
     @Override
     public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
         super.onLocalStreamUpdated(streamEvent, type);
+        notifyStageVideoList();
     }
 
     @Override
     public void onLocalStreamRemoved(@NotNull EduStreamEvent streamEvent) {
         super.onLocalStreamRemoved(streamEvent);
+        /**本地流被移除，被强制下台
+         * 1:同步状态至CoVideoView 2:刷新音视频列表*/
+        agoraEduCoVideoView.onLinkMediaChanged(false);
+        notifyStageVideoList();
     }
 
     @Override
@@ -610,6 +662,4 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     public void onGlobalStateChanged(GlobalState state) {
         super.onGlobalStateChanged(state);
     }
-
-
 }

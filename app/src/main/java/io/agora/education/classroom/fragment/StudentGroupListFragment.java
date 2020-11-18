@@ -14,6 +14,7 @@ import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.base.BaseFragment;
 import io.agora.education.classroom.adapter.StudentGroupAdapter;
 import io.agora.education.classroom.bean.group.GroupInfo;
+import io.agora.education.classroom.bean.group.GroupMemberInfo;
 
 import static io.agora.education.util.AppUtil.dip2px;
 
@@ -38,14 +39,14 @@ public class StudentGroupListFragment extends BaseFragment {
         rcvGroups.setAdapter(studentListAdapter);
     }
 
-    public void updateGroupList(List<GroupInfo> groupInfos, List<EduUserInfo> allStudents) {
+    public void updateGroupList(List<GroupInfo> groupInfos, List<GroupMemberInfo> allMembers) {
         getActivity().runOnUiThread(() -> {
             if (rcvGroups.isComputingLayout()) {
                 rcvGroups.postDelayed(() -> {
-                    studentListAdapter.updateGroupList(groupInfos, allStudents);
+                    studentListAdapter.updateGroupList(groupInfos, allMembers);
                 }, 300);
             } else {
-                rcvGroups.post(() -> studentListAdapter.updateGroupList(groupInfos, allStudents));
+                rcvGroups.post(() -> studentListAdapter.updateGroupList(groupInfos, allMembers));
             }
         });
     }
