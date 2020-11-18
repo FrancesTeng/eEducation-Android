@@ -48,3 +48,17 @@ object CoVideoActionType {
      */
     var EXIT = 7
 }
+
+object CoVideoSwitchState {
+    const val DISABLE = 0
+
+    /*可以举手*/
+    const val ENABLE = 1
+}
+
+object CoVideoApplySwitchState {
+    const val DISABLE = 0
+
+    /*需要申请才能上台*/
+    const val ENABLE = 1
+}

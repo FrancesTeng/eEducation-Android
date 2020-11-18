@@ -52,8 +52,8 @@
         android:text="99999"
         android:textColor="@color/white"
         android:textSize="@dimen/dp_12"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="@id/view_bg_info"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/view_bg_info" />
 
     <androidx.appcompat.widget.AppCompatImageView
@@ -85,5 +85,12 @@
         app:layout_constraintBottom_toBottomOf="@id/view_bg_info"
         app:layout_constraintEnd_toStartOf="@id/ic_video"
         app:layout_constraintTop_toTopOf="@id/view_bg_info" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/rewardAnim_ImageView"
+        android:layout_width="match_parent"
+        android:visibility="gone"
+        android:layout_height="match_parent"
+        android:src="@drawable/img_reward_anim" />
 
 </merge>

@@ -602,8 +602,12 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             }
             /*处理分组信息*/
             syncRoomGroupProperty(roomProperties);
+            /*刷新学生列表或分组列表*/
             notifyUserList();
-//            notifyStageVideoList();
+            /*刷新可能存在的视频列表*/
+            notifyStageVideoList();
+            /*同步举手开关的状态至coVideoView*/
+            agoraEduCoVideoView.syncCoVideoSwitchState(roomProperties);
         }
     }
 
@@ -656,6 +660,8 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     @Override
     public void onUserActionMessageReceived(@NotNull EduActionMessage actionMessage) {
         super.onUserActionMessageReceived(actionMessage);
+        /*老师对于举手请求的处理结果同步至coVideoView中*/
+        agoraEduCoVideoView.syncCoVideoState(actionMessage);
     }
 
     @Override

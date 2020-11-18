@@ -2,21 +2,29 @@ package io.agora.education.classroom.widget;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.annotation.LayoutRes;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.vectordrawable.graphics.drawable.Animatable2Compat;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.agora.education.R;
 
-public class PKVideoView extends ConstraintLayout {
+public class StageVideoView extends ConstraintLayout {
 
     @BindView(R.id.tv_name)
     protected TextView tv_name;
@@ -29,24 +37,26 @@ public class PKVideoView extends ConstraintLayout {
     protected FrameLayout layout_place_holder;
     @BindView(R.id.layout_video)
     protected FrameLayout layout_video;
+    @BindView(R.id.rewardAnim_ImageView)
+    protected ImageView rewardAnimImageView;
 
-    public PKVideoView(Context context) {
+    public StageVideoView(Context context) {
         super(context);
         init(context);
     }
 
-    public PKVideoView(Context context, AttributeSet attrs) {
+    public StageVideoView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context);
     }
 
-    public PKVideoView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public StageVideoView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context);
     }
 
     public void init(Context context) {
-        inflate(context, R.layout.layout_video_pk, this);
+        inflate(context, R.layout.layout_video_stage, this);
         ButterKnife.bind(this);
     }
 
@@ -126,5 +136,32 @@ public class PKVideoView extends ConstraintLayout {
 //    public void showRemote(int uid) {
 //        VideoMediator.setupRemoteVideo(this, uid);
 //    }
+
+    /**
+     * 显示奖励动画
+     */
+    public void showRewardAnim() {
+        rewardAnimImageView.setVisibility(VISIBLE);
+        Glide.with(getContext()).asGif().skipMemoryCache(true)
+                .load(R.drawable.img_reward_anim).listener(new RequestListener<GifDrawable>() {
+            @Override
+            public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                                        Target<GifDrawable> target, boolean isFirstResource) {
+                return false;
+            }
+
+            @Override
+            public boolean onResourceReady(GifDrawable resource, Object model,
+                                           Target<GifDrawable> target, DataSource dataSource, boolean isFirstResource) {
+                resource.setLoopCount(1);
+                resource.registerAnimationCallback(new Animatable2Compat.AnimationCallback() {
+                    public void onAnimationEnd(Drawable drawable) {
+                        rewardAnimImageView.setVisibility(GONE);
+                    }
+                });
+                return false;
+            }
+        }).into(rewardAnimImageView);
+    }
 
 }

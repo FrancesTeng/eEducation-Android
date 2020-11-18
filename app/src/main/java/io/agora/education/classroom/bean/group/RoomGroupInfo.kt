@@ -5,6 +5,9 @@ class RoomGroupInfo() {
         const val GROUPSTATES = "groupsStates"
         const val INTERACTOUTGROUPS = "interactOutGroups"
         const val GROUPS = "groups"
+
+        /*班级的全体人员名单(包含在线和不在线)*/
+        const val ALLMEMBERS = "allMembers"
     }
 
     /*分组状态*/

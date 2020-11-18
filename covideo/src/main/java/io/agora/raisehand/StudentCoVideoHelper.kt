@@ -1,6 +1,7 @@
 package io.agora.raisehand
 
 import android.content.Context
+import com.google.gson.Gson
 import io.agora.education.api.EduCallback
 import io.agora.education.api.base.EduError
 import io.agora.education.api.base.EduError.Companion.customMsgError
@@ -23,15 +24,8 @@ internal class StudentCoVideoHelper(
 
     init {
         val properties = eduRoom.roomProperties
-        properties?.let {
-            for ((key, value) in properties) {
-                if (key == STATE) {
-                    enableCoVideo = (value as Int) == 1
-                } else if (key == APPLY) {
-                    autoCoVideo = (value as Int) == 0
-                }
-            }
-        }
+        /*提取并同步当前的举手开关状态 和 举手即上台开关状态*/
+        syncCoVideoSwitchState(properties)
     }
 
     fun getLocalUser(callback: EduCallback<EduUser>) {
@@ -39,6 +33,41 @@ internal class StudentCoVideoHelper(
             eduRoom.get()?.getLocalUser(callback)
         }
         callback.onFailure(internalError("current eduRoom is null"))
+    }
+
+    /**同步当前的举手开关状态 和 举手即上台开关状态*/
+    override fun syncCoVideoSwitchState(properties: MutableMap<String, Any>?) {
+        properties?.let {
+            for ((key, value) in properties) {
+                if (key == HANDUPSTATES) {
+                    val json = value as String
+                    val coVideoSwitchStateInfo = Gson().fromJson(json, CoVideoSwitchStateInfo::class.java)
+                    enableCoVideo = coVideoSwitchStateInfo.state == CoVideoSwitchState.ENABLE
+                    autoCoVideo = coVideoSwitchStateInfo.apply == CoVideoApplySwitchState.DISABLE
+                }
+            }
+        }
+    }
+
+    /**检查是否老师是否在线，老师不在线无法举手*/
+    override fun isAllowCoVideo(callback: EduCallback<Unit>) {
+        eduRoom?.let {
+            eduRoom.get()?.getFullUserList(object : EduCallback<MutableList<EduUserInfo>> {
+                override fun onSuccess(res: MutableList<EduUserInfo>?) {
+                    res?.forEach {
+                        if (it.role == EduUserRole.TEACHER) {
+                            callback.onSuccess(Unit)
+                            return
+                        }
+                    }
+                    callback.onFailure(customMsgError(context.get()?.getString(R.string.there_is_no_teacher_disable_covideo)))
+                }
+
+                override fun onFailure(error: EduError) {
+                    callback.onFailure(error)
+                }
+            })
+        }
     }
 
     override fun applyCoVideo(callback: EduCallback<Unit>) {

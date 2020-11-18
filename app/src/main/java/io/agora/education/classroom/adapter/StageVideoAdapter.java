@@ -17,7 +17,7 @@ import io.agora.education.R;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.classroom.BaseClassActivity;
 import io.agora.education.classroom.bean.group.StageStreamInfo;
-import io.agora.education.classroom.widget.PKVideoView;
+import io.agora.education.classroom.widget.StageVideoView;
 
 public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVideoAdapter.ViewHolder> {
 
@@ -70,7 +70,7 @@ public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVi
     @NonNull
     @Override
     protected ViewHolder onCreateDefViewHolder(@NonNull ViewGroup parent, int viewType) {
-        PKVideoView item = new PKVideoView(getContext());
+        StageVideoView item = new StageVideoView(getContext());
         int width = getContext().getResources().getDimensionPixelSize(R.dimen.dp_95);
         int height = parent.getHeight() - parent.getPaddingTop() - parent.getPaddingBottom();
         item.setLayoutParams(new ViewGroup.LayoutParams(width, height));
@@ -103,9 +103,9 @@ public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVi
     }
 
     static class ViewHolder extends BaseViewHolder {
-        private PKVideoView view;
+        private StageVideoView view;
 
-        ViewHolder(PKVideoView view) {
+        ViewHolder(StageVideoView view) {
             super(view);
             this.view = view;
         }

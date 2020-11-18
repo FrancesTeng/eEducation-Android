@@ -95,6 +95,9 @@ dependencies {
     implementation "com.jakewharton:butterknife:${extGet('dependencies', 'com.jakewharton:butterknife')}"
     annotationProcessor "com.jakewharton:butterknife-compiler:${extGet('dependencies', 'com.jakewharton:butterknife-compiler')}"
 
+    implementation "com.github.bumptech.glide:glide:${extGet('dependencies', 'com.github.bumptech.glide:glide')}"
+    annotationProcessor "com.github.bumptech.glide:compiler:${extGet('dependencies', 'com.github.bumptech.glide:compiler')}"
+
 
 //    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
 
