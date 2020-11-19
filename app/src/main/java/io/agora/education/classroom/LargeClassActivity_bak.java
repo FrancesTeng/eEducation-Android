@@ -61,7 +61,7 @@ import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.CANC
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.EXIT;
 import static io.agora.education.classroom.bean.msg.PeerMsg.CoVideoMsg.Type.REJECT;
 
-public class LargeClassActivity extends BaseClassActivity_bak implements TabLayout.OnTabSelectedListener {
+public class LargeClassActivity_bak extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
     private static final String TAG = "LargeClassActivity";
 
     @BindView(R.id.layout_video_teacher)
@@ -116,15 +116,10 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
                     public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
                         runOnUiThread(() -> {
                             showFragmentWithJoinSuccess();
-                            /*disable operation in large class*/
+                            // disable operation in large class
                             whiteboardFragment.disableDeviceInputs(true);
                             whiteboardFragment.setWritable(false);
                         });
-                        initTitleTimeState();
-                        initParseBoardInfo(getMainEduRoom());
-                        setTitleClassName();
-                        resetHandState();
-                        renderRemoteStream();
                     }
 
                     @Override
@@ -476,9 +471,6 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
         });
     }
 
-    /**
-     * 渲染连麦流
-     */
     private void renderStudentStream(EduStreamInfo streamInfo, ViewGroup viewGroup) {
         if (viewGroup != null) {
             runOnUiThread(() -> viewGroup.removeAllViews());
@@ -490,9 +482,6 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
         video_student.muteAudio(!streamInfo.getHasAudio());
     }
 
-    /**
-     * 渲染本地用户的连麦流
-     */
     private void renderOwnCoVideoStream(EduStreamEvent streamEvent) {
         EduStreamInfo modifiedStream = streamEvent.getModifiedStream();
         setLocalCameraStream(modifiedStream);
@@ -535,61 +524,6 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
         });
     }
 
-    /**
-     * 渲染远端流，包括老师的流和远端连麦流
-     */
-    private void renderRemoteStream() {
-        getMyMediaRoom().getFullStreamList(new EduCallback<List<EduStreamInfo>>() {
-            @Override
-            public void onSuccess(@Nullable List<EduStreamInfo> streams) {
-                if (streams != null && streams.size() > 0) {
-                    /*远端学生的连麦流优先渲染*/
-                    for (int i = 0; i < streams.size(); i++) {
-                        EduStreamInfo element = streams.get(i);
-                        if (element.getPublisher().getRole().equals(EduUserRole.STUDENT)) {
-                            Collections.swap(streams, streams.size() - 1, i);
-                            break;
-                        }
-                    }
-                    /**大班课场景下，远端流可能包括老师和远端学生连麦的流*/
-                    for (EduStreamInfo streamInfo : streams) {
-                        EduBaseUserInfo publisher = streamInfo.getPublisher();
-                        if (publisher.getRole().equals(EduUserRole.TEACHER)) {
-                            switch (streamInfo.getVideoSourceType()) {
-                                case CAMERA:
-                                    video_teacher.setName(publisher.getUserName());
-                                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                                    video_teacher.muteVideo(!streamInfo.getHasVideo());
-                                    video_teacher.muteAudio(!streamInfo.getHasAudio());
-                                    break;
-                                case SCREEN:
-                                    runOnUiThread(() -> {
-                                        layout_whiteboard.setVisibility(View.GONE);
-                                        layout_share_video.setVisibility(View.VISIBLE);
-                                        layout_share_video.removeAllViews();
-                                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
-                                    });
-                                    break;
-                                default:
-                                    break;
-                            }
-                        } else {
-                            Log.e(TAG, "发现有远端连麦流,立即渲染");
-                            renderStudentStream(streamInfo, video_student.getVideoLayout());
-                            curLinkedUser = streamInfo.getPublisher();
-                            resetHandState();
-                            refreshStudentVideoZOrder();
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(@NotNull EduError error) {
-            }
-        });
-    }
-
     @Override
     public void onTabSelected(TabLayout.Tab tab) {
         if (layout_materials == null) {
@@ -617,12 +551,14 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
+        setTitleData();
+        resetHandState();
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        setTitleClassName();
+        setTitleData();
         /**老师不在的时候不能举手*/
         resetHandState();
 
@@ -631,7 +567,7 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
     @Override
     public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         super.onRemoteUserLeft(userEvent, classRoom);
-        setTitleClassName();
+        setTitleData();
         /**老师不在的时候不能举手*/
         resetHandState();
     }
@@ -656,6 +592,43 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
     @Override
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
+        for (int i = 0; i < streams.size(); i++) {
+            EduStreamInfo element = streams.get(i);
+            if (element.getPublisher().getRole().equals(EduUserRole.STUDENT)) {
+                Collections.swap(streams, streams.size() - 1, i);
+                break;
+            }
+        }
+        /**大班课场景下，远端流可能包括老师和远端学生连麦的流*/
+        for (EduStreamInfo streamInfo : streams) {
+            EduBaseUserInfo publisher = streamInfo.getPublisher();
+            if (publisher.getRole().equals(EduUserRole.TEACHER)) {
+                switch (streamInfo.getVideoSourceType()) {
+                    case CAMERA:
+                        video_teacher.setName(publisher.getUserName());
+                        renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+                        video_teacher.muteVideo(!streamInfo.getHasVideo());
+                        video_teacher.muteAudio(!streamInfo.getHasAudio());
+                        break;
+                    case SCREEN:
+                        runOnUiThread(() -> {
+                            layout_whiteboard.setVisibility(View.GONE);
+                            layout_share_video.setVisibility(View.VISIBLE);
+                            layout_share_video.removeAllViews();
+                            renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                        });
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                Log.e(TAG, "发现有远端连麦流,立即渲染");
+                renderStudentStream(streamInfo, video_student.getVideoLayout());
+                curLinkedUser = streamInfo.getPublisher();
+                resetHandState();
+                refreshStudentVideoZOrder();
+            }
+        }
     }
 
     @Override
