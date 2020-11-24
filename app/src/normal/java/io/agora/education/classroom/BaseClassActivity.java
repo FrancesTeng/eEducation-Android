@@ -605,11 +605,11 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
                 .getBoardInfo(userToken, appId, roomUuid)
                 .enqueue(new RetrofitManager.Callback<>(0, new ThrowableCallback<ResponseBody<BoardBean>>() {
                     @Override
-                    public void onFailure(@androidx.annotation.Nullable Throwable throwable) {
+                    public void onFailure(@Nullable Throwable throwable) {
                     }
 
                     @Override
-                    public void onSuccess(@androidx.annotation.Nullable ResponseBody<BoardBean> res) {
+                    public void onSuccess(@Nullable ResponseBody<BoardBean> res) {
                     }
                 }));
     }

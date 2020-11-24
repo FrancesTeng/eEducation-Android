@@ -53,6 +53,7 @@ import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
+import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduLocalUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
@@ -607,7 +608,7 @@ public abstract class BaseClassActivity_bak extends BaseActivity implements EduR
                     }
 
                     @Override
-                    public void onSuccess(@androidx.annotation.Nullable ResponseBody<BoardBean> res) {
+                    public void onSuccess(@Nullable ResponseBody<BoardBean> res) {
                     }
                 }));
     }
@@ -681,6 +682,8 @@ public abstract class BaseClassActivity_bak extends BaseActivity implements EduR
 
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
+        initTitleTimeState();
+        initParseBoardInfo(getMainEduRoom());
     }
 
     @Override

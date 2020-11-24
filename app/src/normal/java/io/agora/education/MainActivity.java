@@ -193,8 +193,8 @@ public class MainActivity extends BaseActivity {
         /**userUuid和roomUuid需用户自己指定，并保证唯一性*/
         int roomType = getClassType(roomTypeStr);
         String userUuid = yourNameStr + EduUserRole.STUDENT.getValue();
-//        String roomUuid = roomNameStr + roomType;
-        String roomUuid = roomNameStr + 2;
+        String roomUuid = roomNameStr + roomType;
+//        String roomUuid = roomNameStr + 2;
 
         assert getAppId() != null;
         assert getCustomerId() != null;
@@ -230,7 +230,8 @@ public class MainActivity extends BaseActivity {
         } else if (roomTypeStr.equals(getString(R.string.breakout))) {
             return RoomType.BREAKOUT_CLASS.getValue();
         } else {
-            return RoomType.INTERMEDIATE_CLASS.getValue();
+//            return RoomType.INTERMEDIATE_CLASS.getValue();
+            return RoomType.LARGE_CLASS.getValue();
         }
     }
 

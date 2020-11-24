@@ -113,7 +113,7 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
         joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, false, true,
                 new EduCallback<EduStudent>() {
                     @Override
-                    public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
+                    public void onSuccess(@Nullable EduStudent res) {
                         runOnUiThread(() -> {
                             showFragmentWithJoinSuccess();
                             /*disable operation in large class*/
@@ -617,12 +617,12 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
+        resetHandState();
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        setTitleClassName();
         /**老师不在的时候不能举手*/
         resetHandState();
 
@@ -631,7 +631,6 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
     @Override
     public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         super.onRemoteUserLeft(userEvent, classRoom);
-        setTitleClassName();
         /**老师不在的时候不能举手*/
         resetHandState();
     }
@@ -656,6 +655,7 @@ public class LargeClassActivity extends BaseClassActivity_bak implements TabLayo
     @Override
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
+        renderRemoteStream();
     }
 
     @Override

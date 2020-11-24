@@ -27,12 +27,13 @@ import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
+import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.api.user.data.EduUserStateChangeType;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.widget.RtcVideoView;
 
 
-public class OneToOneClassActivity extends BaseClassActivity {
+public class OneToOneClassActivity extends BaseClassActivity_bak {
     private static final String TAG = OneToOneClassActivity.class.getSimpleName();
 
     @BindView(R.id.layout_video_teacher)
@@ -55,6 +56,21 @@ public class OneToOneClassActivity extends BaseClassActivity {
                     @Override
                     public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
                         runOnUiThread(() -> showFragmentWithJoinSuccess());
+                        setTitleClassName();
+                        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+                            @Override
+                            public void onSuccess(@Nullable EduUserInfo userInfo) {
+                                video_student.setName(userInfo.getUserName());
+                            }
+
+                            @Override
+                            public void onFailure(@NotNull EduError error) {
+
+                            }
+                        });
+                        initTitleTimeState();
+                        initParseBoardInfo(getMainEduRoom());
+                        renderTeacherStream();
                     }
 
                     @Override
@@ -85,33 +101,56 @@ public class OneToOneClassActivity extends BaseClassActivity {
         layout_im.setVisibility(isSelected ? View.VISIBLE : View.GONE);
     }
 
-    @Override
-    public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
-        super.onRemoteUsersInitialized(users, classRoom);
-        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+    private void renderTeacherStream() {
+        getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
             @Override
-            public void onSuccess(@Nullable EduUserInfo userInfo) {
-                video_student.setName(userInfo.getUserName());
+            public void onSuccess(@Nullable List<EduStreamInfo> streams) {
+                if (streams != null) {
+                    for (EduStreamInfo streamInfo : streams) {
+                        if (streamInfo.getPublisher().getRole().equals(EduUserRole.TEACHER)) {
+                            switch (streamInfo.getVideoSourceType()) {
+                                case CAMERA:
+                                    video_teacher.setName(streamInfo.getPublisher().getUserName());
+                                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+                                    video_teacher.muteVideo(!streamInfo.getHasVideo());
+                                    video_teacher.muteAudio(!streamInfo.getHasAudio());
+                                    break;
+                                case SCREEN:
+                                    /**有屏幕分享的流进入，说明是老师打开了屏幕分享，此时把这个流渲染出来*/
+                                    runOnUiThread(() -> {
+                                        layout_whiteboard.setVisibility(View.GONE);
+                                        layout_share_video.setVisibility(View.VISIBLE);
+                                        layout_share_video.removeAllViews();
+                                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                                    });
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                }
             }
 
             @Override
             public void onFailure(@NotNull EduError error) {
-
             }
         });
-        setTitleData();
+    }
+
+    @Override
+    public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
+        super.onRemoteUsersInitialized(users, classRoom);
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        setTitleData();
     }
 
     @Override
     public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         super.onRemoteUserLeft(userEvent, classRoom);
-        setTitleData();
     }
 
     @Override
@@ -158,36 +197,7 @@ public class OneToOneClassActivity extends BaseClassActivity {
                                            @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
         Log.e(TAG, "onRemoteStreamsInitialized");
-//        EduStreamInfo streamInfo = getTeacherStream();
-//        Log.e(TAG, "老师的流信息:" + new Gson().toJson(streamInfo));
-//        if (streamInfo != null) {
-//            video_teacher.setName(streamInfo.getPublisher().getUserName());
-//            renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-//            video_teacher.muteVideo(!streamInfo.getHasVideo());
-//            video_teacher.muteAudio(!streamInfo.getHasAudio());
-//        }
-        for (EduStreamInfo streamInfo : streams) {
-            /**一对一场景下，远端流就是老师的流*/
-            switch (streamInfo.getVideoSourceType()) {
-                case CAMERA:
-                    video_teacher.setName(streamInfo.getPublisher().getUserName());
-                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                    video_teacher.muteVideo(!streamInfo.getHasVideo());
-                    video_teacher.muteAudio(!streamInfo.getHasAudio());
-                    break;
-                case SCREEN:
-                    /**有屏幕分享的流进入，说明是老师打开了屏幕分享，此时把这个流渲染出来*/
-                    runOnUiThread(() -> {
-                        layout_whiteboard.setVisibility(View.GONE);
-                        layout_share_video.setVisibility(View.VISIBLE);
-                        layout_share_video.removeAllViews();
-                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
-                    });
-                    break;
-                default:
-                    break;
-            }
-        }
+        renderTeacherStream();
     }
 
     @Override
