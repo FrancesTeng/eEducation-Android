@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.DiffUtil;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.viewholder.BaseViewHolder;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +23,8 @@ import io.agora.education.classroom.widget.StageVideoView;
 
 public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVideoAdapter.ViewHolder> {
 
+    private static String localUserUuid;
+
     public StageVideoAdapter() {
         super(0);
         setDiffCallback(new DiffUtil.ItemCallback<StageStreamInfo>() {
@@ -28,24 +32,26 @@ public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVi
             public boolean areItemsTheSame(@NonNull StageStreamInfo oldItem, @NonNull StageStreamInfo newItem) {
                 EduStreamInfo oldStream = oldItem.getStreamInfo();
                 EduStreamInfo newStream = newItem.getStreamInfo();
-                return oldStream.getHasVideo() == newStream.getHasVideo()
+                boolean a = oldStream.getHasVideo() == newStream.getHasVideo()
                         && oldStream.getHasAudio() == newStream.getHasAudio()
                         && oldStream.getStreamUuid().equals(newStream.getStreamUuid())
                         && oldStream.getStreamName().equals(newStream.getStreamName())
                         && oldStream.getPublisher().equals(newStream.getPublisher())
                         && oldStream.getVideoSourceType().equals(newStream.getVideoSourceType());
+                return a;
             }
 
             @Override
             public boolean areContentsTheSame(@NonNull StageStreamInfo oldItem, @NonNull StageStreamInfo newItem) {
                 EduStreamInfo oldStream = oldItem.getStreamInfo();
                 EduStreamInfo newStream = newItem.getStreamInfo();
-                return oldStream.getHasVideo() == newStream.getHasVideo()
+                boolean a = oldStream.getHasVideo() == newStream.getHasVideo()
                         && oldStream.getHasAudio() == newStream.getHasAudio()
                         && oldStream.getStreamUuid().equals(newStream.getStreamUuid())
                         && oldStream.getStreamName().equals(newStream.getStreamName())
                         && oldStream.getPublisher().equals(newStream.getPublisher())
                         && oldStream.getVideoSourceType().equals(newStream.getVideoSourceType());
+                return a;
             }
 
             @Nullable
@@ -53,12 +59,13 @@ public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVi
             public Object getChangePayload(@NonNull StageStreamInfo oldItem, @NonNull StageStreamInfo newItem) {
                 EduStreamInfo oldStream = oldItem.getStreamInfo();
                 EduStreamInfo newStream = newItem.getStreamInfo();
-                if (oldStream.getHasVideo() == newStream.getHasVideo()
+                boolean a = oldStream.getHasVideo() == newStream.getHasVideo()
                         && oldStream.getHasAudio() == newStream.getHasAudio()
                         && oldStream.getStreamUuid().equals(newStream.getStreamUuid())
                         && oldStream.getStreamName().equals(newStream.getStreamName())
                         && oldStream.getPublisher().equals(newStream.getPublisher())
-                        && oldStream.getVideoSourceType().equals(newStream.getVideoSourceType())) {
+                        && oldStream.getVideoSourceType().equals(newStream.getVideoSourceType());
+                if (a) {
                     return true;
                 } else {
                     return null;
@@ -71,8 +78,9 @@ public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVi
     @Override
     protected ViewHolder onCreateDefViewHolder(@NonNull ViewGroup parent, int viewType) {
         StageVideoView item = new StageVideoView(getContext());
+        item.init();
         int width = getContext().getResources().getDimensionPixelSize(R.dimen.dp_95);
-        int height = parent.getHeight() - parent.getPaddingTop() - parent.getPaddingBottom();
+        int height = parent.getMeasuredHeight() - parent.getPaddingTop() - parent.getPaddingBottom();
         item.setLayoutParams(new ViewGroup.LayoutParams(width, height));
         return new ViewHolder(item);
     }
@@ -93,11 +101,12 @@ public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVi
                 viewHolder.view.getVideoLayout());
     }
 
-    public void setNewList(@Nullable List<StageStreamInfo> data) {
+    public void setNewList(@Nullable List<StageStreamInfo> data, String localUserUuid) {
+        this.localUserUuid = localUserUuid;
         ((Activity) getContext()).runOnUiThread(() -> {
             List<StageStreamInfo> list = new ArrayList<>();
             list.addAll(data);
-            setDiffNewData(list);
+            setNewData(list);
             notifyDataSetChanged();
         });
     }
@@ -111,9 +120,11 @@ public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVi
         }
 
         void convert(StageStreamInfo item) {
-            view.muteVideo(!item.getStreamInfo().getHasVideo());
-            view.muteAudio(!item.getStreamInfo().getHasAudio());
+            if (item.getStreamInfo().getPublisher().getUserUuid().equals(localUserUuid)) {
+                view.muteAudio(item.getStreamInfo().getHasAudio());
+            }
             view.setName(item.getStreamInfo().getPublisher().getUserName());
+            view.setReward(item.getReward());
         }
     }
 

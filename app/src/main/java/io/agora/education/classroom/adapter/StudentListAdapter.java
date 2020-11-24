@@ -15,11 +15,12 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.agora.education.R;
 import io.agora.education.api.user.data.EduUserInfo;
+import io.agora.education.classroom.bean.group.GroupMemberInfo;
 
 public class StudentListAdapter extends RecyclerView.Adapter<StudentListAdapter.ViewHolder> {
     private static final String TAG = StudentListAdapter.class.getSimpleName();
     private final int layoutId = R.layout.item_student_layout;
-    private List<EduUserInfo> students = new ArrayList<>();
+    private List<GroupMemberInfo> students = new ArrayList<>();
 
     public StudentListAdapter() {
     }
@@ -33,8 +34,8 @@ public class StudentListAdapter extends RecyclerView.Adapter<StudentListAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        EduUserInfo userInfo = students.get(position);
-        holder.textView.setText(userInfo.getUserName());
+        GroupMemberInfo memberInfo = students.get(position);
+        holder.textView.setText(memberInfo.getUserName());
     }
 
     @Override
@@ -42,7 +43,7 @@ public class StudentListAdapter extends RecyclerView.Adapter<StudentListAdapter.
         return students.size();
     }
 
-    public void updateStudentList(List<EduUserInfo> students) {
+    public void updateStudentList(List<GroupMemberInfo> students) {
         this.students = students;
         notifyDataSetChanged();
     }

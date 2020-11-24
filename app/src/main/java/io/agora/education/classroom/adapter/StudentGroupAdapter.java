@@ -43,7 +43,7 @@ public class StudentGroupAdapter extends RecyclerView.Adapter<StudentGroupAdapte
         holder.groupNameTextView.setText(groupInfo.getGroupName());
         List<GroupMemberInfo> curGroupMembers = new ArrayList<>();
         for (GroupMemberInfo memberInfo : allMemberList) {
-            if (groupInfo.getMembers().contains(memberInfo.getUserInfo().getUserUuid())) {
+            if (groupInfo.getMembers().contains(memberInfo.getUuid())) {
                 curGroupMembers.add(memberInfo);
             }
         }
@@ -51,7 +51,10 @@ public class StudentGroupAdapter extends RecyclerView.Adapter<StudentGroupAdapte
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(holder.itemView.getContext(),
                 LinearLayoutManager.HORIZONTAL, false);
         holder.membersRecyclerView.setLayoutManager(linearLayoutManager);
-        holder.membersRecyclerView.addItemDecoration(new AdapterDecoration(18));
+        /*分割线判空，否则随着刷新，分割间隔将逐渐变大*/
+        if (holder.membersRecyclerView.getItemDecorationCount() == 0) {
+            holder.membersRecyclerView.addItemDecoration(new AdapterDecoration(18));
+        }
         holder.membersRecyclerView.setAdapter(memberAdapter);
         holder.membersRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -80,6 +83,7 @@ public class StudentGroupAdapter extends RecyclerView.Adapter<StudentGroupAdapte
                     @Override
                     public void onGlobalLayout() {
                         scrollViewWidth = holder.scrollView.getRight() - holder.scrollView.getLeft();
+                        holder.scrollView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                     }
                 }
         );
@@ -97,12 +101,6 @@ public class StudentGroupAdapter extends RecyclerView.Adapter<StudentGroupAdapte
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        @BindView(R.id.reward_ImageView)
-        AppCompatImageView rewardImageView;
-        @BindView(R.id.coVideoing_ImageView)
-        AppCompatImageView coVideoingImageView;
-        @BindView(R.id.audio_ImageView)
-        AppCompatImageView audioImageView;
         @BindView(R.id.groupName_TextView)
         AppCompatTextView groupNameTextView;
         @BindView(R.id.coVideoing)

@@ -27,7 +27,8 @@
         android:id="@+id/view_bg_info"
         android:layout_width="match_parent"
         android:layout_height="@dimen/dp_20"
-        android:background="@color/black_79"
+        android:background="@color/black"
+        android:alpha="0.4"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -42,14 +43,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/view_bg_info" />
 
+    <io.agora.education.classroom.widget.StageAudioView
+        android:id="@+id/ic_audio"
+        android:layout_width="@dimen/dp_20"
+        android:visibility="gone"
+        android:layout_height="@dimen/dp_20"
+        android:layout_marginStart="@dimen/dp_8"
+        app:layout_constraintBottom_toBottomOf="@id/tv_name"
+        app:layout_constraintStart_toEndOf="@id/tv_name"
+        app:layout_constraintTop_toTopOf="@id/tv_name" />
+
     <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/integral_TextView"
+        android:id="@+id/reward_TextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:maxEms="2"
         android:singleLine="true"
-        android:text="99999"
+        android:text="9"
         android:textColor="@color/white"
         android:textSize="@dimen/dp_12"
         app:layout_constraintBottom_toBottomOf="@id/view_bg_info"
@@ -63,34 +74,14 @@
         android:layout_marginEnd="@dimen/dp_2"
         android:background="@drawable/ic_star"
         app:layout_constraintBottom_toBottomOf="@id/view_bg_info"
-        app:layout_constraintEnd_toStartOf="@id/integral_TextView"
-        app:layout_constraintTop_toTopOf="@id/view_bg_info" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/ic_video"
-        android:layout_width="@dimen/dp_20"
-        android:layout_height="@dimen/dp_20"
-        android:layout_marginEnd="@dimen/dp_10"
-        android:src="@drawable/ic_camera"
-        app:layout_constraintBottom_toBottomOf="@id/view_bg_info"
-        app:layout_constraintEnd_toStartOf="@id/integral_ImageView"
-        app:layout_constraintTop_toTopOf="@id/view_bg_info"
-        app:layout_goneMarginEnd="@dimen/dp_8" />
-
-    <io.agora.education.classroom.widget.RtcAudioView
-        android:id="@+id/ic_audio"
-        android:layout_width="@dimen/dp_20"
-        android:layout_height="@dimen/dp_20"
-        android:layout_marginEnd="@dimen/dp_8"
-        app:layout_constraintBottom_toBottomOf="@id/view_bg_info"
-        app:layout_constraintEnd_toStartOf="@id/ic_video"
+        app:layout_constraintEnd_toStartOf="@id/reward_TextView"
         app:layout_constraintTop_toTopOf="@id/view_bg_info" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/rewardAnim_ImageView"
         android:layout_width="match_parent"
-        android:visibility="gone"
         android:layout_height="match_parent"
-        android:src="@drawable/img_reward_anim" />
+        android:src="@drawable/img_reward_anim"
+        android:visibility="gone" />
 
 </merge>

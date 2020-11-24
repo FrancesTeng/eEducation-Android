@@ -32,7 +32,7 @@ class AgoraEduCoVideoView : LinearLayout {
 
     private lateinit var session: StudentCoVideoSession
     private var initialized = false
-    private var countDownTexts: Array<String> = arrayOf("4", "3", "2", "1");
+    private var countDownTexts: Array<String> = arrayOf("4", "3", "2", "1")
     private var handImgs: Array<Int> = arrayOf(R.drawable.ic_hand_up, R.drawable.ic_hand_down)
     private var coVideoListener: AgoraEduCoVideoListener? = null
 
@@ -249,6 +249,10 @@ class AgoraEduCoVideoView : LinearLayout {
     /**同步举手的开关状态和举手即上台的开关状态*/
     fun syncCoVideoSwitchState(properties: MutableMap<String, Any>?) {
         session.syncCoVideoSwitchState(properties)
+        post {
+            /*检查老师是否打开举手开关*/
+            visibility = if (session.enableCoVideo) View.VISIBLE else View.GONE
+        }
     }
 
     fun destroy() {

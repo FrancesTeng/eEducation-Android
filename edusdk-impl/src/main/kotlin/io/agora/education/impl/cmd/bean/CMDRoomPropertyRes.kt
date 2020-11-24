@@ -8,6 +8,6 @@ open class CMDRoomPropertyRes(
 }
 
 enum class PropertyChangeType(val value: Int) {
-    Update(1),
+    Upsert(1),
     Delete(2);
 }

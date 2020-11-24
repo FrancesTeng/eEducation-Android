@@ -6,7 +6,9 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import butterknife.BindView;
 import io.agora.education.R;
@@ -39,14 +41,14 @@ public class StudentGroupListFragment extends BaseFragment {
         rcvGroups.setAdapter(studentListAdapter);
     }
 
-    public void updateGroupList(List<GroupInfo> groupInfos, List<GroupMemberInfo> allMembers) {
+    public void updateGroupList(List<GroupInfo> groupInfos, List<GroupMemberInfo> allStudent) {
         getActivity().runOnUiThread(() -> {
             if (rcvGroups.isComputingLayout()) {
                 rcvGroups.postDelayed(() -> {
-                    studentListAdapter.updateGroupList(groupInfos, allMembers);
+                    studentListAdapter.updateGroupList(groupInfos, allStudent);
                 }, 300);
             } else {
-                rcvGroups.post(() -> studentListAdapter.updateGroupList(groupInfos, allMembers));
+                rcvGroups.post(() -> studentListAdapter.updateGroupList(groupInfos, allStudent));
             }
         });
     }

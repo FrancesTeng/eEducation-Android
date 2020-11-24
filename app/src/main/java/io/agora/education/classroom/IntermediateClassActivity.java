@@ -8,6 +8,7 @@ import android.widget.FrameLayout;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.tabs.TabLayout;
@@ -18,6 +19,7 @@ import com.herewhite.sdk.domain.GlobalState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,6 +42,7 @@ import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
+import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduBaseUserInfo;
 import io.agora.education.api.user.data.EduLocalUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
@@ -59,12 +62,27 @@ import io.agora.education.classroom.fragment.StudentGroupListFragment;
 import io.agora.education.classroom.fragment.StudentListFragment;
 import io.agora.education.classroom.widget.RtcVideoView;
 import io.agora.raisehand.AgoraEduCoVideoView;
+import kotlin.Unit;
 
 import static io.agora.education.EduApplication.getAppId;
 import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.CMD;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.GROUOREWARD;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.GROUPMEDIA;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.STUDENTLISTCHANGED;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.STUDENTREWARD;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.SWITCHAUTOCOVIDEO;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.SWITCHCOVIDEO;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.SWITCHGROUP;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.SWITCHINTERACTIN;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.SWITCHINTERACTOUT;
+import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.UPDATEGROUP;
 import static io.agora.education.classroom.bean.group.RoomGroupInfo.GROUPS;
 import static io.agora.education.classroom.bean.group.RoomGroupInfo.GROUPSTATES;
+import static io.agora.education.classroom.bean.group.RoomGroupInfo.GROUPUUID;
 import static io.agora.education.classroom.bean.group.RoomGroupInfo.INTERACTOUTGROUPS;
+import static io.agora.education.classroom.bean.group.RoomGroupInfo.STUDENTS;
+import static io.agora.education.classroom.bean.group.RoomGroupInfo.USERUUID;
 
 public class IntermediateClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
     private static final String TAG = IntermediateClassActivity.class.getSimpleName();
@@ -87,7 +105,6 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     private EduRoom curGroupRoom;
     /*当前班级的分组情况*/
     private RoomGroupInfo roomGroupInfo = new RoomGroupInfo();
-    private List<GroupMemberInfo> allGroupMembers = new ArrayList<>();
     private StageVideoAdapter stageVideoAdapterOne = new StageVideoAdapter(),
             getStageVideoAdapterTwo = new StageVideoAdapter();
     private List<StageStreamInfo> stageStreamInfosOne = new ArrayList<>();
@@ -152,7 +169,9 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                 .hide(studentGroupListFragment)
                 .commitNowAllowingStateLoss();
 
+        stageVideosOne.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         stageVideosOne.setAdapter(stageVideoAdapterOne);
+        stageVideosTwo.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         stageVideosTwo.setAdapter(getStageVideoAdapterTwo);
     }
 
@@ -243,18 +262,44 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
         GroupStateInfo groupStateInfo = new Gson().fromJson(groupStatesJson, GroupStateInfo.class);
         roomGroupInfo.setGroupStates(groupStateInfo);
         String interactOutGroupsJson = getProperty(roomProperties, INTERACTOUTGROUPS);
-        List<String> interactOutGroups = new Gson().fromJson(interactOutGroupsJson,
-                new TypeToken<List<String>>() {
+        Map<String, String> interactOutGroups = new Gson().fromJson(interactOutGroupsJson,
+                new TypeToken<Map<String, String>>() {
                 }.getType());
-        roomGroupInfo.setInteractOutGroups(interactOutGroups);
+        roomGroupInfo.updateInteractOutGroups(interactOutGroups);
         String groupsJson = getProperty(roomProperties, GROUPS);
-        List<GroupInfo> groups = new Gson().fromJson(groupsJson,
-                new TypeToken<List<GroupInfo>>() {
+        Map<String, GroupInfo> groups = new Gson().fromJson(groupsJson,
+                new TypeToken<Map<String, GroupInfo>>() {
                 }.getType());
-        roomGroupInfo.setGroups(groups);
+        roomGroupInfo.updateGroups(groups);
+        /*解析当前的学生名单*/
+        String allStudentJson = getProperty(roomProperties, STUDENTS);
+        Map<String, GroupMemberInfo> allStudent = new Gson().fromJson(allStudentJson,
+                new TypeToken<Map<String, GroupMemberInfo>>() {
+                }.getType());
+        getCurFullUser(new EduCallback<List<EduUserInfo>>() {
+            @Override
+            public void onSuccess(@Nullable List<EduUserInfo> onLineUsers) {
+                getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
+                    @Override
+                    public void onSuccess(@Nullable List<EduStreamInfo> streams) {
+                        if (onLineUsers != null && streams != null) {
+                            roomGroupInfo.updateAllStudent(allStudent, onLineUsers, streams);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull EduError error) {
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+            }
+        });
     }
 
-    private void getCurAllStudent(EduCallback<List<EduUserInfo>> callback) {
+    private void getCurAllStudentUser(EduCallback<List<EduUserInfo>> callback) {
         getCurFullUser(new EduCallback<List<EduUserInfo>>() {
             @Override
             public void onSuccess(@Nullable List<EduUserInfo> res) {
@@ -269,13 +314,62 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                     }
                     callback.onSuccess(students);
                 } else {
-                    callback.onFailure(EduError.Companion.customMsgError("current room no stream!"));
+                    callback.onFailure(EduError.Companion.customMsgError("current room no user!"));
                 }
             }
 
             @Override
             public void onFailure(@NotNull EduError error) {
                 callback.onFailure(error);
+            }
+        });
+    }
+
+    /**
+     * 检查并更新课堂的学生名单
+     * 学生名单名单包括所有进入过课堂的学生，只增不减
+     */
+    private void updateStudentList() {
+        getLocalUser(new EduCallback<EduUser>() {
+            @Override
+            public void onSuccess(@Nullable EduUser user) {
+                if (user != null) {
+                    EduUserInfo userInfo = user.getUserInfo();
+                    List list = roomGroupInfo.getAllStudent();
+                    if (list != null && list.size() > 0) {
+                        /*检查名单中是否有本地用户*/
+                        Iterator<GroupMemberInfo> iterator = list.iterator();
+                        while (iterator.hasNext()) {
+                            GroupMemberInfo element = iterator.next();
+                            if (element.getUuid().equals(userInfo.getUserUuid())) {
+                                return;
+                            }
+                        }
+                    }
+                    /*名单中无本地用户，更新名单*/
+                    GroupMemberInfo memberInfo = new GroupMemberInfo(userInfo.getUserUuid(),
+                            userInfo.getUserName(), "", 0);
+                    Map.Entry<String, String> memberInfoEntry = new AbstractMap.SimpleEntry(
+                            STUDENTS.concat(".").concat(memberInfo.getUuid()),
+                            new Gson().toJson(memberInfo));
+                    Map<String, String> cause = new HashMap<>();
+                    cause.put(CMD, String.valueOf(STUDENTLISTCHANGED));
+                    user.setRoomProperty(memberInfoEntry, cause, new EduCallback<Unit>() {
+                        @Override
+                        public void onSuccess(@Nullable Unit res) {
+                        }
+
+                        @Override
+                        public void onFailure(@NotNull EduError error) {
+                            Log.e(TAG, "更新本地用户信息至课堂名单中失败->" + error.getMsg());
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
             }
         });
     }
@@ -289,125 +383,68 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             /*开启了分组，需要分组显示学生列表*/
             switchUserFragment(true);
             //TODO 显示分组列表
-            List<GroupInfo> groupInfos = new ArrayList<>();
-            List<String> memberUuids0 = new ArrayList<>();
-            memberUuids0.add("111");
-            memberUuids0.add("222");
-            memberUuids0.add("333");
-            memberUuids0.add("444");
-            memberUuids0.add("555");
-            memberUuids0.add("666");
-            List<String> memberUuids1 = new ArrayList<>();
-            memberUuids1.add("777");
-            memberUuids1.add("888");
-            memberUuids1.add("999");
-            memberUuids1.add("101");
-            memberUuids1.add("202");
-            memberUuids1.add("303");
-            List<String> memberUuids2 = new ArrayList<>();
-            memberUuids2.add("404");
-            memberUuids2.add("505");
-            memberUuids2.add("606");
-            memberUuids2.add("707");
-            memberUuids2.add("808");
-            memberUuids2.add("909");
-            List<String> memberUuids3 = new ArrayList<>();
-            memberUuids3.add("110");
-            memberUuids3.add("120");
-            memberUuids3.add("130");
-            memberUuids3.add("140");
-            memberUuids3.add("150");
-            memberUuids3.add("160");
-            List<String> memberUuids4 = new ArrayList<>();
-            memberUuids4.add("170");
-            memberUuids4.add("180");
-            memberUuids4.add("190");
-            memberUuids4.add("200");
-            memberUuids4.add("210");
-            memberUuids4.add("220");
-            List<String> memberUuids5 = new ArrayList<>();
-            memberUuids5.add("230");
-            memberUuids5.add("240");
-            memberUuids5.add("250");
-            memberUuids5.add("260");
-            memberUuids5.add("270");
-            memberUuids5.add("280");
-            List[] memberUuidsArray = new List[]{memberUuids0, memberUuids1
-                    , memberUuids2, memberUuids3, memberUuids4, memberUuids5};
-            for (int i = 0; i < 6; i++) {
-                GroupInfo groupInfo = new GroupInfo("123-" + i, "组" + i, 6, 6, memberUuidsArray[i],
-                        new HashMap<>(), 123456789);
-                groupInfos.add(groupInfo);
-            }
-            List<EduUserInfo> userInfos = new ArrayList<>();
-            userInfos.add(new EduUserInfo("111", "学111", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("222", "学222", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("333", "学333", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("444", "学444", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("555", "学555", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("666", "学666", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("777", "学777", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("888", "学888", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("999", "学999", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("101", "学101", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("202", "学202", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("303", "学303", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("404", "学404", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("505", "学505", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("606", "学606", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("707", "学707", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("808", "学808", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("909", "学909", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("110", "学110", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("120", "学120", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("130", "学130", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("140", "学140", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("150", "学150", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("160", "学160", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("170", "学170", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("180", "学180", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("190", "学190", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("200", "学200", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("210", "学210", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("220", "学220", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("230", "学230", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("240", "学240", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("250", "学250", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("260", "学260", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("270", "学270", EduUserRole.STUDENT, true));
-            userInfos.add(new EduUserInfo("280", "学280", EduUserRole.STUDENT, true));
-            for (EduUserInfo userInfo : userInfos) {
-                GroupMemberInfo memberInfo = new GroupMemberInfo(userInfo);
-                allGroupMembers.add(memberInfo);
-            }
-            studentGroupListFragment.updateGroupList(groupInfos, allGroupMembers);
-//            getCurAllStudent(new EduCallback<List<EduUserInfo>>() {
+//            /**测试代码*/
+//            List<GroupInfo> groupInfos = new ArrayList<>();
+//            List<List<String>> memberUuidsList = new ArrayList<>();
+//            List<String> memberIds = null;
+//            for (int i = 0; i < 36; i++) {
+//                if (i % 6 == 0) {
+//                    memberIds = new ArrayList<>();
+//                }
+//                if (i == 0) {
+//                    memberIds.add("1232");
+//                }
+//                memberIds.add("999" + i);
+//                if (memberIds.size() == 6) {
+//                    memberUuidsList.add(memberIds);
+//                }
+//            }
+//            for (int i = 0; i < 6; i++) {
+//                GroupInfo groupInfo = new GroupInfo("123-" + i, "组" + i, memberUuidsList.get(i), "0",
+//                        new HashMap<>());
+//                groupInfos.add(groupInfo);
+//            }
+//            /**测试代码*/
+//            roomGroupInfo.setGroups(groupInfos);
+//            getCurAllStudentUser(new EduCallback<List<EduUserInfo>>() {
 //                @Override
-//                public void onSuccess(@Nullable List<EduUserInfo> res) {
-//                    if (res != null) {
-//                        List<GroupInfo> groupInfos = roomGroupInfo.getGroups();
-//                        studentGroupListFragment.updateGroupList(groupInfos, res);
+//                public void onSuccess(@Nullable List<EduUserInfo> onlineStudentUsers) {
+//                    List<GroupMemberInfo> allStudent = new ArrayList<>();
+//                    for (int i = 0; i < 35; i++) {
+//                        GroupMemberInfo memberInfo = new GroupMemberInfo("999" + i, "学" + i, "", 0);
+//                        for (EduUserInfo userInfo : onlineStudentUsers) {
+//                            if (userInfo.getUserUuid().equals(memberInfo.getUuid())) {
+//                                memberInfo.setOnline(true);
+//                            }
+//                        }
+//                        allStudent.add(memberInfo);
 //                    }
+//                    GroupMemberInfo memberInfo = new GroupMemberInfo("1232", "123", "", 0);
+//                    for (EduUserInfo userInfo : onlineStudentUsers) {
+//                        if (userInfo.getUserUuid().equals(memberInfo.getUuid())) {
+//                            memberInfo.setOnline(true);
+//                        }
+//                    }
+//                    allStudent.add(0, memberInfo);
+//                    /**测试代码*/
+//                    roomGroupInfo.setAllStudent(allStudent);
+//                    studentGroupListFragment.updateGroupList(groupInfos, allStudent);
 //                }
 //
 //                @Override
 //                public void onFailure(@NotNull EduError error) {
-//
 //                }
 //            });
+            List<GroupInfo> groupInfos = roomGroupInfo.getGroups();
+            List<GroupMemberInfo> allStudent = roomGroupInfo.getAllStudent();
+            if (groupInfos != null && groupInfos.size() > 0 && allStudent != null
+                    && allStudent.size() > 0) {
+                studentGroupListFragment.updateGroupList(groupInfos, roomGroupInfo.getAllStudent());
+            }
         } else {
             /*未开启分组，直接列表显示学生*/
             switchUserFragment(false);
-            getCurAllStudent(new EduCallback<List<EduUserInfo>>() {
-                @Override
-                public void onSuccess(@Nullable List<EduUserInfo> res) {
-                    studentListFragment.updateStudentList(res);
-                }
-
-                @Override
-                public void onFailure(@NotNull EduError error) {
-                }
-            });
+            studentListFragment.updateStudentList(roomGroupInfo.getAllStudent());
         }
     }
 
@@ -423,43 +460,108 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                     stageGroups.add(element);
                 }
             }
+            /*打开pk,肯定有一个组整体上台*/
             List<String> stageMemberIdsOne = stageGroups.get(0).getMembers();
-            List<String> stageMemberIdsTwo = stageGroups.get(1).getMembers();
-            getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
-                @Override
-                public void onSuccess(@Nullable List<EduStreamInfo> curFullStreams) {
-                    if (curFullStreams != null) {
-                        for (EduStreamInfo stream : curFullStreams) {
-                            String userUuid = stream.getPublisher().getUserUuid();
-                            if (stageMemberIdsOne.contains(userUuid)) {
-                                StageStreamInfo stageStream = new StageStreamInfo(stream, "0");
-                                stageStreamInfosOne.add(stageStream);
-                            } else if (stageMemberIdsTwo.contains(userUuid)) {
-                                StageStreamInfo stageStream = new StageStreamInfo(stream, "0");
-                                stageStreamInfosTwo.add(stageStream);
-                            }
-                        }
-                        notifyStageVideoListOne();
-                        notifyStageVideoListTwo();
+            List<String> stageMemberIdsTwo = new ArrayList<>();
+            if (stageGroups.size() > 1) {
+                stageMemberIdsTwo = stageGroups.get(1).getMembers();
+            }
+            /**测试代码*/
+            List<EduStreamInfo> curFullStreams = new ArrayList<>();
+            for (GroupMemberInfo memberInfo : roomGroupInfo.getAllStudent()) {
+                EduBaseUserInfo baseUserInfo = new EduBaseUserInfo(memberInfo.getUuid(),
+                        memberInfo.getUserName(), EduUserRole.STUDENT);
+                EduStreamInfo streamInfo = new EduStreamInfo(memberInfo.getUuid().concat("000"),
+                        "stream-".concat(memberInfo.getUserName()), VideoSourceType.CAMERA,
+                        true, true, baseUserInfo);
+                curFullStreams.add(streamInfo);
+            }
+            stageStreamInfosOne.clear();
+            stageStreamInfosTwo.clear();
+            if (curFullStreams != null && curFullStreams.size() > 0) {
+                for (EduStreamInfo stream : curFullStreams) {
+                    String userUuid = stream.getPublisher().getUserUuid();
+                    if (stageMemberIdsOne.contains(userUuid)) {
+                        StageStreamInfo stageStream = new StageStreamInfo(stream,
+                                roomGroupInfo.getStudentReward(userUuid));
+                        stageStreamInfosOne.add(stageStream);
+                    } else if (stageMemberIdsTwo.contains(userUuid)) {
+                        StageStreamInfo stageStream = new StageStreamInfo(stream,
+                                roomGroupInfo.getStudentReward(userUuid));
+                        stageStreamInfosTwo.add(stageStream);
                     }
                 }
-
-                @Override
-                public void onFailure(@NotNull EduError error) {
-
-                }
-            });
+                notifyStageVideoListOne();
+                notifyStageVideoListTwo();
+            }
+//            getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
+//                @Override
+//                public void onSuccess(@Nullable List<EduStreamInfo> curFullStreams) {
+//                    if (curFullStreams != null && curFullStreams.size() > 0) {
+//                        for (EduStreamInfo stream : curFullStreams) {
+//                            String userUuid = stream.getPublisher().getUserUuid();
+//                            if (stageMemberIdsOne.contains(userUuid)) {
+//                                StageStreamInfo stageStream = new StageStreamInfo(stream,
+//                                        roomGroupInfo.getScoreByUuid(userUuid));
+//                                stageStreamInfosOne.add(stageStream);
+//                            } else if (stageMemberIdsTwo.contains(userUuid)) {
+//                                StageStreamInfo stageStream = new StageStreamInfo(stream,
+//                                        roomGroupInfo.getScoreByUuid(userUuid));
+//                                stageStreamInfosTwo.add(stageStream);
+//                            }
+//                        }
+//                        notifyStageVideoListOne();
+//                        notifyStageVideoListTwo();
+//                    }
+//                }
+//
+//                @Override
+//                public void onFailure(@NotNull EduError error) {
+//
+//                }
+//            });
+        } else {
+            stageStreamInfosOne.clear();
+            stageStreamInfosTwo.clear();
+            notifyStageVideoListOne();
+            notifyStageVideoListTwo();
         }
     }
 
     private void notifyStageVideoListOne() {
-        stageVideoAdapterOne.setNewList(stageStreamInfosOne);
-        stageVideosOne.setVisibility(stageStreamInfosOne.size() > 0 ? View.VISIBLE : View.GONE);
+        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+            @Override
+            public void onSuccess(@Nullable EduUserInfo res) {
+                if (res != null) {
+                    runOnUiThread(() -> {
+                        stageVideosOne.setVisibility(stageStreamInfosOne.size() > 0 ? View.VISIBLE : View.GONE);
+                        stageVideoAdapterOne.setNewList(stageStreamInfosOne, res.getUserUuid());
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+            }
+        });
     }
 
     private void notifyStageVideoListTwo() {
-        getStageVideoAdapterTwo.setNewList(stageStreamInfosTwo);
-        stageVideosTwo.setVisibility(stageStreamInfosTwo.size() > 0 ? View.VISIBLE : View.GONE);
+        getLocalUserInfo(new EduCallback<EduUserInfo>() {
+            @Override
+            public void onSuccess(@Nullable EduUserInfo res) {
+                if (res != null) {
+                    runOnUiThread(() -> {
+                        stageVideosTwo.setVisibility(stageStreamInfosTwo.size() > 0 ? View.VISIBLE : View.GONE);
+                        getStageVideoAdapterTwo.setNewList(stageStreamInfosTwo, res.getUserUuid());
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+            }
+        });
     }
 
     @Override
@@ -489,6 +591,8 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             }
             /*获取班级的roomProperties中可能存在的分组信息*/
             syncRoomGroupProperty(roomProperties);
+            /*检查并更新课堂名单*/
+            updateStudentList();
             notifyUserList();
             notifyStageVideoList();
             /*刷新title数据*/
@@ -535,6 +639,7 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                     showTeacherStream(streamInfo, videoTeacher.getVideoLayout());
                 }
             }
+            notifyStageVideoList();
         }
     }
 
@@ -554,7 +659,8 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     }
 
     @Override
-    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type, @NotNull EduRoom classRoom) {
+    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type,
+                                      @NotNull EduRoom classRoom) {
         if (classRoom.equals(getMainEduRoom())) {
             super.onRemoteStreamUpdated(streamEvent, type, classRoom);
             EduStreamInfo streamInfo = streamEvent.getModifiedStream();
@@ -602,12 +708,51 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             }
             /*处理分组信息*/
             syncRoomGroupProperty(roomProperties);
-            /*刷新学生列表或分组列表*/
-            notifyUserList();
-            /*刷新可能存在的视频列表*/
-            notifyStageVideoList();
-            /*同步举手开关的状态至coVideoView*/
-            agoraEduCoVideoView.syncCoVideoSwitchState(roomProperties);
+            if (cause != null && !cause.isEmpty()) {
+                int causeType = (int) Float.parseFloat(cause.get(CMD).toString());
+                switch (causeType) {
+                    case SWITCHGROUP:
+                        /*开关分组，*/
+                        notifyUserList();
+                        break;
+                    case UPDATEGROUP:
+                        /*分组更新：删除原分组信息*/
+                        notifyUserList();
+                        break;
+                    case SWITCHINTERACTIN:
+                        break;
+                    case SWITCHINTERACTOUT:
+                        /*开启PK，刷新分组列表*/
+                        notifyUserList();
+                        break;
+                    case GROUPMEDIA:
+                        /*开关整组音频*/
+                        break;
+                    case GROUOREWARD:
+                        /*整组奖励，刷新分组列表*/
+                        String groupUuid = String.valueOf(cause.get(GROUPUUID));
+                        roomGroupInfo.updateRewardByGroup(groupUuid);
+                        notifyUserList();
+                        break;
+                    case SWITCHCOVIDEO:
+                    case SWITCHAUTOCOVIDEO:
+                        /*同步举手开关的状态至coVideoView*/
+                        agoraEduCoVideoView.syncCoVideoSwitchState(roomProperties);
+                        break;
+                    case STUDENTLISTCHANGED:
+                        /*学生名单发生变化，刷新名单列表*/
+                        notifyUserList();
+                        break;
+                    case STUDENTREWARD:
+                        /*学生个人奖励，刷新分组列表*/
+                        String userUuid = String.valueOf(cause.get(USERUUID));
+                        roomGroupInfo.updateRewardByUser(userUuid);
+                        notifyUserList();
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
     }
 

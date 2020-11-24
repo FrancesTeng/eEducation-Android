@@ -13,6 +13,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/cover_View"
+        android:layout_width="@dimen/dp_28"
+        android:layout_height="@dimen/dp_28"
+        android:alpha="0.5"
+        android:background="@color/gray_CCCCCC"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/memberName_TextView"
         android:layout_width="wrap_content"
@@ -30,13 +40,13 @@
         android:layout_width="@dimen/dp_12"
         android:layout_height="@dimen/dp_12"
         android:src="@drawable/ic_integral_0"
-        app:layout_constraintBottom_toBottomOf="@id/integral_TextView"
-        app:layout_constraintEnd_toStartOf="@id/integral_TextView"
+        app:layout_constraintBottom_toBottomOf="@id/reward_TextView"
+        app:layout_constraintEnd_toStartOf="@id/reward_TextView"
         app:layout_constraintStart_toStartOf="@id/portrait_ImageView"
-        app:layout_constraintTop_toTopOf="@id/integral_TextView" />
+        app:layout_constraintTop_toTopOf="@id/reward_TextView" />
 
     <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/integral_TextView"
+        android:id="@+id/reward_TextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/dp_2"

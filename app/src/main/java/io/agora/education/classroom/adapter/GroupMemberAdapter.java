@@ -15,7 +15,6 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.agora.education.R;
-import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.classroom.bean.group.GroupMemberInfo;
 
 public class GroupMemberAdapter extends RecyclerView.Adapter<GroupMemberAdapter.ViewHolder> {
@@ -37,10 +36,19 @@ public class GroupMemberAdapter extends RecyclerView.Adapter<GroupMemberAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         GroupMemberInfo info = memberList.get(position);
-        holder.memberNameTextView.setText(info.getUserInfo().getUserName());
+        if (info.getOnStage()) {
+            holder.coverView.setVisibility(View.VISIBLE);
+        } else {
+            if (info.getOnline()) {
+                holder.coverView.setVisibility(View.GONE);
+            } else {
+                holder.coverView.setVisibility(View.VISIBLE);
+            }
+        }
+        holder.coverView.setVisibility(info.getOnline() ? View.GONE : View.VISIBLE);
+        holder.memberNameTextView.setText(info.getUserName());
+        holder.memberNameTextView.setTextColor(holder.itemView.getResources().getColor(R.color.gray_191919));
         holder.integralTextView.setText(String.valueOf(info.getReward()));
-        holder.memberNameTextView.setTextColor(holder.itemView.getResources().getColor(
-                info.getOnline() ? R.color.gray_191919 : R.color.gray_CCCCCC));
         holder.integralImageView.setImageResource(
                 info.getOnline() ? R.drawable.ic_integral_1 : R.drawable.ic_integral_0);
     }
@@ -53,11 +61,13 @@ public class GroupMemberAdapter extends RecyclerView.Adapter<GroupMemberAdapter.
     static class ViewHolder extends RecyclerView.ViewHolder {
         @BindView(R.id.portrait_ImageView)
         AppCompatImageView portraitImageView;
+        @BindView(R.id.cover_View)
+        AppCompatImageView coverView;
         @BindView(R.id.memberName_TextView)
         AppCompatTextView memberNameTextView;
         @BindView(R.id.integral_ImageView)
         AppCompatImageView integralImageView;
-        @BindView(R.id.integral_TextView)
+        @BindView(R.id.reward_TextView)
         AppCompatTextView integralTextView;
 
         ViewHolder(View view) {

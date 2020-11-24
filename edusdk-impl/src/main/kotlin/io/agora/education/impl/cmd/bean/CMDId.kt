@@ -13,6 +13,9 @@ enum class CMDId(var value: Int) {
     /**房间属性发生变更*/
     RoomPropertyChanged(4),
 
+    /**多个房间属性发生变更*/
+    RoomPropertiesChanged(5),
+
     /**频道--自定义消息(可以是用户的信令)*/
     ChannelCustomMsgReceived(99),
 
@@ -24,7 +27,7 @@ enum class CMDId(var value: Int) {
     UserStateChange(21),
 
     /**人员自定义信息发生改变*/
-    UserPropertiedChanged(22),
+    UserPropertyChanged(22),
 
     /**频道-流-新增/更新/删除*/
     StreamStateChange(40),

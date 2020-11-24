@@ -113,7 +113,7 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
                     val properties = cmdUsrPropertyRes.changeProperties
                     val sets = properties.entries
                     sets?.forEach {
-                        if (cmdUsrPropertyRes.action == PropertyChangeType.Update.value) {
+                        if (cmdUsrPropertyRes.action == PropertyChangeType.Upsert.value) {
                             element.userProperties[it.key] = it.value
                         } else if (cmdUsrPropertyRes.action == PropertyChangeType.Delete.value) {
                             element.userProperties.remove(it.key)
@@ -365,10 +365,55 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
             val properties = event.changeProperties
             val sets = properties.entries
             sets?.forEach {
-                if (event.action == PropertyChangeType.Update.value) {
+                if (event.action == PropertyChangeType.Upsert.value) {
                     eduRoom.roomProperties[it.key] = it.value
                 } else if (event.action == PropertyChangeType.Delete.value) {
                     eduRoom.roomProperties.remove(it.key)
+                }
+            }
+        }
+
+        fun updateRoomProperties2(eduRoom: EduRoom, event: CMDRoomPropertyRes) {
+            val roomProperties = eduRoom.roomProperties
+            val properties = event.changeProperties
+            val sets = properties.entries
+            sets?.forEach {
+                if (event.action == PropertyChangeType.Upsert.value) {
+                    val keys = it.key.split(".")
+                    val iterable = keys.iterator()
+                    var map: MutableMap<String, Any> = roomProperties
+                    val notExistsKeys = mutableListOf<String>()
+                    while (iterable.hasNext()) {
+                        val elementKey = iterable.next()
+                        val data = map[elementKey]
+                        if (data != null && data is MutableMap<*, *>) {
+                            if (!iterable.hasNext()) {
+                                map[elementKey] = it.value
+                            } else {
+                                map = data as MutableMap<String, Any>
+                            }
+                        } else if (data != null && data !is MutableMap<*, *>) {
+                            map[elementKey] = it.value
+                        } else if (data == null) {
+                            notExistsKeys.add(elementKey)
+                        }
+                    }
+                    if (notExistsKeys.isNotEmpty()) {
+                        notExistsKeys.reverse()
+                        var value = it.value
+                        if (notExistsKeys.size > 1) {
+                            for ((index, element) in notExistsKeys.withIndex()) {
+                                val map = mutableMapOf<String, Any>()
+                                map[element] = value
+                                value = map
+                                if (index == notExistsKeys.size - 2) {
+                                    break
+                                }
+                            }
+                        }
+                        map[notExistsKeys[notExistsKeys.size - 1]] = value
+                    }
+                } else if (event.action == PropertyChangeType.Delete.value) {
                 }
             }
         }

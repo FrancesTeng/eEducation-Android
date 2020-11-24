@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -29,72 +28,56 @@ public class StageVideoView extends ConstraintLayout {
     @BindView(R.id.tv_name)
     protected TextView tv_name;
     @BindView(R.id.ic_audio)
-    protected RtcAudioView ic_audio;
-    @Nullable
-    @BindView(R.id.ic_video)
-    protected ImageView ic_video;
+    protected StageAudioView ic_audio;
     @BindView(R.id.layout_place_holder)
     protected FrameLayout layout_place_holder;
     @BindView(R.id.layout_video)
     protected FrameLayout layout_video;
     @BindView(R.id.rewardAnim_ImageView)
     protected ImageView rewardAnimImageView;
+    @BindView(R.id.reward_TextView)
+    protected TextView rewardTextView;
 
     public StageVideoView(Context context) {
         super(context);
-        init(context);
     }
 
     public StageVideoView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context);
     }
 
     public StageVideoView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context);
     }
 
-    public void init(Context context) {
-        inflate(context, R.layout.layout_video_stage, this);
+    public void init() {
+        inflate(getContext(), R.layout.layout_video_stage, this);
         ButterKnife.bind(this);
     }
 
     public void setViewVisibility(int visibility) {
-        ((Activity) getContext()).runOnUiThread(() -> setVisibility(visibility));
+        post(() -> setVisibility(visibility));
     }
 
     public void setName(String name) {
-        ((Activity) getContext()).runOnUiThread(() -> tv_name.setText(name));
+        post(() -> tv_name.setText(name));
     }
 
     public void muteAudio(boolean muted) {
-        ((Activity) getContext()).runOnUiThread(() -> {
-            ic_audio.setState(muted ? RtcAudioView.State.CLOSED : RtcAudioView.State.OPENED);
+        post(() -> {
+            ic_audio.setVisibility(VISIBLE);
+            ic_audio.setState(muted ? StageAudioView.State.CLOSED : StageAudioView.State.OPENED);
         });
+    }
 
+    public void setReward(int reward) {
+        post(() -> {
+            rewardTextView.setText(String.valueOf(reward));
+        });
     }
 
     public boolean isAudioMuted() {
-        return ic_audio.getState() == RtcAudioView.State.CLOSED;
-    }
-
-    public void muteVideo(boolean muted) {
-        ((Activity) getContext()).runOnUiThread(() -> {
-            if (ic_video != null) {
-                ic_video.setSelected(!muted);
-            }
-            layout_video.setVisibility(muted ? GONE : VISIBLE);
-            layout_place_holder.setVisibility(muted ? VISIBLE : GONE);
-            Log.e("RtcVideoView", "muteVideo：" + muted);
-        });
-    }
-
-    public boolean isVideoMuted() {
-        if (ic_video != null) {
-            return !ic_video.isSelected();
-        }
-        return true;
+        return ic_audio.getState() == StageAudioView.State.CLOSED;
     }
 
     public FrameLayout getVideoLayout() {
@@ -105,37 +88,9 @@ public class StageVideoView extends ConstraintLayout {
         return tv_name;
     }
 
-    //    public SurfaceView getSurfaceView() {
-//        if (layout_video.getChildCount() > 0) {
-//            return (SurfaceView) layout_video.getChildAt(0);
-//        }
-//        return null;
-//    }
-//
-//    public void setSurfaceView(SurfaceView surfaceView) {
-//        layout_video.removeAllViews();
-//        if (surfaceView != null) {
-//            layout_video.addView(surfaceView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
-//        }
-//    }
-
     public void setOnClickAudioListener(OnClickListener listener) {
         ic_audio.setOnClickListener(listener);
     }
-
-    public void setOnClickVideoListener(OnClickListener listener) {
-        if (ic_video != null) {
-            ic_video.setOnClickListener(listener);
-        }
-    }
-
-//    public void showLocal() {
-//        VideoMediator.setupLocalVideo(this);
-//    }
-//
-//    public void showRemote(int uid) {
-//        VideoMediator.setupRemoteVideo(this, uid);
-//    }
 
     /**
      * 显示奖励动画

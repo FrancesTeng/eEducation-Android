@@ -40,7 +40,7 @@ internal class StudentCoVideoHelper(
         properties?.let {
             for ((key, value) in properties) {
                 if (key == HANDUPSTATES) {
-                    val json = value as String
+                    val json = value.toString()
                     val coVideoSwitchStateInfo = Gson().fromJson(json, CoVideoSwitchStateInfo::class.java)
                     enableCoVideo = coVideoSwitchStateInfo.state == CoVideoSwitchState.ENABLE
                     autoCoVideo = coVideoSwitchStateInfo.apply == CoVideoApplySwitchState.DISABLE

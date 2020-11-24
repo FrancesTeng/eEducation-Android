@@ -89,6 +89,16 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                 AgoraLog.i("$TAG->Callback the received roomProperty to upper layer")
                 cmdCallbackManager.onRoomPropertyChanged(eduRoom, propertyChangeEvent.cause)
             }
+            CMDId.RoomPropertiesChanged.value -> {
+                AgoraLog.i("$TAG->Received RTM message for roomProperties change:${text}")
+                val propertyChangeEvent = Gson().fromJson<CMDResponseBody<CMDRoomPropertyRes>>(
+                        text, object : TypeToken<CMDResponseBody<CMDRoomPropertyRes>>() {}.type).data
+                /**把变化(update or delete)的属性更新到本地*/
+                CMDDataMergeProcessor.updateRoomProperties2(eduRoom, propertyChangeEvent)
+                /**通知用户房间属性发生改变*/
+                AgoraLog.i("$TAG->Callback the received roomProperties to upper layer")
+                cmdCallbackManager.onRoomPropertyChanged(eduRoom, propertyChangeEvent.cause)
+            }
             CMDId.ChannelMsgReceived.value -> {
                 /**频道内的聊天消息*/
                 AgoraLog.i("$TAG->Receive channel chat message")
@@ -199,7 +209,7 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                     cmdCallbackManager.onRemoteUserUpdated(it.event, it.type, eduRoom)
                 }
             }
-            CMDId.UserPropertiedChanged.value -> {
+            CMDId.UserPropertyChanged.value -> {
                 AgoraLog.e(TAG, "Receive RTM of userProperty change: ${text}")
                 val cmdUserPropertyRes = Gson().fromJson<CMDResponseBody<CMDUserPropertyRes>>(text, object :
                         TypeToken<CMDResponseBody<CMDUserPropertyRes>>() {}.type).data

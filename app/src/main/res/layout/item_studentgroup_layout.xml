@@ -6,47 +6,17 @@
     android:layout_height="wrap_content"
     android:background="@drawable/bg_studentgroup_cell">
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/reward_ImageView"
-        android:layout_width="@dimen/dp_20"
-        android:layout_height="@dimen/dp_20"
-        android:layout_marginTop="@dimen/dp_8"
-        android:layout_marginEnd="@dimen/dp_8"
-        android:src="@drawable/ic_reward_0"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/coVideoing_ImageView"
-        android:layout_width="@dimen/dp_20"
-        android:layout_height="@dimen/dp_20"
-        android:layout_marginEnd="@dimen/dp_6"
-        android:src="@drawable/ic_discovideo"
-        app:layout_constraintBottom_toBottomOf="@id/reward_ImageView"
-        app:layout_constraintEnd_toStartOf="@id/reward_ImageView"
-        app:layout_constraintTop_toTopOf="@id/reward_ImageView" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/audio_ImageView"
-        android:layout_width="@dimen/dp_20"
-        android:layout_height="@dimen/dp_20"
-        android:layout_marginEnd="@dimen/dp_6"
-        android:src="@drawable/ic_audio_close"
-        app:layout_constraintBottom_toBottomOf="@id/coVideoing_ImageView"
-        app:layout_constraintEnd_toStartOf="@id/coVideoing_ImageView"
-        app:layout_constraintTop_toTopOf="@id/coVideoing_ImageView" />
-
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/groupName_TextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/dp_7"
+        android:layout_marginStart="@dimen/dp_8"
+        android:layout_marginTop="@dimen/dp_8"
         android:text="组1"
         android:textColor="@color/gray_191919"
         android:textSize="@dimen/sp_13"
-        app:layout_constraintBottom_toBottomOf="@id/audio_ImageView"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/audio_ImageView" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/coVideoing"
@@ -68,7 +38,7 @@
         android:background="@color/gray_DBE2E5"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/reward_ImageView" />
+        app:layout_constraintTop_toBottomOf="@id/groupName_TextView" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/members_RecyclerView"
