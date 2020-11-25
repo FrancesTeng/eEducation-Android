@@ -20,7 +20,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import butterknife.BindView;
@@ -48,15 +47,8 @@ import io.agora.education.classroom.adapter.ClassVideoAdapter;
 import io.agora.education.classroom.bean.board.BoardState;
 import io.agora.education.classroom.bean.channel.Room;
 import io.agora.education.classroom.fragment.UserListFragment;
-import io.agora.rtc.IRtcEngineEventHandler;
-import io.agora.rtc.RtcChannel;
-import io.agora.rte.RteEngineImpl;
-import io.agora.rte.listener.RteAudioMixingListener;
-import io.agora.rte.listener.RteMediaDeviceListener;
-import io.agora.rte.listener.RteSpeakerReportListener;
-import io.agora.rte.listener.RteStatisticsReportListener;
 
-public class SmallClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
+public class SmallClassActivity extends BaseClassActivity_bak implements TabLayout.OnTabSelectedListener {
     private static final String TAG = "SmallClassActivity";
 
     @BindView(R.id.layout_placeholder)
@@ -83,8 +75,19 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         joinRoom(getMainEduRoom(), roomEntry.getUserName(), roomEntry.getUserUuid(), true, true, true,
                 new EduCallback<EduStudent>() {
                     @Override
-                    public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
+                    public void onSuccess(@Nullable EduStudent res) {
                         runOnUiThread(() -> showFragmentWithJoinSuccess());
+                        notifyStreamAndUser();
+                        getMainEduRoom().getLocalUser(new EduCallback<EduUser>() {
+                            @Override
+                            public void onSuccess(@Nullable EduUser user) {
+                                userListFragment.setLocalUserUuid(user.getUserInfo().getUserUuid());
+                            }
+
+                            @Override
+                            public void onFailure(@NotNull EduError error) {
+                            }
+                        });
                     }
 
                     @Override
@@ -153,22 +156,54 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
 
     }
 
+    /**
+     * 刷新流和user列表
+     * 流：屏幕分享流和摄像头流
+     */
+    private void notifyStreamAndUser() {
+        getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
+            @Override
+            public void onSuccess(@Nullable List<EduStreamInfo> streams) {
+                if (streams != null) {
+                    for (EduStreamInfo streamInfo : streams) {
+                        switch (streamInfo.getVideoSourceType()) {
+                            case SCREEN:
+                                runOnUiThread(() -> {
+                                    layout_whiteboard.setVisibility(View.GONE);
+                                    layout_share_video.setVisibility(View.VISIBLE);
+                                    layout_share_video.removeAllViews();
+                                    renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                                });
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    userListFragment.setUserList(streams);
+                    showVideoList(streams);
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull EduError error) {
+
+            }
+        });
+    }
+
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersInitialized(users, classRoom);
-        setTitleData();
     }
 
     @Override
     public void onRemoteUsersJoined(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         super.onRemoteUsersJoined(users, classRoom);
-        setTitleData();
     }
 
     @Override
     public void onRemoteUserLeft(@NotNull EduUserEvent userEvent, @NotNull EduRoom classRoom) {
         super.onRemoteUserLeft(userEvent, classRoom);
-        setTitleData();
     }
 
     @Override
@@ -200,36 +235,11 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     @Override
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
         super.onRemoteStreamsInitialized(streams, classRoom);
-        for (EduStreamInfo streamInfo : streams) {
-            switch (streamInfo.getVideoSourceType()) {
-                case SCREEN:
-                    runOnUiThread(() -> {
-                        layout_whiteboard.setVisibility(View.GONE);
-                        layout_share_video.setVisibility(View.VISIBLE);
-                        layout_share_video.removeAllViews();
-                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
-                    });
-                    break;
-                default:
-                    break;
-            }
-        }
+        notifyStreamAndUser();
         classRoom.getLocalUser(new EduCallback<EduUser>() {
             @Override
             public void onSuccess(@Nullable EduUser user) {
                 userListFragment.setLocalUserUuid(user.getUserInfo().getUserUuid());
-            }
-
-            @Override
-            public void onFailure(@NotNull EduError error) {
-
-            }
-        });
-        getCurFullStream(new EduCallback<List<EduStreamInfo>>() {
-            @Override
-            public void onSuccess(@Nullable List<EduStreamInfo> streamInfos) {
-                userListFragment.setUserList(streamInfos);
-                showVideoList(streamInfos);
             }
 
             @Override
@@ -304,14 +314,8 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
-        super.onRoomPropertyChanged(classRoom, cause);
-    }
-
-    @Override
-    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom,
-                                            @Nullable Map<String, Object> cause) {
-        super.onRemoteUserPropertyUpdated(userInfo, classRoom, cause);
+    public void onRoomPropertiesChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRoomPropertiesChanged(classRoom, cause);
     }
 
     @Override
@@ -330,11 +334,6 @@ public class SmallClassActivity extends BaseClassActivity implements TabLayout.O
         super.onLocalUserUpdated(userEvent, type);
         /**更新视频列表和用户列表*/
         notifyVideoUserListForLocal();
-    }
-
-    @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
-        super.onLocalUserPropertyUpdated(userInfo, cause);
     }
 
     @Override

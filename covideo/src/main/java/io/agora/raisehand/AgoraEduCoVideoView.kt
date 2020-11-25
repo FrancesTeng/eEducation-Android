@@ -104,64 +104,66 @@ class AgoraEduCoVideoView : LinearLayout {
     }
 
     fun init(eduRoom: EduRoom) {
-        session = StudentCoVideoHelper(context, eduRoom)
-        /*检查老师是否打开举手开关*/
-        visibility = if (session.enableCoVideo) View.VISIBLE else View.GONE
-        if (context is AgoraEduCoVideoListener) {
-            coVideoListener = context as AgoraEduCoVideoListener
-        }
-        operaAlphaAnimation(false)
-        handImg.setOnTouchListener(object : OnTouchListener {
-            @SuppressLint("ClickableViewAccessibility")
-            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-                /*检查当前状态下，是否允许举手*/
-                session.isAllowCoVideo(object : EduCallback<Unit> {
-                    override fun onSuccess(res: Unit?) {
-                        when (event?.action) {
-                            MotionEvent.ACTION_DOWN -> {
-                                /**/
-                                if (countdownLayout.visibility == View.INVISIBLE) {
-                                    countdownLayout.visibility = View.VISIBLE
-                                    operaAlphaAnimation(true)
-                                    /*举手倒计时任务开启*/
-                                    coVideoCountDownTimer.start()
-                                } else {
-                                    operaAlphaAnimation(false)
-                                    cancelCountDownTimer.cancel()
-                                    countdownLayout.visibility = View.INVISIBLE
-                                    countDownTextView.setText(countDownTexts[0])
-                                }
-                            }
-                            MotionEvent.ACTION_UP -> {
-                                if (countdownLayout.visibility == View.INVISIBLE) {
-                                    /*松开之后如果举手倒计时结束，那么在未开启举手即上台和老师未同意上台的情况下，
-                                    开始取消举手的倒计时*/
-                                    if (session.autoCoVideo || !session.isCoVideoing()) {
+        if (!initialized) {
+            session = StudentCoVideoHelper(context, eduRoom)
+            /*检查老师是否打开举手开关*/
+            visibility = if (session.enableCoVideo) View.VISIBLE else View.GONE
+            if (context is AgoraEduCoVideoListener) {
+                coVideoListener = context as AgoraEduCoVideoListener
+            }
+            operaAlphaAnimation(false)
+            handImg.setOnTouchListener(object : OnTouchListener {
+                @SuppressLint("ClickableViewAccessibility")
+                override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                    /*检查当前状态下，是否允许举手*/
+                    session.isAllowCoVideo(object : EduCallback<Unit> {
+                        override fun onSuccess(res: Unit?) {
+                            when (event?.action) {
+                                MotionEvent.ACTION_DOWN -> {
+                                    /**/
+                                    if (countdownLayout.visibility == View.INVISIBLE) {
                                         countdownLayout.visibility = View.VISIBLE
                                         operaAlphaAnimation(true)
-                                        cancelCountDownTimer.start()
+                                        /*举手倒计时任务开启*/
+                                        coVideoCountDownTimer.start()
+                                    } else {
+                                        operaAlphaAnimation(false)
+                                        cancelCountDownTimer.cancel()
+                                        countdownLayout.visibility = View.INVISIBLE
+                                        countDownTextView.setText(countDownTexts[0])
                                     }
-                                } else {
-                                    /*松开之后如果举手倒计时没有结束，那么直接停止举手倒计时即可*/
-                                    operaAlphaAnimation(false)
-                                    coVideoCountDownTimer.cancel()
-                                    countdownLayout.visibility = View.INVISIBLE
-                                    countDownTextView.setText(countDownTexts[0])
+                                }
+                                MotionEvent.ACTION_UP -> {
+                                    if (countdownLayout.visibility == View.INVISIBLE) {
+                                        /*松开之后如果举手倒计时结束，那么在未开启举手即上台和老师未同意上台的情况下，
+                                        开始取消举手的倒计时*/
+                                        if (session.autoCoVideo || !session.isCoVideoing()) {
+                                            countdownLayout.visibility = View.VISIBLE
+                                            operaAlphaAnimation(true)
+                                            cancelCountDownTimer.start()
+                                        }
+                                    } else {
+                                        /*松开之后如果举手倒计时没有结束，那么直接停止举手倒计时即可*/
+                                        operaAlphaAnimation(false)
+                                        coVideoCountDownTimer.cancel()
+                                        countdownLayout.visibility = View.INVISIBLE
+                                        countDownTextView.setText(countDownTexts[0])
+                                    }
+                                }
+                                else -> {
                                 }
                             }
-                            else -> {
-                            }
                         }
-                    }
 
-                    override fun onFailure(error: EduError) {
-                        ToastManager.showShort(error.msg)
-                    }
-                })
-                return true
-            }
-        })
-        initialized = true
+                        override fun onFailure(error: EduError) {
+                            ToastManager.showShort(error.msg)
+                        }
+                    })
+                    return true
+                }
+            })
+            initialized = true
+        }
     }
 
     private fun operaAlphaAnimation(enable: Boolean) {

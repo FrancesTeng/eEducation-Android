@@ -7,7 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import butterknife.BindView;
@@ -56,7 +55,6 @@ public class OneToOneClassActivity extends BaseClassActivity_bak {
                     @Override
                     public void onSuccess(@org.jetbrains.annotations.Nullable EduStudent res) {
                         runOnUiThread(() -> showFragmentWithJoinSuccess());
-                        setTitleClassName();
                         getLocalUserInfo(new EduCallback<EduUserInfo>() {
                             @Override
                             public void onSuccess(@Nullable EduUserInfo userInfo) {
@@ -272,18 +270,13 @@ public class OneToOneClassActivity extends BaseClassActivity_bak {
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
-        super.onRoomPropertyChanged(classRoom, cause);
+    public void onRoomPropertiesChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRoomPropertiesChanged(classRoom, cause);
 //        runOnUiThread(() -> {
 //            /**小班课，默认学生可以针对白板进行输入*/
 //            whiteboardFragment.disableCameraTransform(false);
 //            whiteboardFragment.disableDeviceInputs(false);
 //        });
-    }
-
-    @Override
-    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom,
-                                            @Nullable Map<String, Object> cause) {
     }
 
     @Override
@@ -300,11 +293,6 @@ public class OneToOneClassActivity extends BaseClassActivity_bak {
     @Override
     public void onLocalUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type) {
         super.onLocalUserUpdated(userEvent, type);
-    }
-
-    @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
-        super.onLocalUserPropertyUpdated(userInfo, cause);
     }
 
     @Override

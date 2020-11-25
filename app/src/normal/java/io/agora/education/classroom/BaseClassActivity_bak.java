@@ -651,19 +651,9 @@ public abstract class BaseClassActivity_bak extends BaseActivity implements EduR
         getLocalUserInfo(new EduCallback<EduUserInfo>() {
             @Override
             public void onSuccess(@Nullable EduUserInfo userInfo) {
-                if (TextUtils.isEmpty(boardJson)) {
-                    classRoom.getRoomInfo(new EduCallback<EduRoomInfo>() {
-                        @Override
-                        public void onSuccess(@Nullable EduRoomInfo roomInfo) {
-                            requestBoardInfo(((EduLocalUserInfo) userInfo).getUserToken(), getAppId(),
-                                    roomInfo.getRoomUuid());
-                        }
-
-                        @Override
-                        public void onFailure(@NotNull EduError error) {
-
-                        }
-                    });
+                if (TextUtils.isEmpty(boardJson) && mainBoardBean == null) {
+                    requestBoardInfo(((EduLocalUserInfo) userInfo).getUserToken(), getAppId(),
+                            roomEntry.getRoomUuid());
                 } else {
                     mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
                     BoardInfo info = mainBoardBean.getInfo();
@@ -816,7 +806,7 @@ public abstract class BaseClassActivity_bak extends BaseActivity implements EduR
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+    public void onRoomPropertiesChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
         Log.e(TAG, "收到roomProperty改变的数据");
         Map<String, Object> roomProperties = classRoom.getRoomProperties();
         String boardJson = getProperty(roomProperties, BOARD);
@@ -867,11 +857,6 @@ public abstract class BaseClassActivity_bak extends BaseActivity implements EduR
     }
 
     @Override
-    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
-
-    }
-
-    @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
 //        Log.e(TAG, "onNetworkQualityChanged->" + quality.getValue());
         title_view.setNetworkQuality(quality);
@@ -898,11 +883,6 @@ public abstract class BaseClassActivity_bak extends BaseActivity implements EduR
         /**更新用户信息*/
         EduUserInfo userInfo = userEvent.getModifiedUser();
         chatRoomFragment.setMuteLocal(!userInfo.isChatAllowed());
-    }
-
-    @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
-
     }
 
     @Override

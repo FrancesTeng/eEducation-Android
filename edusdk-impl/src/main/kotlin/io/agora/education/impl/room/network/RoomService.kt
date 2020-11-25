@@ -92,13 +92,11 @@ internal interface RoomService {
 
 
     /**为room添加自定义属性
-     * @param key 属性key
      * @param value 属性值（null为删除）*/
-    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/properties/{key}")
-    fun addRoomProperty(
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/properties")
+    fun setRoomProperties(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
-            @Path("key") key: String,
             @Body req: EduUpdateRoomPropertyReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 

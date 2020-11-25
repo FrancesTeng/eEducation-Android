@@ -503,37 +503,11 @@ internal open class EduUserImpl(
         return null
     }
 
-
-    override fun setRoomProperty(property: MutableMap.MutableEntry<String, String>,
-                                 cause: MutableMap<String, String>, callback: EduCallback<Unit>) {
-        val req = EduUpdateRoomPropertyReq(property.value, cause)
+    override fun setRoomProperties(properties: MutableMap<String, String>,
+                                   cause: MutableMap<String, String>, callback: EduCallback<Unit>) {
+        val req = EduUpdateRoomPropertyReq(properties, cause)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
-                .addRoomProperty(APPID, eduRoom.getCurRoomUuid(), property.key, req)
-                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
-                    override fun onSuccess(res: ResponseBody<String>?) {
-                        callback.onSuccess(Unit)
-                    }
-
-                    override fun onFailure(throwable: Throwable?) {
-                        var error = throwable as? BusinessException
-                        callback.onFailure(httpError(error?.code
-                                ?: AgoraError.INTERNAL_ERROR.value,
-                                error?.message ?: throwable?.message))
-                    }
-                }))
-    }
-
-    override fun setUserProperty(property: MutableMap.MutableEntry<String, String>,
-                                 cause: MutableMap<String, String>, targetUser: EduUserInfo,
-                                 callback: EduCallback<Unit>) {
-        if (TextUtils.isEmpty(targetUser.userUuid)) {
-            callback.onFailure(parameterError("targetUser'userUuid"))
-            return
-        }
-        val req = EduUpdateUserPropertyReq(property.value, cause)
-        RetrofitManager.instance()!!.getService(API_BASE_URL, UserService::class.java)
-                .addProperty(APPID, eduRoom.getCurRoomUuid(), targetUser.userUuid, property.key,
-                        req)
+                .setRoomProperties(APPID, eduRoom.getCurRoomUuid(), req)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)

@@ -23,6 +23,7 @@ import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
 import io.agora.education.base.BaseFragment;
 import io.agora.education.classroom.BaseClassActivity;
+import io.agora.education.classroom.BaseClassActivity_bak;
 import io.agora.education.classroom.adapter.UserListAdapter;
 
 public class UserListFragment extends BaseFragment implements OnItemChildClickListener {
@@ -40,7 +41,7 @@ public class UserListFragment extends BaseFragment implements OnItemChildClickLi
 
     @Override
     protected void initData() {
-        if (context instanceof BaseClassActivity) {
+        if (context instanceof BaseClassActivity || context instanceof BaseClassActivity_bak) {
             adapter = new UserListAdapter();
             adapter.setOnItemChildClickListener(this);
         }

@@ -84,7 +84,7 @@ import static io.agora.education.classroom.bean.group.RoomGroupInfo.INTERACTOUTG
 import static io.agora.education.classroom.bean.group.RoomGroupInfo.STUDENTS;
 import static io.agora.education.classroom.bean.group.RoomGroupInfo.USERUUID;
 
-public class IntermediateClassActivity extends BaseClassActivity implements TabLayout.OnTabSelectedListener {
+public class IntermediateClassActivity extends BaseClassActivity_bak implements TabLayout.OnTabSelectedListener {
     private static final String TAG = IntermediateClassActivity.class.getSimpleName();
 
     @BindView(R.id.layout_video_teacher)
@@ -133,6 +133,15 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                             whiteboardFragment.disableDeviceInputs(true);
                             whiteboardFragment.setWritable(false);
                         });
+                        /*初始化举手连麦组件*/
+                        agoraEduCoVideoView.init(getMainEduRoom());
+                        initParseBoardInfo(getMainEduRoom());
+                        /*获取班级的roomProperties中可能存在的分组信息*/
+                        syncRoomGroupProperty(getMainEduRoom().getRoomProperties());
+                        /*检查并更新课堂名单*/
+                        updateStudentList();
+                        notifyUserList();
+                        notifyStageVideoList();
                     }
 
                     @Override
@@ -349,12 +358,12 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                     /*名单中无本地用户，更新名单*/
                     GroupMemberInfo memberInfo = new GroupMemberInfo(userInfo.getUserUuid(),
                             userInfo.getUserName(), "", 0);
-                    Map.Entry<String, String> memberInfoEntry = new AbstractMap.SimpleEntry(
-                            STUDENTS.concat(".").concat(memberInfo.getUuid()),
+                    Map<String, String> memberInfoMap = new HashMap<>();
+                    memberInfoMap.put(STUDENTS.concat(".").concat(memberInfo.getUuid()),
                             new Gson().toJson(memberInfo));
                     Map<String, String> cause = new HashMap<>();
                     cause.put(CMD, String.valueOf(STUDENTLISTCHANGED));
-                    user.setRoomProperty(memberInfoEntry, cause, new EduCallback<Unit>() {
+                    user.setRoomProperties(memberInfoMap, cause, new EduCallback<Unit>() {
                         @Override
                         public void onSuccess(@Nullable Unit res) {
                         }
@@ -567,36 +576,14 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     @Override
     public void onRemoteUsersInitialized(@NotNull List<? extends EduUserInfo> users, @NotNull EduRoom classRoom) {
         if (classRoom.equals(getMainEduRoom())) {
-            /*初始化举手连麦组件*/
-            agoraEduCoVideoView.init(getMainEduRoom());
-            Map<String, Object> roomProperties = getMainEduRoom().getRoomProperties();
-            /*判断班级中的roomProperties中是否有白板信息，如果没有，发起请求,等待RTM通知*/
-            String boardJson = getProperty(roomProperties, BOARD);
-            mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
-            if (mainBoardBean == null) {
-                Log.e(TAG, "请求大房间的白板信息");
-                getLocalUserInfo(new EduCallback<EduUserInfo>() {
-                    @Override
-                    public void onSuccess(@Nullable EduUserInfo userInfo) {
-                        requestBoardInfo(((EduLocalUserInfo) userInfo).getUserToken(),
-                                getAppId(), roomEntry.getRoomUuid());
-                    }
-
-                    @Override
-                    public void onFailure(@NotNull EduError error) {
-                    }
-                });
-            } else {
-                initBoard(mainBoardBean);
-            }
+            initParseBoardInfo(getMainEduRoom());
             /*获取班级的roomProperties中可能存在的分组信息*/
+            Map<String, Object> roomProperties = getMainEduRoom().getRoomProperties();
             syncRoomGroupProperty(roomProperties);
             /*检查并更新课堂名单*/
             updateStudentList();
             notifyUserList();
             notifyStageVideoList();
-            /*刷新title数据*/
-            setTitleData();
         }
     }
 
@@ -633,13 +620,23 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     public void onRemoteStreamsInitialized(@NotNull List<? extends EduStreamInfo> streams, @NotNull EduRoom classRoom) {
         if (classRoom.equals(getMainEduRoom())) {
             /*显示老师的流*/
-            for (EduStreamInfo streamInfo : streams) {
-                EduBaseUserInfo publisher = streamInfo.getPublisher();
-                if (publisher.getRole().equals(EduUserRole.TEACHER)) {
-                    showTeacherStream(streamInfo, videoTeacher.getVideoLayout());
+            getMainEduRoom().getFullStreamList(new EduCallback<List<EduStreamInfo>>() {
+                @Override
+                public void onSuccess(@Nullable List<EduStreamInfo> res) {
+                    if (res != null) {
+                        for (EduStreamInfo streamInfo : res) {
+                            EduBaseUserInfo publisher = streamInfo.getPublisher();
+                            if (publisher.getRole().equals(EduUserRole.TEACHER)) {
+                                showTeacherStream(streamInfo, videoTeacher.getVideoLayout());
+                            }
+                        }
+                    }
                 }
-            }
-            notifyStageVideoList();
+
+                @Override
+                public void onFailure(@NotNull EduError error) {
+                }
+            });
         }
     }
 
@@ -679,8 +676,7 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
             for (EduStreamEvent streamEvent : streamEvents) {
                 EduStreamInfo streamInfo = streamEvent.getModifiedStream();
                 EduBaseUserInfo userInfo = streamInfo.getPublisher();
-                if (userInfo.getRole().equals(EduUserRole.TEACHER) &&
-                        streamInfo.getVideoSourceType().equals(VideoSourceType.CAMERA)) {
+                if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
                     showTeacherStream(streamInfo, null);
                 }
             }
@@ -694,19 +690,12 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+    public void onRoomPropertiesChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
         if (classRoom.equals(getMainEduRoom())) {
             Log.e(TAG, "收到大房间的roomProperty改变的数据");
-            Map<String, Object> roomProperties = classRoom.getRoomProperties();
-            /*处理白板信息*/
-            String boardJson = getProperty(roomProperties, BOARD);
-            if (!TextUtils.isEmpty(boardJson) && mainBoardBean == null) {
-                Log.e(TAG, "首次获取到大房间的白板信息->" + boardJson);
-                /*首次获取到白板信息*/
-                mainBoardBean = new Gson().fromJson(boardJson, BoardBean.class);
-                initBoard(mainBoardBean);
-            }
+            initParseBoardInfo(getMainEduRoom());
             /*处理分组信息*/
+            Map<String, Object> roomProperties = classRoom.getRoomProperties();
             syncRoomGroupProperty(roomProperties);
             if (cause != null && !cause.isEmpty()) {
                 int causeType = (int) Float.parseFloat(cause.get(CMD).toString());
@@ -722,8 +711,9 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                     case SWITCHINTERACTIN:
                         break;
                     case SWITCHINTERACTOUT:
-                        /*开启PK，刷新分组列表*/
+                        /*开关PK，刷新分组列表*/
                         notifyUserList();
+                        notifyStageVideoList();
                         break;
                     case GROUPMEDIA:
                         /*开关整组音频*/
@@ -733,6 +723,7 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                         String groupUuid = String.valueOf(cause.get(GROUPUUID));
                         roomGroupInfo.updateRewardByGroup(groupUuid);
                         notifyUserList();
+                        notifyStageVideoList();
                         break;
                     case SWITCHCOVIDEO:
                     case SWITCHAUTOCOVIDEO:
@@ -748,17 +739,13 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
                         String userUuid = String.valueOf(cause.get(USERUUID));
                         roomGroupInfo.updateRewardByUser(userUuid);
                         notifyUserList();
+                        notifyStageVideoList();
                         break;
                     default:
                         break;
                 }
             }
         }
-    }
-
-    @Override
-    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
-        /*远端用户Property发生改变*/
     }
 
     @Override
@@ -773,12 +760,6 @@ public class IntermediateClassActivity extends BaseClassActivity implements TabL
 
     @Override
     public void onLocalUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type) {
-    }
-
-    @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
-        super.onLocalUserPropertyUpdated(userInfo, cause);
-        /*本地用户的Property发生改变*/
     }
 
     @Override

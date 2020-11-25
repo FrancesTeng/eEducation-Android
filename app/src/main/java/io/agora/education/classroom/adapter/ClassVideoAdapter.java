@@ -19,6 +19,7 @@ import io.agora.education.R;
 import io.agora.education.api.stream.data.EduStreamInfo;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.classroom.BaseClassActivity;
+import io.agora.education.classroom.BaseClassActivity_bak;
 import io.agora.education.classroom.widget.RtcVideoView;
 
 public class ClassVideoAdapter extends BaseQuickAdapter<EduStreamInfo, ClassVideoAdapter.ViewHolder> {
@@ -85,8 +86,14 @@ public class ClassVideoAdapter extends BaseQuickAdapter<EduStreamInfo, ClassVide
     @Override
     protected void convert(@NonNull ViewHolder viewHolder, EduStreamInfo item) {
         viewHolder.convert(item);
-        BaseClassActivity activity = ((BaseClassActivity) viewHolder.view.getContext());
-        activity.renderStream(activity.getMainEduRoom(), item, viewHolder.view.getVideoLayout());
+        Activity a = ((Activity) viewHolder.view.getContext());
+        if (a instanceof BaseClassActivity) {
+            BaseClassActivity activity = (BaseClassActivity) a;
+            activity.renderStream(activity.getMainEduRoom(), item, viewHolder.view.getVideoLayout());
+        } else {
+            BaseClassActivity_bak activity = (BaseClassActivity_bak) a;
+            activity.renderStream(activity.getMainEduRoom(), item, viewHolder.view.getVideoLayout());
+        }
     }
 
     public void setNewList(@Nullable List<EduStreamInfo> data) {

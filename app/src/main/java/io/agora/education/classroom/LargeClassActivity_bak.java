@@ -716,8 +716,8 @@ public class LargeClassActivity_bak extends BaseClassActivity implements TabLayo
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
-        super.onRoomPropertyChanged(classRoom, cause);
+    public void onRoomPropertiesChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+        super.onRoomPropertiesChanged(classRoom, cause);
         /*处理可能收到的录制的消息*/
         runOnUiThread(() -> {
             if (revRecordMsg) {
@@ -725,11 +725,6 @@ public class LargeClassActivity_bak extends BaseClassActivity implements TabLayo
                 updateUnReadCount(chatRoomShowing());
             }
         });
-    }
-
-    @Override
-    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfos, @NotNull EduRoom classRoom,
-                                            @Nullable Map<String, Object> cause) {
     }
 
     @Override
@@ -746,11 +741,6 @@ public class LargeClassActivity_bak extends BaseClassActivity implements TabLayo
     @Override
     public void onLocalUserUpdated(@NotNull EduUserEvent userEvent, @NotNull EduUserStateChangeType type) {
         super.onLocalUserUpdated(userEvent, type);
-    }
-
-    @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
-        super.onLocalUserPropertyUpdated(userInfo, cause);
     }
 
     @Override

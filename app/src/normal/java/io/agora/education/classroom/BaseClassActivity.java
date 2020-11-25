@@ -809,7 +809,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRoomPropertyChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
+    public void onRoomPropertiesChanged(@NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
         Log.e(TAG, "收到roomProperty改变的数据");
         Map<String, Object> roomProperties = classRoom.getRoomProperties();
         String boardJson = getProperty(roomProperties, BOARD);
@@ -860,11 +860,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteUserPropertyUpdated(@NotNull EduUserInfo userInfo, @NotNull EduRoom classRoom, @Nullable Map<String, Object> cause) {
-
-    }
-
-    @Override
     public void onNetworkQualityChanged(@NotNull NetworkQuality quality, @NotNull EduUserInfo user, @NotNull EduRoom classRoom) {
 //        Log.e(TAG, "onNetworkQualityChanged->" + quality.getValue());
         title_view.setNetworkQuality(quality);
@@ -891,11 +886,6 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
         /**更新用户信息*/
         EduUserInfo userInfo = userEvent.getModifiedUser();
         chatRoomFragment.setMuteLocal(!userInfo.isChatAllowed());
-    }
-
-    @Override
-    public void onLocalUserPropertyUpdated(@NotNull EduUserInfo userInfo, @Nullable Map<String, Object> cause) {
-
     }
 
     @Override

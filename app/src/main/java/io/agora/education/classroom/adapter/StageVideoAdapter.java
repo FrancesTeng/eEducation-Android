@@ -10,14 +10,12 @@ import androidx.recyclerview.widget.DiffUtil;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.viewholder.BaseViewHolder;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import io.agora.education.R;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.classroom.BaseClassActivity;
+import io.agora.education.classroom.BaseClassActivity_bak;
 import io.agora.education.classroom.bean.group.StageStreamInfo;
 import io.agora.education.classroom.widget.StageVideoView;
 
@@ -96,7 +94,7 @@ public class StageVideoAdapter extends BaseQuickAdapter<StageStreamInfo, StageVi
     @Override
     protected void convert(@NonNull ViewHolder viewHolder, StageStreamInfo item) {
         viewHolder.convert(item);
-        BaseClassActivity activity = ((BaseClassActivity) viewHolder.view.getContext());
+        BaseClassActivity_bak activity = ((BaseClassActivity_bak) viewHolder.view.getContext());
         activity.renderStream(activity.getMainEduRoom(), item.getStreamInfo(),
                 viewHolder.view.getVideoLayout());
     }

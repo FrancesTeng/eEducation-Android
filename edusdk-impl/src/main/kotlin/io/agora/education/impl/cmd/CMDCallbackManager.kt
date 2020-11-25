@@ -20,7 +20,7 @@ internal class CMDCallbackManager {
     }
 
     fun onRoomPropertyChanged(classRoom: EduRoom, cause: MutableMap<String, Any>?) {
-        classRoom.eventListener?.onRoomPropertyChanged(classRoom, cause)
+        classRoom.eventListener?.onRoomPropertiesChanged(classRoom, cause)
     }
 
     fun onRoomChatMessageReceived(chatMsg: EduChatMsg, classRoom: EduRoom) {
@@ -49,11 +49,6 @@ internal class CMDCallbackManager {
         classRoom.eventListener?.onRemoteStreamsRemoved(streamEvents, classRoom)
     }
 
-    fun onRemoteUserPropertiesUpdated(userInfo: EduUserInfo, classRoom: EduRoom,
-                                      cause: MutableMap<String, Any>?) {
-        classRoom.eventListener?.onRemoteUserPropertyUpdated(userInfo, classRoom, cause)
-    }
-
     fun onRemoteStreamsUpdated(streamEvent: EduStreamEvent, type: EduStreamStateChangeType, classRoom: EduRoom) {
         classRoom.eventListener?.onRemoteStreamUpdated(streamEvent, type, classRoom)
     }
@@ -73,10 +68,6 @@ internal class CMDCallbackManager {
     fun onLocalUserRemoved(userEvent: EduUserEvent, eduUser: EduUser) {
         /**本地用户的offline数据暂不回调出去，后期会在EduUserEventListener中添加
          * onLocalUserLeft回调来处理此消息(为踢人功能预备)*/
-    }
-
-    fun onLocalUserPropertyUpdated(userInfo: EduUserInfo, cause: MutableMap<String, Any>?, eduUser: EduUser) {
-        eduUser.eventListener?.onLocalUserPropertyUpdated(userInfo, cause)
     }
 
     fun onLocalStreamAdded(streamEvent: EduStreamEvent, eduUser: EduUser) {

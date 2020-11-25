@@ -209,23 +209,23 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
                     cmdCallbackManager.onRemoteUserUpdated(it.event, it.type, eduRoom)
                 }
             }
-            CMDId.UserPropertyChanged.value -> {
-                AgoraLog.e(TAG, "Receive RTM of userProperty change: ${text}")
-                val cmdUserPropertyRes = Gson().fromJson<CMDResponseBody<CMDUserPropertyRes>>(text, object :
-                        TypeToken<CMDResponseBody<CMDUserPropertyRes>>() {}.type).data
-                val updatedUserInfo = CMDDataMergeProcessor.updateUserPropertyWithChange(cmdUserPropertyRes,
-                        (eduRoom as EduRoomImpl).getCurUserList())
-                updatedUserInfo?.let {
-                    if (updatedUserInfo == eduRoom.getCurLocalUserInfo()) {
-                        cmdCallbackManager.onLocalUserPropertyUpdated(it, cmdUserPropertyRes.cause,
-                                eduRoom.getCurLocalUser())
-                    } else {
-                        /**远端用户property发生改变如何回调出去*/
-                        cmdCallbackManager.onRemoteUserPropertiesUpdated(it, eduRoom,
-                                cmdUserPropertyRes.cause)
-                    }
-                }
-            }
+//            CMDId.UserPropertyChanged.value -> {
+//                AgoraLog.e(TAG, "Receive RTM of userProperty change: ${text}")
+//                val cmdUserPropertyRes = Gson().fromJson<CMDResponseBody<CMDUserPropertyRes>>(text, object :
+//                        TypeToken<CMDResponseBody<CMDUserPropertyRes>>() {}.type).data
+//                val updatedUserInfo = CMDDataMergeProcessor.updateUserPropertyWithChange(cmdUserPropertyRes,
+//                        (eduRoom as EduRoomImpl).getCurUserList())
+//                updatedUserInfo?.let {
+//                    if (updatedUserInfo == eduRoom.getCurLocalUserInfo()) {
+//                        cmdCallbackManager.onLocalUserPropertyUpdated(it, cmdUserPropertyRes.cause,
+//                                eduRoom.getCurLocalUser())
+//                    } else {
+//                        /**远端用户property发生改变如何回调出去*/
+//                        cmdCallbackManager.onRemoteUserPropertiesUpdated(it, eduRoom,
+//                                cmdUserPropertyRes.cause)
+//                    }
+//                }
+//            }
             CMDId.StreamStateChange.value -> {
                 val cmdStreamActionMsg = Gson().fromJson<CMDResponseBody<CMDStreamActionMsg>>(text, object :
                         TypeToken<CMDResponseBody<CMDStreamActionMsg>>() {}.type).data

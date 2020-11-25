@@ -11,8 +11,6 @@ interface EduUserEventListener {
 
     fun onLocalUserUpdated(userEvent: EduUserEvent, type: EduUserStateChangeType)
 
-    fun onLocalUserPropertyUpdated(userInfo: EduUserInfo, cause: MutableMap<String, Any>?)
-
     fun onLocalStreamAdded(streamEvent: EduStreamEvent)
 
     fun onLocalStreamUpdated(streamEvent: EduStreamEvent, type: EduStreamStateChangeType)
