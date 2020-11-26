@@ -10,7 +10,7 @@ internal class EduStreamListRes(
 open class EduStreamRes(
         var fromUser: EduFromUserRes,
         streamUuid: String,
-        streamName: String,
+        streamName: String?,
         videoSourceType: Int,
         audioSourceType: Int,
         videoState: Int,
@@ -21,7 +21,7 @@ open class EduStreamRes(
 
 open class EduBaseStreamRes(
         var streamUuid: String,
-        var streamName: String,
+        var streamName: String?,
         var videoSourceType: Int,
         var audioSourceType: Int,
         var videoState: Int,

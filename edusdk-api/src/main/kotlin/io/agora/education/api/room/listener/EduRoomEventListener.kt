@@ -8,7 +8,6 @@ import io.agora.education.api.statistics.ConnectionState
 import io.agora.education.api.statistics.NetworkQuality
 import io.agora.education.api.stream.data.EduStreamEvent
 import io.agora.education.api.stream.data.EduStreamInfo
-import io.agora.education.api.stream.data.EduStreamStateChangeType
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.data.EduUserStateChangeType
@@ -31,7 +30,7 @@ interface EduRoomEventListener {
 
     fun onRemoteStreamsAdded(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom)
 
-    fun onRemoteStreamUpdated(streamEvent: EduStreamEvent, type: EduStreamStateChangeType, classRoom: EduRoom)
+    fun onRemoteStreamUpdated(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom)
 
     fun onRemoteStreamsRemoved(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom)
 

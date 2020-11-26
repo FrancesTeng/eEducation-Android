@@ -49,7 +49,6 @@ import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
@@ -749,18 +748,25 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent,
-                                      @NotNull EduStreamStateChangeType type, @NotNull EduRoom classRoom) {
+    public void onRemoteStreamUpdated(@NotNull List<EduStreamEvent> streamEvents,
+                                      @NotNull EduRoom classRoom) {
         Log.e(TAG, "收到修改远端流的回调");
-        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-        if (streamInfo.getPublisher().getRole() == EduUserRole.TEACHER
-                && streamInfo.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
-            runOnUiThread(() -> {
-                layout_whiteboard.setVisibility(View.GONE);
-                layout_share_video.setVisibility(View.VISIBLE);
-                layout_share_video.removeAllViews();
-                renderStream(getMainEduRoom(), streamInfo, layout_share_video);
-            });
+        Iterator<EduStreamEvent> iterator = streamEvents.iterator();
+        while (iterator.hasNext()) {
+            EduStreamEvent streamEvent = iterator.next();
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            if (streamInfo.getPublisher().getRole() == EduUserRole.TEACHER
+                    && streamInfo.getVideoSourceType().equals(VideoSourceType.SCREEN)) {
+                runOnUiThread(() -> {
+                    layout_whiteboard.setVisibility(View.GONE);
+                    layout_share_video.setVisibility(View.VISIBLE);
+                    layout_share_video.removeAllViews();
+                    renderStream(getMainEduRoom(), streamInfo, layout_share_video);
+                });
+                /**屏幕分享流已处理，移出集合*/
+                iterator.remove();
+                break;
+            }
         }
     }
 
@@ -905,7 +911,7 @@ public abstract class BaseClassActivity extends BaseActivity implements EduRoomE
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
         Log.e(TAG, "收到更新本地流的回调");
         switch (streamEvent.getModifiedStream().getVideoSourceType()) {
             case CAMERA:

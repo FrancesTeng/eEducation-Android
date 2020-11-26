@@ -20,35 +20,6 @@ internal interface UserService {
             @Body eduJoinClassroomReq: EduJoinClassroomReq
     ): Call<ResponseBody<EduEntryRes>>
 
-    /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
-     * @param nextId 下一页起始ID；非必须参数
-     * @param count 返回条数	*/
-    @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/users")
-    fun getUserList(
-            @Path("appId") appId: String,
-            @Path("roomUuid") roomUuid: String,
-//            @Query("role")       role: String?,
-            @Query("nextId") nextId: String?,
-            @Query("count") count: Int,
-            @Query("updateTimeOffset") updateTimeOffset: Long?,
-            @Query("includeOffline") includeOffline: Int?
-    ): Call<ResponseBody<EduUserListRes>>
-
-    /**@param role 角色, 多个逗号分隔 非必须参数（拉全量数据，不传此参数等于所有角色值全传）
-     * @param nextId 本次查询起始userId；非必须参数
-     * @param count 返回条数	*/
-    @GET("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/streams")
-    fun getStreamList(
-            @Path("appId") appId: String,
-            @Path("roomUuid") roomUuid: String,
-//            @Query("role")       role: String?,
-            @Query("nextId") nextId: String?,
-            @Query("count") count: Int,
-            @Query("updateTimeOffset") updateTimeOffset: Long?,
-            @Query("includeOffline") includeOffline: Int?
-    ): Call<ResponseBody<EduStreamListRes>>
-
-
     /**更新某一个用户的禁止聊天状态
      * @param mute 可否聊天 1可 0否*/
     @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}")
@@ -67,19 +38,6 @@ internal interface UserService {
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
             @Path("userUuid") userUuid: String
-    ): Call<io.agora.base.network.ResponseBody<String>>
-
-
-    /**为用户添加自定义属性
-     * @param key 属性key
-     * @param value 属性值（null为删除）*/
-    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/users/{userUuid}/properties/{key}")
-    fun addProperty(
-            @Path("appId") appId: String,
-            @Path("roomUuid") roomUuid: String,
-            @Path("userUuid") userUuid: String,
-            @Path("key") key: String,
-            @Body req: EduUpdateUserPropertyReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**开启 邀请/申请流程*/

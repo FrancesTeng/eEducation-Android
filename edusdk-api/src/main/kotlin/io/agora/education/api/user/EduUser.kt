@@ -101,5 +101,12 @@ interface EduUser {
      * 2:internal error：可以内部订阅具体什么错误
      * 301:network error，透传后台错误msg字段*/
     fun setRoomProperties(properties: MutableMap<String, String>,
-                        cause: MutableMap<String, String>, callback: EduCallback<Unit>)
+                          cause: MutableMap<String, String>, callback: EduCallback<Unit>)
+
+    /**code:message
+     * 1:parameter XXX is invalid
+     * 2:internal error：可以内部订阅具体什么错误
+     * 301:network error，透传后台错误msg字段*/
+    fun removeRoomProperties(properties: MutableList<String>,
+                             cause: MutableMap<String, String>, callback: EduCallback<Unit>)
 }

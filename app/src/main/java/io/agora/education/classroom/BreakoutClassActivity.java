@@ -47,7 +47,6 @@ import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduBaseUserInfo;
@@ -753,20 +752,21 @@ public class BreakoutClassActivity extends BaseClassActivity_bak implements TabL
     }
 
     @Override
-    public void onRemoteStreamUpdated(@NotNull EduStreamEvent
-                                              streamEvent, @NotNull EduStreamStateChangeType type,
+    public void onRemoteStreamUpdated(@NotNull List<EduStreamEvent> streamEvents,
                                       @NotNull EduRoom classRoom) {
         /**老师的屏幕分享流在super方法中处理*/
-        super.onRemoteStreamUpdated(streamEvent, type, classRoom);
+        super.onRemoteStreamUpdated(streamEvents, classRoom);
         /**处理摄像头流*/
         boolean notify = false;
-        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-        switch (streamInfo.getVideoSourceType()) {
-            case CAMERA:
-                notify = true;
-                break;
-            default:
-                break;
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    notify = true;
+                    break;
+                default:
+                    break;
+            }
         }
         if (notify) {
             Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
@@ -829,7 +829,7 @@ public class BreakoutClassActivity extends BaseClassActivity_bak implements TabL
 
     @Override
     public void onRoomPropertiesChanged(@NotNull EduRoom
-                                              classRoom, @Nullable Map<String, Object> cause) {
+                                                classRoom, @Nullable Map<String, Object> cause) {
         if (classRoom.equals(getMainEduRoom())) {
             Log.e(TAG, "收到大房间的roomProperty改变的数据");
             Map<String, Object> roomProperties = classRoom.getRoomProperties();
@@ -905,9 +905,8 @@ public class BreakoutClassActivity extends BaseClassActivity_bak implements TabL
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent
-                                             streamEvent, @NotNull EduStreamStateChangeType type) {
-        super.onLocalStreamUpdated(streamEvent, type);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
+        super.onLocalStreamUpdated(streamEvent);
         notifyVideoUserListForLocal(true);
     }
 

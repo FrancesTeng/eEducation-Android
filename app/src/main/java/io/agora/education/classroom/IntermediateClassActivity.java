@@ -1,6 +1,5 @@
 package io.agora.education.classroom;
 
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,7 +18,6 @@ import com.herewhite.sdk.domain.GlobalState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,12 +37,10 @@ import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduBaseUserInfo;
-import io.agora.education.api.user.data.EduLocalUserInfo;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
 import io.agora.education.api.user.data.EduUserRole;
@@ -64,8 +60,6 @@ import io.agora.education.classroom.widget.RtcVideoView;
 import io.agora.raisehand.AgoraEduCoVideoView;
 import kotlin.Unit;
 
-import static io.agora.education.EduApplication.getAppId;
-import static io.agora.education.classroom.bean.board.BoardBean.BOARD;
 import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.CMD;
 import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.GROUOREWARD;
 import static io.agora.education.classroom.bean.group.IntermediateClassPropertyCauseType.GROUPMEDIA;
@@ -656,14 +650,15 @@ public class IntermediateClassActivity extends BaseClassActivity_bak implements 
     }
 
     @Override
-    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type,
-                                      @NotNull EduRoom classRoom) {
+    public void onRemoteStreamUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
         if (classRoom.equals(getMainEduRoom())) {
-            super.onRemoteStreamUpdated(streamEvent, type, classRoom);
-            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-            EduBaseUserInfo userInfo = streamInfo.getPublisher();
-            if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-                showTeacherStream(streamInfo, videoTeacher.getVideoLayout());
+            super.onRemoteStreamUpdated(streamEvents, classRoom);
+            for (EduStreamEvent streamEvent : streamEvents) {
+                EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+                EduBaseUserInfo userInfo = streamInfo.getPublisher();
+                if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
+                    showTeacherStream(streamInfo, videoTeacher.getVideoLayout());
+                }
             }
             notifyStageVideoList();
         }
@@ -769,8 +764,8 @@ public class IntermediateClassActivity extends BaseClassActivity_bak implements 
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
-        super.onLocalStreamUpdated(streamEvent, type);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
+        super.onLocalStreamUpdated(streamEvent);
         notifyStageVideoList();
     }
 

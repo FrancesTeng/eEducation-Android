@@ -36,7 +36,6 @@ import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.EduUser;
 import io.agora.education.api.user.data.EduUserEvent;
@@ -270,17 +269,18 @@ public class SmallClassActivity extends BaseClassActivity_bak implements TabLayo
     }
 
     @Override
-    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent,
-                                      @NotNull EduStreamStateChangeType type, @NotNull EduRoom classRoom) {
-        super.onRemoteStreamUpdated(streamEvent, type, classRoom);
+    public void onRemoteStreamUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        super.onRemoteStreamUpdated(streamEvents, classRoom);
         boolean notify = false;
-        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-        switch (streamInfo.getVideoSourceType()) {
-            case CAMERA:
-                notify = true;
-                break;
-            default:
-                break;
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    notify = true;
+                    break;
+                default:
+                    break;
+            }
         }
         if (notify) {
             Log.e(TAG, "有远端Camera流被修改，刷新视频列表");
@@ -343,8 +343,8 @@ public class SmallClassActivity extends BaseClassActivity_bak implements TabLayo
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
-        super.onLocalStreamUpdated(streamEvent, type);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
+        super.onLocalStreamUpdated(streamEvent);
         notifyVideoUserListForLocal();
     }
 

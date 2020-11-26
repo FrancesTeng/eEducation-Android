@@ -38,7 +38,6 @@ import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.stream.data.LocalStreamInitOptions;
 import io.agora.education.api.stream.data.VideoSourceType;
 import io.agora.education.api.user.EduStudent;
@@ -662,29 +661,30 @@ public class LargeClassActivity_bak extends BaseClassActivity implements TabLayo
     }
 
     @Override
-    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type,
-                                      @NotNull EduRoom classRoom) {
-        super.onRemoteStreamUpdated(streamEvent, type, classRoom);
-        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-        EduBaseUserInfo userInfo = streamInfo.getPublisher();
-        if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
-            switch (streamInfo.getVideoSourceType()) {
-                case CAMERA:
-                    video_teacher.setName(userInfo.getUserName());
-                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                    video_teacher.muteVideo(!streamInfo.getHasVideo());
-                    video_teacher.muteAudio(!streamInfo.getHasAudio());
-                    /**刷新学生的流的显示层级*/
-                    refreshStudentVideoZOrder();
-                    break;
-                default:
-                    break;
+    public void onRemoteStreamUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        super.onRemoteStreamUpdated(streamEvents, classRoom);
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            EduBaseUserInfo userInfo = streamInfo.getPublisher();
+            if (userInfo.getRole().equals(EduUserRole.TEACHER)) {
+                switch (streamInfo.getVideoSourceType()) {
+                    case CAMERA:
+                        video_teacher.setName(userInfo.getUserName());
+                        renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+                        video_teacher.muteVideo(!streamInfo.getHasVideo());
+                        video_teacher.muteAudio(!streamInfo.getHasAudio());
+                        /**刷新学生的流的显示层级*/
+                        refreshStudentVideoZOrder();
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                renderStudentStream(streamInfo, video_student.getVideoLayout());
+                curLinkedUser = streamInfo.getPublisher();
+                resetHandState();
+                refreshStudentVideoZOrder();
             }
-        } else {
-            renderStudentStream(streamInfo, video_student.getVideoLayout());
-            curLinkedUser = streamInfo.getPublisher();
-            resetHandState();
-            refreshStudentVideoZOrder();
         }
     }
 
@@ -750,8 +750,8 @@ public class LargeClassActivity_bak extends BaseClassActivity implements TabLayo
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
-        super.onLocalStreamUpdated(streamEvent, type);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
+        super.onLocalStreamUpdated(streamEvent);
         /**本地流(连麦的Camera流)被修改;同时，老师同意连麦时，老师会访问更新流接口来为学生新建流，所以此处会接收到回调*/
         renderOwnCoVideoStream(streamEvent);
     }

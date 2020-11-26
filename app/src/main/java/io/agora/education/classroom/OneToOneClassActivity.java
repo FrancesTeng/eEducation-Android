@@ -22,7 +22,6 @@ import io.agora.education.api.statistics.ConnectionState;
 import io.agora.education.api.statistics.NetworkQuality;
 import io.agora.education.api.stream.data.EduStreamEvent;
 import io.agora.education.api.stream.data.EduStreamInfo;
-import io.agora.education.api.stream.data.EduStreamStateChangeType;
 import io.agora.education.api.user.EduStudent;
 import io.agora.education.api.user.data.EduUserEvent;
 import io.agora.education.api.user.data.EduUserInfo;
@@ -211,15 +210,6 @@ public class OneToOneClassActivity extends BaseClassActivity_bak {
                     video_teacher.muteVideo(!streamInfo.getHasVideo());
                     video_teacher.muteAudio(!streamInfo.getHasAudio());
                     break;
-//                case SCREEN:
-//                    /**有屏幕分享的流进入，说明是老师打开了屏幕分享，此时把这个流渲染出来*/
-//                    runOnUiThread(() -> {
-//                        layout_whiteboard.setVisibility(View.GONE);
-//                        layout_share_video.setVisibility(View.VISIBLE);
-//                        layout_share_video.removeAllViews();
-//                        renderStream(getMainEduRoom(), streamInfo, layout_share_video);
-//                    });
-//                    break;
                 default:
                     break;
             }
@@ -227,20 +217,21 @@ public class OneToOneClassActivity extends BaseClassActivity_bak {
     }
 
     @Override
-    public void onRemoteStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type,
-                                      @NotNull EduRoom classRoom) {
-        super.onRemoteStreamUpdated(streamEvent, type, classRoom);
-        EduStreamInfo streamInfo = streamEvent.getModifiedStream();
-        switch (streamInfo.getVideoSourceType()) {
-            case CAMERA:
-                /**一对一场景下，远端流就是老师的流*/
-                video_teacher.setName(streamInfo.getPublisher().getUserName());
-                renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
-                video_teacher.muteVideo(!streamInfo.getHasVideo());
-                video_teacher.muteAudio(!streamInfo.getHasAudio());
-                break;
-            default:
-                break;
+    public void onRemoteStreamUpdated(@NotNull List<EduStreamEvent> streamEvents, @NotNull EduRoom classRoom) {
+        super.onRemoteStreamUpdated(streamEvents, classRoom);
+        for (EduStreamEvent streamEvent : streamEvents) {
+            EduStreamInfo streamInfo = streamEvent.getModifiedStream();
+            /**一对一场景下，远端流就是老师的流*/
+            switch (streamInfo.getVideoSourceType()) {
+                case CAMERA:
+                    video_teacher.setName(streamInfo.getPublisher().getUserName());
+                    renderStream(getMainEduRoom(), streamInfo, video_teacher.getVideoLayout());
+                    video_teacher.muteVideo(!streamInfo.getHasVideo());
+                    video_teacher.muteAudio(!streamInfo.getHasAudio());
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -306,8 +297,8 @@ public class OneToOneClassActivity extends BaseClassActivity_bak {
     }
 
     @Override
-    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent, @NotNull EduStreamStateChangeType type) {
-        super.onLocalStreamUpdated(streamEvent, type);
+    public void onLocalStreamUpdated(@NotNull EduStreamEvent streamEvent) {
+        super.onLocalStreamUpdated(streamEvent);
         EduStreamInfo streamInfo = streamEvent.getModifiedStream();
         video_student.muteVideo(!streamInfo.getHasVideo());
         video_student.muteAudio(!streamInfo.getHasAudio());

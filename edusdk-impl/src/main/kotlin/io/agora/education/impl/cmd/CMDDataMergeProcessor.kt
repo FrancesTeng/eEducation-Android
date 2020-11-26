@@ -12,7 +12,6 @@ import io.agora.education.impl.cmd.bean.*
 import io.agora.education.impl.room.EduRoomImpl
 import io.agora.education.impl.room.data.response.EduSnapshotRes
 import io.agora.education.impl.stream.EduStreamInfoImpl
-import io.agora.education.impl.stream.data.base.EduStreamStateChangeEvent
 import io.agora.education.impl.user.data.EduUserInfoImpl
 import io.agora.education.impl.user.data.base.EduUserStateChangeEvent
 
@@ -200,139 +199,65 @@ internal class CMDDataMergeProcessor : CMDProcessor() {
         }
 
 
-        fun addStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
+        fun addStreamWithAction(streamRes: CMDStreamRes,
                                 streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType):
-                MutableList<EduStreamEvent> {
-            val validStreamList = mutableListOf<EduStreamEvent>()
-            val streamInfos = mutableListOf<EduStreamInfo>()
-            streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
+                EduStreamInfo {
+            val validStream: EduStreamInfo
+            val streamInfo = Convert.convertStreamInfo(streamRes, roomType)
             synchronized(streamInfoList) {
-                for (element in streamInfos) {
-//                    if (streamInfoList.contains(element)) {
-                    val index = Convert.streamExistsInList(element, streamInfoList)
-                    Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
-                    if (index > -1) {
-                        /**更新用户的数据为最新数据*/
-                        streamInfoList[index] = element
-                        /**构造userEvent并返回*/
-                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                        val userEvent = EduStreamEvent(element, operator)
-                        validStreamList.add(userEvent)
-                    } else {
-                        streamInfoList.add(element)
-                        /**构造userEvent并返回*/
-                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                        val userEvent = EduStreamEvent(element, operator)
-                        validStreamList.add(userEvent)
-                    }
+                val index = Convert.streamExistsInList(streamInfo, streamInfoList)
+                Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
+                if (index > -1) {
+                    /**更新用户的数据为最新数据*/
+                    streamInfoList[index] = streamInfo
+                    validStream = streamInfo
+                } else {
+                    streamInfoList.add(streamInfo)
+                    validStream = streamInfo
                 }
-                return validStreamList
+                return validStream
             }
         }
 
-//        fun updateStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
-//                                   streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType):
-//                MutableList<EduStreamEvent> {
-//            val validStreamList = mutableListOf<EduStreamEvent>()
-//            val streamInfos = mutableListOf<EduStreamInfo>()
-//            streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
-//            Log.e(TAG, "本地流缓存:" + Gson().toJson(streamInfoList))
-//            synchronized(streamInfoList) {
-//                for (element in streamInfos) {
-////                    if (streamInfoList.contains(element)) {
-//                    val index = Convert.streamExistsInList(element, streamInfoList)
-//                    Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
-//                    if (index > -1) {
-//                        /**获取已存在于集合中的用户*/
-//                        val userInfo2 = streamInfoList[index]
-//                        if (compareStreamInfoTime(element, userInfo2) > 0) {
-//                            /**更新用户的数据为最新数据*/
-//                            streamInfoList[index] = element
-//                            /**构造userEvent并返回*/
-//                            val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-//                            val userEvent = EduStreamEvent(element, operator)
-//                            validStreamList.add(userEvent)
-//                        }
-//                    } else {
-//                        /**发现是修改流而且本地又没有那么直接添加到本地并作为有效数据；
-//                         * 服务端保证顺序，不会出现remove先到，modify后到的情况（modify先发生，remove后发生）*/
-//                        streamInfoList.add(element)
-//                        /**构造userEvent并返回*/
-//                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-//                        val userEvent = EduStreamEvent(element, operator)
-//                        validStreamList.add(userEvent)
-//                    }
-//                }
-//                return validStreamList
-//            }
-//        }
-
-        fun updateStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
+        fun updateStreamWithAction(streamRes: CMDStreamRes,
                                    streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType):
-                MutableList<EduStreamStateChangeEvent> {
-            val validStreamList = mutableListOf<EduStreamStateChangeEvent>()
-            val streamInfos = mutableListOf<EduStreamInfo>()
-            streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
+                EduStreamInfo {
+            val validStream: EduStreamInfo
+            val streamInfo = Convert.convertStreamInfo(streamRes, roomType)
             Log.e(TAG, "本地流缓存:" + Gson().toJson(streamInfoList))
             synchronized(streamInfoList) {
-                for (element in streamInfos) {
-                    val index = Convert.streamExistsInList(element, streamInfoList)
-                    Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
-                    if (index > -1) {
-                        /**获取已存在于集合中的用户*/
-                        val userInfo2 = streamInfoList[index]
-                        /*确认改变类型*/
-                        var type = EduStreamStateChangeType.Audio
-                        val audio = element.hasAudio != userInfo2.hasAudio
-                        val video = element.hasVideo != userInfo2.hasVideo
-                        if (audio) {
-                            type = EduStreamStateChangeType.Audio
-                        } else if (video) {
-                            type = EduStreamStateChangeType.Video
-                        } else if (audio && video) {
-                            type = EduStreamStateChangeType.VideoAudio
-                        }
-                        /**更新用户的数据为最新数据*/
-                        streamInfoList[index] = element
-                        /**构造userEvent并返回*/
-                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                        val userEvent = EduStreamEvent(element, operator)
-                        validStreamList.add(EduStreamStateChangeEvent(userEvent, type))
-                    } else {
-                        /**发现是修改流而且本地又没有那么直接添加到本地并作为有效数据;
-                         * changeType设置为VideoAudio*/
-                        streamInfoList.add(element)
-                        /**构造userEvent并返回*/
-                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                        val userEvent = EduStreamEvent(element, operator)
-                        validStreamList.add(EduStreamStateChangeEvent(userEvent, EduStreamStateChangeType.VideoAudio))
-                    }
+                val index = Convert.streamExistsInList(streamInfo, streamInfoList)
+                Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
+                if (index > -1) {
+                    /**更新用户的数据为最新数据*/
+                    streamInfoList[index] = streamInfo
+                    validStream = streamInfo
+                } else {
+                    /**发现是修改流而且本地又没有那么直接添加到本地并作为有效数据*/
+                    streamInfoList.add(streamInfo)
+                    validStream = streamInfo
                 }
-                return validStreamList
+                return validStream
             }
         }
 
-        fun removeStreamWithAction(cmdStreamActionMsg: CMDStreamActionMsg,
+        fun removeStreamWithAction(streamRes: CMDStreamRes,
                                    streamInfoList: MutableList<EduStreamInfo>, roomType: RoomType):
-                MutableList<EduStreamEvent> {
-            val validStreamList = mutableListOf<EduStreamEvent>()
-            val streamInfos = mutableListOf<EduStreamInfo>()
-            streamInfos.add(Convert.convertStreamInfo(cmdStreamActionMsg, roomType))
+                EduStreamInfo? {
+            val validStream: EduStreamInfo?
+            val streamInfo = Convert.convertStreamInfo(streamRes, roomType)
             synchronized(streamInfoList) {
-                for (element in streamInfos) {
-//                    if (streamInfoList.contains(element)) {
-                    val index = Convert.streamExistsInList(element, streamInfoList)
-                    Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
-                    if (index > -1) {
-                        /**更新用户的数据为最新数据*/
-                        streamInfoList.removeAt(index)
-                        /**构造userEvent并返回*/
-                        val operator = getOperator(cmdStreamActionMsg.operator, element.publisher, roomType)
-                        val userEvent = EduStreamEvent(element, operator)
-                        validStreamList.add(userEvent)
-                    }
+                val index = Convert.streamExistsInList(streamInfo, streamInfoList)
+                Log.e(TAG, "index的值:$index, 数组长度:${streamInfoList.size}")
+                validStream = if (index > -1) {
+                    /**更新用户的数据为最新数据*/
+                    streamInfoList.removeAt(index)
+                    streamInfo
+                } else {
+                    /*流不存在与本地缓存中*/
+                    null
                 }
-                return validStreamList
+                return validStream
             }
         }
 

@@ -33,7 +33,8 @@ import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.api.user.listener.EduUserEventListener
 import io.agora.education.impl.network.RetrofitManager
 import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.request.EduUpdateRoomPropertyReq
+import io.agora.education.impl.room.data.request.EduRemoveRoomPropertyReq
+import io.agora.education.impl.room.data.request.EduUpsertRoomPropertyReq
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.stream.EduStreamInfoImpl
 import io.agora.education.impl.stream.network.StreamService
@@ -505,9 +506,28 @@ internal open class EduUserImpl(
 
     override fun setRoomProperties(properties: MutableMap<String, String>,
                                    cause: MutableMap<String, String>, callback: EduCallback<Unit>) {
-        val req = EduUpdateRoomPropertyReq(properties, cause)
+        val req = EduUpsertRoomPropertyReq(properties, cause)
         RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
                 .setRoomProperties(APPID, eduRoom.getCurRoomUuid(), req)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
+                    override fun onSuccess(res: ResponseBody<String>?) {
+                        callback.onSuccess(Unit)
+                    }
+
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        callback.onFailure(httpError(error?.code
+                                ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
+                    }
+                }))
+    }
+
+    override fun removeRoomProperties(properties: MutableList<String>, cause: MutableMap<String, String>,
+                                      callback: EduCallback<Unit>) {
+        val req = EduRemoveRoomPropertyReq(properties, cause)
+        RetrofitManager.instance()!!.getService(API_BASE_URL, RoomService::class.java)
+                .removeRoomProperties(APPID, eduRoom.getCurRoomUuid(), req)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)

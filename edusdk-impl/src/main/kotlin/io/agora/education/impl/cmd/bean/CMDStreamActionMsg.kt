@@ -6,7 +6,7 @@ import io.agora.education.impl.room.data.response.EduStreamRes
 class CMDStreamActionMsg(
         fromUser: EduFromUserRes,
         streamUuid: String,
-        streamName: String,
+        streamName: String?,
         videoSourceType: Int,
         audioSourceType: Int,
         videoState: Int,
@@ -16,4 +16,24 @@ class CMDStreamActionMsg(
         val operator: EduFromUserRes
 ) : EduStreamRes(fromUser, streamUuid, streamName, videoSourceType,
         audioSourceType, videoState, audioState, updateTime, null) {
+}
+
+class CMDStreamRes(
+        fromUser: EduFromUserRes,
+        streamUuid: String,
+        streamName: String?,
+        videoSourceType: Int,
+        audioSourceType: Int,
+        videoState: Int,
+        audioState: Int,
+        val action: Int,
+        updateTime: Long
+) : EduStreamRes(fromUser, streamUuid, streamName, videoSourceType, audioSourceType, videoState,
+        audioState, updateTime, null) {
+}
+
+class CMDStreamsActionMsg(
+        val streams: MutableList<CMDStreamRes>,
+        val operator: EduFromUserRes
+) {
 }

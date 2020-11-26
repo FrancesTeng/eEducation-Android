@@ -69,9 +69,9 @@ enum class EduAudioState(var value: Int) {
     Disable(2)
 }
 
-enum class EduStreamStateChangeType(var value: Int) {
-    UnKnow(0),
-    Video(1),
-    Audio(2),
-    VideoAudio(3)
-}
+//enum class EduStreamStateChangeType(var value: Int) {
+//    UnKnow(0),
+//    Video(1),
+//    Audio(2),
+//    VideoAudio(3)
+//}

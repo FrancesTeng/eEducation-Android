@@ -8,6 +8,8 @@ import io.agora.education.api.message.EduChatMsg
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduRoomChangeType
 import io.agora.education.api.room.data.RoomType
+import io.agora.education.api.stream.data.EduStreamEvent
+import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.education.api.user.data.EduChatState
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.impl.cmd.bean.*
@@ -226,88 +228,137 @@ internal class CMDDispatch(private val eduRoom: EduRoom) {
 //                    }
 //                }
 //            }
-            CMDId.StreamStateChange.value -> {
-                val cmdStreamActionMsg = Gson().fromJson<CMDResponseBody<CMDStreamActionMsg>>(text, object :
-                        TypeToken<CMDResponseBody<CMDStreamActionMsg>>() {}.type).data
-                /**根据回调数据，维护本地存储的流列表*/
-                when (cmdStreamActionMsg.action) {
-                    CMDStreamAction.Add.value -> {
-                        AgoraLog.e(TAG, "Receive RTM of newly added stream：${text}")
-                        val validAddStreams = CMDDataMergeProcessor.addStreamWithAction(cmdStreamActionMsg,
-                                (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
-                        AgoraLog.e(TAG, "Effective newly added stream size is: " + validAddStreams.size)
-                        /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
-                        val iterable = validAddStreams.iterator()
-                        while (iterable.hasNext()) {
-                            val element = iterable.next()
-                            val streamInfo = element.modifiedStream
-                            if (streamInfo.publisher == eduRoom.getCurLocalUserInfo()) {
-                                RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
-                                RteEngineImpl.setClientRole(eduRoom.getCurRoomUuid(),
-                                        Constants.CLIENT_ROLE_BROADCASTER)
-                                RteEngineImpl.publish(eduRoom.getCurRoomUuid())
-                                AgoraLog.e(TAG, "Callback the newly added localStream to upper layer")
-                                cmdCallbackManager.onLocalStreamAdded(element, eduRoom.getCurLocalUser())
-                                iterable.remove()
+            CMDId.StreamStateChange.value, CMDId.StreamsStateChange.value -> {
+                var cmdStreamsActionMsg: CMDStreamsActionMsg? = null
+                if (cmdResponseBody.cmd == CMDId.StreamStateChange.value) {
+                    val cmdStreamActionMsg = Gson().fromJson<CMDResponseBody<CMDStreamActionMsg>>(text, object :
+                            TypeToken<CMDResponseBody<CMDStreamActionMsg>>() {}.type).data
+                    val streams: MutableList<CMDStreamRes> = mutableListOf()
+                    val operator = cmdStreamActionMsg.operator
+                    val streamRes = Convert.convertCMDStreamRes(cmdStreamActionMsg)
+                    streams.add(streamRes)
+                    cmdStreamsActionMsg = CMDStreamsActionMsg(streams, operator)
+                } else {
+                    cmdStreamsActionMsg = Gson().fromJson<CMDResponseBody<CMDStreamsActionMsg>>(text, object :
+                            TypeToken<CMDResponseBody<CMDStreamsActionMsg>>() {}.type).data
+                }
+                val operator = Convert.convertUserInfo(cmdStreamsActionMsg.operator,
+                        (eduRoom as EduRoomImpl).getCurRoomType())
+                val validAddedStreams = mutableListOf<EduStreamEvent>()
+                val validUpdatedStreams = mutableListOf<EduStreamEvent>()
+                val validRemovedStreams = mutableListOf<EduStreamEvent>()
+                /**根据回调数据，维护本地存储的流列表;并获取有效的数据*/
+                cmdStreamsActionMsg?.streams?.forEach {
+                    when (it.action) {
+                        CMDStreamAction.Add.value -> {
+                            val streamInfo = CMDDataMergeProcessor.addStreamWithAction(it,
+                                    eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
+                            streamInfo?.let { stream ->
+                                val event = EduStreamEvent(stream, operator)
+                                validAddedStreams.add(event)
                             }
                         }
-                        if (validAddStreams.size > 0) {
-                            AgoraLog.e(TAG, "Callback the newly added remoteStream to upper layer")
-                            cmdCallbackManager.onRemoteStreamsAdded(validAddStreams, eduRoom)
-                        }
-                    }
-                    CMDStreamAction.Modify.value -> {
-                        AgoraLog.e(TAG, "Receive RTM of stream updated: ${text}")
-                        val validModifyStreams = CMDDataMergeProcessor.updateStreamWithAction(cmdStreamActionMsg,
-                                (eduRoom as EduRoomImpl).getCurStreamList(), eduRoom.getCurRoomType())
-                        AgoraLog.e(TAG, "Effective updated stream size is: " + validModifyStreams.size)
-                        /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
-                        val iterable = validModifyStreams.iterator()
-                        while (iterable.hasNext()) {
-                            val element = iterable.next()
-                            val stream = element.event.modifiedStream
-                            if (stream.publisher == eduRoom.getCurLocalUserInfo()) {
-                                RteEngineImpl.updateLocalStream(stream.hasAudio, stream.hasVideo)
-                                RteEngineImpl.setClientRole(eduRoom.getCurRoomUuid(),
-                                        Constants.CLIENT_ROLE_BROADCASTER)
-                                RteEngineImpl.publish(eduRoom.getCurRoomUuid())
-                                AgoraLog.e(TAG, "Callback the updated localStream to upper layer")
-                                cmdCallbackManager.onLocalStreamUpdated(element.event, element.type,
-                                        eduRoom.getCurLocalUser())
-                                iterable.remove()
+                        CMDStreamAction.Modify.value -> {
+                            val streamInfo = CMDDataMergeProcessor.updateStreamWithAction(it,
+                                    eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
+                            streamInfo?.let { stream ->
+                                val event = EduStreamEvent(stream, operator)
+                                validUpdatedStreams.add(event)
                             }
                         }
-                        if (validModifyStreams.size > 0) {
-                            AgoraLog.e(TAG, "Callback the updated remoteStream to upper layer")
-                            validModifyStreams?.forEach {
-                                cmdCallbackManager.onRemoteStreamsUpdated(it.event, it.type, eduRoom)
+                        CMDStreamAction.Remove.value -> {
+                            val streamInfo = CMDDataMergeProcessor.removeStreamWithAction(it,
+                                    eduRoom.getCurStreamList(), eduRoom.getCurRoomType())
+                            streamInfo?.let { stream ->
+                                val event = EduStreamEvent(stream, operator)
+                                validRemovedStreams.add(event)
                             }
                         }
                     }
-                    CMDStreamAction.Remove.value -> {
-                        AgoraLog.e(TAG, "Receive RTM of stream deleted：${text}")
-                        val validRemoveStreams = CMDDataMergeProcessor.removeStreamWithAction(
-                                cmdStreamActionMsg, (eduRoom as EduRoomImpl).getCurStreamList(),
-                                eduRoom.getCurRoomType())
-
-                        /**判断有效的数据中是否有本地流的数据,有则处理并回调*/
-                        val iterable = validRemoveStreams.iterator()
-                        while (iterable.hasNext()) {
-                            val element = iterable.next()
-                            if (element.modifiedStream.publisher == eduRoom.getCurLocalUserInfo()) {
-                                RteEngineImpl.updateLocalStream(element.modifiedStream.hasAudio,
-                                        element.modifiedStream.hasVideo)
-                                RteEngineImpl.unpublish(eduRoom.getCurRoomUuid())
-                                AgoraLog.e(TAG, "Callback the deleted localStream to upper layer")
-                                cmdCallbackManager.onLocalStreamRemoved(element, eduRoom.getCurLocalUser())
-                                iterable.remove()
-                            }
-                        }
-                        if (validRemoveStreams.size > 0) {
-                            AgoraLog.e(TAG, "Callback the deleted remoteStream to upper layer")
-                            cmdCallbackManager.onRemoteStreamsRemoved(validRemoveStreams, eduRoom)
+                }
+                /**检测并处理本地数据*/
+                val validAddedLocalStreams = mutableListOf<EduStreamEvent>()
+                val validUpdatedLocalStreams = mutableListOf<EduStreamEvent>()
+                val validRemovedLocalStreams = mutableListOf<EduStreamEvent>()
+                if (validAddedStreams.size > 0) {
+                    AgoraLog.e(TAG, "Effective newly added streams is: ${Gson().toJson(validAddedStreams)}")
+                    val iterable = validAddedStreams.iterator()
+                    while (iterable.hasNext()) {
+                        val element = iterable.next()
+                        val streamInfo = element.modifiedStream
+                        if (streamInfo.publisher == eduRoom.getCurLocalUserInfo()) {
+                            RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                            RteEngineImpl.setClientRole(eduRoom.getCurRoomUuid(),
+                                    Constants.CLIENT_ROLE_BROADCASTER)
+                            RteEngineImpl.publish(eduRoom.getCurRoomUuid())
+                            val event = EduStreamEvent(streamInfo, operator)
+                            validAddedLocalStreams.add(event)
+                            iterable.remove()
                         }
                     }
+                }
+                if (validUpdatedStreams.size > 0) {
+                    AgoraLog.e(TAG, "Effective updated streams is: ${Gson().toJson(validUpdatedStreams)}")
+                    val iterable = validUpdatedStreams.iterator()
+                    while (iterable.hasNext()) {
+                        val element = iterable.next()
+                        val streamInfo = element.modifiedStream
+                        if (streamInfo.publisher == eduRoom.getCurLocalUserInfo()) {
+                            RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                            RteEngineImpl.setClientRole(eduRoom.getCurRoomUuid(),
+                                    Constants.CLIENT_ROLE_BROADCASTER)
+                            RteEngineImpl.publish(eduRoom.getCurRoomUuid())
+                            val event = EduStreamEvent(streamInfo, operator)
+                            validUpdatedLocalStreams.add(event)
+                            iterable.remove()
+                        }
+                    }
+                }
+                if (validRemovedStreams.size > 0) {
+                    AgoraLog.e(TAG, "Effective deleted streams is: ${Gson().toJson(validRemovedStreams)}")
+                    val iterable = validRemovedStreams.iterator()
+                    while (iterable.hasNext()) {
+                        val element = iterable.next()
+                        val streamInfo = element.modifiedStream
+                        if (streamInfo.publisher == eduRoom.getCurLocalUserInfo()) {
+                            RteEngineImpl.updateLocalStream(streamInfo.hasAudio, streamInfo.hasVideo)
+                            RteEngineImpl.unpublish(eduRoom.getCurRoomUuid())
+                            val event = EduStreamEvent(streamInfo, operator)
+                            validRemovedLocalStreams.add(event)
+                            iterable.remove()
+                        }
+                    }
+                }
+                /**回调有效数据*/
+                if (validAddedLocalStreams.size > 0) {
+                    AgoraLog.e(TAG, "Callback the newly added localStream to upper layer")
+                    validAddedLocalStreams.forEach {
+                        cmdCallbackManager.onLocalStreamAdded(it, eduRoom.getCurLocalUser())
+                    }
+                }
+                if (validAddedStreams.size > 0) {
+                    AgoraLog.e(TAG, "Callback the newly added remoteStream to upper layer")
+                    cmdCallbackManager.onRemoteStreamsAdded(validAddedStreams, eduRoom)
+                }
+                if (validUpdatedLocalStreams.size > 0) {
+                    AgoraLog.e(TAG, "Callback the updated localStream to upper layer")
+                    validUpdatedLocalStreams.forEach {
+                        cmdCallbackManager.onLocalStreamUpdated(it, eduRoom.getCurLocalUser())
+                    }
+                }
+                if (validUpdatedStreams.size > 0) {
+                    AgoraLog.e(TAG, "Callback the updated remoteStream to upper layer")
+                    cmdCallbackManager.onRemoteStreamsUpdated(validUpdatedStreams, eduRoom)
+                }
+                if (validRemovedLocalStreams.size > 0) {
+                    AgoraLog.e(TAG, "Callback the deleted localStream to upper layer")
+                    validRemovedLocalStreams.forEach {
+                        cmdCallbackManager.onLocalStreamRemoved(it, eduRoom.getCurLocalUser())
+                    }
+                }
+                if (validRemovedStreams.size > 0) {
+                    AgoraLog.e(TAG, "Callback the deleted remoteStream to upper layer")
+                    cmdCallbackManager.onRemoteStreamsRemoved(validRemovedStreams, eduRoom)
                 }
             }
             CMDId.BoardRoomStateChange.value -> {

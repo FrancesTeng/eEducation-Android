@@ -32,6 +32,9 @@ enum class CMDId(var value: Int) {
     /**频道-流-新增/更新/删除*/
     StreamStateChange(40),
 
+    /**频道-流-新增/更新/删除(批量)*/
+    StreamsStateChange(41),
+
     /**频道-白板房间状态*/
     BoardRoomStateChange(60),
 

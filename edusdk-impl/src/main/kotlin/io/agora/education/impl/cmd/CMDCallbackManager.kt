@@ -7,7 +7,6 @@ import io.agora.education.api.message.EduMsg
 import io.agora.education.api.room.EduRoom
 import io.agora.education.api.room.data.EduRoomChangeType
 import io.agora.education.api.stream.data.EduStreamEvent
-import io.agora.education.api.stream.data.EduStreamStateChangeType
 import io.agora.education.api.user.EduUser
 import io.agora.education.api.user.data.EduUserEvent
 import io.agora.education.api.user.data.EduUserInfo
@@ -49,8 +48,8 @@ internal class CMDCallbackManager {
         classRoom.eventListener?.onRemoteStreamsRemoved(streamEvents, classRoom)
     }
 
-    fun onRemoteStreamsUpdated(streamEvent: EduStreamEvent, type: EduStreamStateChangeType, classRoom: EduRoom) {
-        classRoom.eventListener?.onRemoteStreamUpdated(streamEvent, type, classRoom)
+    fun onRemoteStreamsUpdated(streamEvents: MutableList<EduStreamEvent>, classRoom: EduRoom) {
+        classRoom.eventListener?.onRemoteStreamUpdated(streamEvents, classRoom)
     }
 
     fun onRemoteUserUpdated(userEvent: EduUserEvent, type: EduUserStateChangeType, classRoom: EduRoom) {
@@ -74,8 +73,8 @@ internal class CMDCallbackManager {
         eduUser.eventListener?.onLocalStreamAdded(streamEvent)
     }
 
-    fun onLocalStreamUpdated(streamEvent: EduStreamEvent, type: EduStreamStateChangeType, eduUser: EduUser) {
-        eduUser.eventListener?.onLocalStreamUpdated(streamEvent, type)
+    fun onLocalStreamUpdated(streamEvent: EduStreamEvent, eduUser: EduUser) {
+        eduUser.eventListener?.onLocalStreamUpdated(streamEvent)
     }
 
     fun onLocalStreamRemoved(streamEvent: EduStreamEvent, eduUser: EduUser) {

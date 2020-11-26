@@ -11,7 +11,6 @@ import io.agora.education.api.room.data.EduRoomState
 import io.agora.education.api.stream.data.AudioSourceType
 import io.agora.education.api.stream.data.EduStreamInfo
 import io.agora.education.api.stream.data.ScreenStreamInitOptions
-import io.agora.education.api.stream.data.VideoSourceType
 import io.agora.education.api.user.EduTeacher
 import io.agora.education.api.user.data.EduUserInfo
 import io.agora.education.impl.util.Convert
@@ -20,8 +19,6 @@ import io.agora.education.api.statistics.AgoraError
 import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.listener.EduTeacherEventListener
 import io.agora.education.impl.network.RetrofitManager
-import io.agora.education.impl.room.EduRoomImpl
-import io.agora.education.impl.room.data.request.EduUpdateRoomPropertyReq
 import io.agora.education.impl.room.network.RoomService
 import io.agora.education.impl.stream.network.StreamService
 import io.agora.education.impl.user.data.request.EduRoomMuteStateReq

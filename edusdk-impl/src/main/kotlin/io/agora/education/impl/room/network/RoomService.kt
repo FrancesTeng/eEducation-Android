@@ -1,8 +1,9 @@
 package io.agora.education.impl.room.network
 
 import io.agora.education.impl.ResponseBody
+import io.agora.education.impl.room.data.request.EduRemoveRoomPropertyReq
 import io.agora.education.impl.room.data.request.EduSyncRoomReq
-import io.agora.education.impl.room.data.request.EduUpdateRoomPropertyReq
+import io.agora.education.impl.room.data.request.EduUpsertRoomPropertyReq
 import io.agora.education.impl.room.data.response.*
 import io.agora.education.impl.room.data.response.EduSequenceListRes
 import io.agora.education.impl.room.data.response.EduSequenceSnapshotRes
@@ -97,7 +98,17 @@ internal interface RoomService {
     fun setRoomProperties(
             @Path("appId") appId: String,
             @Path("roomUuid") roomUuid: String,
-            @Body req: EduUpdateRoomPropertyReq
+            @Body req: EduUpsertRoomPropertyReq
+    ): Call<io.agora.base.network.ResponseBody<String>>
+
+
+    /**为room添加自定义属性
+     * @param value 属性值（null为删除）*/
+    @PUT("/scene/apps/{appId}/v1/rooms/{roomUuid}/properties")
+    fun removeRoomProperties(
+            @Path("appId") appId: String,
+            @Path("roomUuid") roomUuid: String,
+            @Body req: EduRemoveRoomPropertyReq
     ): Call<io.agora.base.network.ResponseBody<String>>
 
     /**查询丢失的消息列表*/
