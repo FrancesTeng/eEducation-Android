@@ -334,8 +334,13 @@ internal class EduRoomImpl(
                 getCurRoomStatus().onlineUsersCount = getCurUserList().size
                 joinSuccess = true
                 callback.onSuccess(eduUser as EduStudent)
-                eventListener?.onRemoteUsersInitialized(getCurRemoteUserList(), this@EduRoomImpl)
-                eventListener?.onRemoteStreamsInitialized(getCurRemoteStreamList(), this@EduRoomImpl)
+                /**本地缓存的远端人流数据为空，则不走initialized回调*/
+                if (getCurRemoteUserList().size > 0) {
+                    eventListener?.onRemoteUsersInitialized(getCurRemoteUserList(), this@EduRoomImpl)
+                }
+                if (getCurRemoteStreamList().size > 0) {
+                    eventListener?.onRemoteStreamsInitialized(getCurRemoteStreamList(), this@EduRoomImpl)
+                }
                 /**检查是否有默认流信息(直接处理数据)*/
                 val addedStreamsIterable = defaultStreams.iterator()
                 while (addedStreamsIterable.hasNext()) {
@@ -352,10 +357,6 @@ internal class EduRoomImpl(
                         /**把本地流*/
                         addedStreamsIterable.remove()
                     }
-                }
-                if (defaultStreams.size > 0) {
-                    AgoraLog.i("$TAG->Join success，callback the added remoteStream to upper layer")
-                    eventListener?.onRemoteStreamsAdded(defaultStreams, this)
                 }
                 /**检查并处理缓存数据(处理CMD消息)*/
                 (syncSession as RoomSyncHelper).handleCache(object : EduCallback<Unit> {

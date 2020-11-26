@@ -20,6 +20,8 @@ import io.agora.education.api.user.data.EduLocalUserInfo
 import io.agora.education.api.user.listener.EduTeacherEventListener
 import io.agora.education.impl.network.RetrofitManager
 import io.agora.education.impl.room.network.RoomService
+import io.agora.education.impl.stream.data.request.EduDelStreamReq
+import io.agora.education.impl.stream.data.request.EduUpsertStreamReq
 import io.agora.education.impl.stream.network.StreamService
 import io.agora.education.impl.user.data.request.EduRoomMuteStateReq
 import io.agora.education.impl.user.data.request.EduStreamStatusReq
@@ -98,12 +100,37 @@ internal class EduTeacherImpl(
 
     }
 
-    override fun createOrUpdateStudentStream(remoteStream: EduStreamInfo, callback: EduCallback<Unit>) {
-        val eduStreamStatusReq = EduStreamStatusReq(remoteStream.streamName, remoteStream.videoSourceType.value,
-                AudioSourceType.MICROPHONE.value, if (remoteStream.hasVideo) 1 else 0, if (remoteStream.hasAudio) 1 else 0)
+    override fun upsertStudentStreams(streamInfos: MutableList<EduStreamInfo>, callback: EduCallback<Unit>) {
+        val streams = mutableListOf<EduUpsertStreamReq>()
+        streamInfos.forEach {
+            val eduUpsertStreamReq = EduUpsertStreamReq(it.publisher.userUuid, it.streamUuid,
+                    it.streamName, it.videoSourceType, if (it.hasVideo) 1 else 0,
+                    if (it.hasAudio) 1 else 0)
+            streams.add(eduUpsertStreamReq)
+        }
         RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
-                .updateStreamInfo(APPID, eduRoom.getCurRoomUuid(), remoteStream.publisher.userUuid,
-                        remoteStream.streamUuid, eduStreamStatusReq)
+                .upsertStreams(APPID, eduRoom.getCurRoomUuid(), streams)
+                .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
+                    override fun onSuccess(res: ResponseBody<String>?) {
+                        callback.onSuccess(Unit)
+                    }
+
+                    override fun onFailure(throwable: Throwable?) {
+                        var error = throwable as? BusinessException
+                        callback.onFailure(httpError(error?.code ?: AgoraError.INTERNAL_ERROR.value,
+                                error?.message ?: throwable?.message))
+                    }
+                }))
+    }
+
+    override fun deleteStudentStreams(streamInfos: MutableList<EduStreamInfo>, callback: EduCallback<Unit>) {
+        val streams = mutableListOf<EduDelStreamReq>()
+        streamInfos.forEach {
+            val eduDelStreamReq = EduDelStreamReq(it.publisher.userUuid, it.streamUuid)
+            streams.add(eduDelStreamReq)
+        }
+        RetrofitManager.instance()!!.getService(API_BASE_URL, StreamService::class.java)
+                .delStreams(APPID, eduRoom.getCurRoomUuid(), streams)
                 .enqueue(RetrofitManager.Callback(0, object : ThrowableCallback<ResponseBody<String>> {
                     override fun onSuccess(res: ResponseBody<String>?) {
                         callback.onSuccess(Unit)

@@ -44,10 +44,17 @@ interface EduTeacher : EduUser {
      * 301:network error，透传后台错误msg字段*/
     fun stopShareScreen(callback: EduCallback<Unit>)
 
-    /**为学生新建或者更新流
+    /**upsert学生的流
      * code:message
      * 1:parameter XXX is invalid
      * 2:internal error：可以内部订阅具体什么错误
      * 301:network error，透传后台错误msg字段*/
-    fun createOrUpdateStudentStream(streamInfo: EduStreamInfo, callback: EduCallback<Unit>)
+    fun upsertStudentStreams(streams: MutableList<EduStreamInfo>, callback: EduCallback<Unit>)
+
+    /**删除学生的流
+     * code:message
+     * 1:parameter XXX is invalid
+     * 2:internal error：可以内部订阅具体什么错误
+     * 301:network error，透传后台错误msg字段*/
+    fun deleteStudentStreams(streams: MutableList<EduStreamInfo>, callback: EduCallback<Unit>)
 }
